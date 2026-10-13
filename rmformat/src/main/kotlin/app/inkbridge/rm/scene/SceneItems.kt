@@ -81,6 +81,7 @@ class Line(
     val moveId: CrdtId? = null,
     /** Explicit RGBA (r, g, b, a), present for newer colours such as highlighter shades. */
     val colorRgba: IntArray? = null,
+    val timestamp: CrdtId = CrdtId(0, 1),
 ) : SceneItem
 
 class Rectangle(val x: Double, val y: Double, val w: Double, val h: Double)

@@ -28,14 +28,14 @@ object SceneStream {
             val block = try {
                 reader.readBlock({ i ->
                     info = i
-                    parseBlock(reader, i)
+                    parseBlock(reader, i).also { it.minVersion = i.minVersion; it.currentVersion = i.currentVersion }
                 }, { extra = it })
             } catch (e: Exception) {
                 // Resynchronise on the block length so one bad block doesn't lose the page.
                 val i = info
                 if (i == null) throw IllegalArgumentException("Corrupt block header at $start: ${e.message}", e)
                 val raw = reader.rawBlockContent(i)
-                UnreadableBlock(i.blockType, i.minVersion, i.currentVersion, raw, e.toString())
+                UnreadableBlock(i.blockType, raw, e.toString()).also { it.minVersion = i.minVersion; it.currentVersion = i.currentVersion }
             } ?: break
             blocks += if (extra.isNotEmpty() && block !is UnreadableBlock) withExtra(block, extra) else block
         }
@@ -44,7 +44,11 @@ object SceneStream {
 
     fun readTree(bytes: ByteArray): SceneTree = SceneTree.build(readBlocks(bytes))
 
-    private fun withExtra(b: Block, extra: ByteArray): Block = when (b) {
+    private fun withExtra(b: Block, extra: ByteArray): Block = withExtra0(b, extra).also {
+        it.minVersion = b.minVersion; it.currentVersion = b.currentVersion
+    }
+
+    private fun withExtra0(b: Block, extra: ByteArray): Block = when (b) {
         is AuthorIdsBlock -> AuthorIdsBlock(b.authors, extra)
         is MigrationInfoBlock -> MigrationInfoBlock(b.migrationId, b.isDevice, b.unknown, extra)
         is PageInfoBlock -> PageInfoBlock(b.loadsCount, b.mergesCount, b.textCharsCount, b.textLinesCount, b.typeFolioUseCount, extra)
@@ -52,7 +56,7 @@ object SceneStream {
         is SceneTreeBlock -> SceneTreeBlock(b.treeId, b.nodeId, b.isUpdate, b.parentId, extra)
         is TreeNodeBlock -> TreeNodeBlock(b.group, extra)
         is RootTextBlock -> RootTextBlock(b.blockId, b.value, extra)
-        is SceneItemBlock -> SceneItemBlock(b.blockType, b.parentId, b.itemId, b.leftId, b.rightId, b.deletedLength, b.value, extra)
+        is SceneItemBlock -> SceneItemBlock(b.blockType, b.parentId, b.itemId, b.leftId, b.rightId, b.deletedLength, b.value, b.itemType, b.valueExtra, extra)
         is UnreadableBlock -> b
     }
 
@@ -60,7 +64,7 @@ object SceneStream {
         BLOCK_MIGRATION_INFO -> {
             val id = r.readId(1)
             val device = r.readBool(2)
-            val unknown = if (r.bytesRemainingInBlock() > 0) r.readBool(3) else false
+            val unknown = if (r.bytesRemainingInBlock() > 0) r.readBool(3) else null
             MigrationInfoBlock(id, device, unknown)
         }
         BLOCK_SCENE_TREE -> {
@@ -101,7 +105,7 @@ object SceneStream {
             val merges = r.readInt(2)
             val chars = r.readInt(3)
             val lines = r.readInt(4)
-            val folio = if (r.bytesRemainingInBlock() > 0) r.readInt(5) else 0
+            val folio = if (r.bytesRemainingInBlock() > 0) r.readInt(5) else null
             PageInfoBlock(loads, merges, chars, lines, folio)
         }
         BLOCK_SCENE_INFO -> {
@@ -123,9 +127,11 @@ object SceneStream {
         val right = r.readId(4)
         val deleted = r.readInt(5)
         var value: Any? = null
+        var itemType: Int? = null
+        var valueExtra = ByteArray(0)
         if (r.hasSubblock(6)) {
-            r.readSubblock(6) {
-                r.data.readU8() // item type tag; implied by the block type
+            r.readSubblock(6, onExtra = { valueExtra = it }) {
+                itemType = r.data.readU8()
                 value = when (info.blockType) {
                     SceneItemBlock.GLYPH -> readGlyph(r)
                     SceneItemBlock.GROUP -> r.readId(2)
@@ -134,7 +140,7 @@ object SceneStream {
                 }
             }
         }
-        return SceneItemBlock(info.blockType, parent, itemId, left, right, deleted, value)
+        return SceneItemBlock(info.blockType, parent, itemId, left, right, deleted, value, itemType, valueExtra)
     }
 
     private fun readPoint(d: RmDataStream, version: Int): Point {
@@ -167,11 +173,11 @@ object SceneStream {
             require(sub.size % pointSize == 0) { "Point data size ${sub.size} is not a multiple of $pointSize" }
             List(sub.size / pointSize) { readPoint(r.data, version) }
         }
-        r.readId(6) // timestamp, unused
+        val timestamp = r.readId(6)
         var moveId: CrdtId? = null
         if (r.bytesRemainingInBlock() >= 3 && r.data.checkTag(7, TagType.ID)) moveId = r.readId(7)
         val rgba = r.readColorOptional(8)
-        return Line(tool, color, points, thickness, startLen, moveId, rgba)
+        return Line(tool, color, points, thickness, startLen, moveId, rgba, timestamp)
     }
 
     private fun readGlyph(r: TaggedBlockReader): GlyphRange {
