@@ -18,5 +18,7 @@ rootProject.name = "InkBridge"
 
 // Pure-Kotlin .rm v6 parser + platform-neutral renderer (runs on the JVM, unit-tested without a device).
 include(":rmformat")
-// Android app for the BOOX Note Air5 C.
-include(":app")
+// Android app for the BOOX Note Air5 C. Pass -PrmOnly to skip it (fast JVM-only parser/renderer builds).
+if (!providers.gradleProperty("rmOnly").isPresent) {
+    include(":app")
+}
