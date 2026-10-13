@@ -16,7 +16,8 @@ reMarkable 2 `.rm` v6 format, so the same notebooks work on both devices.
 | Page editing: add strokes, erase, undo/redo, save to `.rm` | done and tested on the JVM (edits are appended blocks / tombstones; old bytes stay untouched) |
 | Android app (import folder, browse, open pages, draw, erase, save) | builds; **not yet run on a device**; pen feel untested |
 | Pen input via the Onyx SDK (`TouchHelper`) | written against the SDK's real API; needs on-device tuning |
-| PDF/EPUB overlay, export, OCR, sync | not started |
+| Export a page to SVG, PNG and PDF | done (SVG tested on the JVM; PNG/PDF untested on a device) |
+| PDF/EPUB overlay, OCR, sync | not started |
 
 ## Layout
 

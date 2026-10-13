@@ -36,6 +36,7 @@ private const val ERASER_RADIUS_PX = 22f
 
 @Composable
 fun PageScreen(store: LibraryStore, doc: LibraryEntry, onClose: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     var index by remember(doc.id) { mutableIntStateOf(0) }
     val pageCount = doc.pageIds.size
     val canDraw = doc.fileType == "notebook"
@@ -80,6 +81,18 @@ fun PageScreen(store: LibraryStore, doc: LibraryEntry, onClose: () -> Unit) {
             BlackButton("◀", { index-- }, enabled = index > 0)
             Text(if (pageCount == 0) "–" else "${index + 1} / $pageCount", fontSize = 18.sp, modifier = Modifier.padding(horizontal = 12.dp))
             BlackButton("▶", { index++ }, enabled = index < pageCount - 1)
+            Spacer(Modifier.width(10.dp))
+            BlackButton("Export", {
+                val s = session ?: return@BlackButton
+                message = try {
+                    val dir = java.io.File(context.getExternalFilesDir(null) ?: context.filesDir, "exports")
+                    val safe = doc.name.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').ifEmpty { "page" }
+                    val files = s.export(dir, "${safe}_p${index + 1}")
+                    "Exported ${files.joinToString { it.name }} to ${dir.absolutePath}"
+                } catch (e: Exception) {
+                    "Export failed: ${e.message}"
+                }
+            }, enabled = session != null)
         }
         // Row 2+3: pen controls.
         if (canDraw) {

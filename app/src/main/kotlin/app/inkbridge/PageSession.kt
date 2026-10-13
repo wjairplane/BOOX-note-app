@@ -9,7 +9,9 @@ import app.inkbridge.rm.edit.PageEditor
 import app.inkbridge.rm.edit.PageTransform
 import app.inkbridge.rm.edit.PenSpec
 import app.inkbridge.rm.edit.PenTool
+import app.inkbridge.rm.export.PageExport
 import app.inkbridge.rm.library.PageFiles
+import android.graphics.pdf.PdfDocument
 import java.io.File
 
 /**
@@ -74,6 +76,45 @@ class PageSession(private val file: File) {
         if (!editor.isDirty) return
         PageFiles.save(file, editor.toBytes())
         editor.markSaved()
+    }
+
+    /**
+     * Export the page as `<baseName>.svg`, `.png` and `.pdf` into [dir]. SVG and PDF are vector;
+     * PNG is 1 pixel per page unit. Returns the files written.
+     */
+    @Synchronized
+    fun export(dir: File, baseName: String): List<File> {
+        dir.mkdirs()
+        val renderer = editor.renderer
+        val layout = renderer.layout
+
+        val svg = File(dir, "$baseName.svg").also { it.writeText(PageExport.svg(renderer)) }
+
+        val png = File(dir, "$baseName.png")
+        val full = Bitmap.createBitmap(layout.width.toInt(), layout.height.toInt(), Bitmap.Config.ARGB_8888)
+        Canvas(full).also { c ->
+            c.drawColor(Color.WHITE)
+            c.translate(-layout.xMin, -layout.yMin)
+            renderer.render(AndroidPageCanvas(c))
+        }
+        png.outputStream().use { full.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        full.recycle()
+
+        val pdf = File(dir, "$baseName.pdf")
+        val pt = 72f / 226f // page units are ~226 dpi
+        val doc = PdfDocument()
+        try {
+            val page = doc.startPage(PdfDocument.PageInfo.Builder((layout.width * pt).toInt(), (layout.height * pt).toInt(), 1).create())
+            page.canvas.drawColor(Color.WHITE)
+            page.canvas.scale(pt, pt)
+            page.canvas.translate(-layout.xMin, -layout.yMin)
+            renderer.render(AndroidPageCanvas(page.canvas))
+            doc.finishPage(page)
+            pdf.outputStream().use { doc.writeTo(it) }
+        } finally {
+            doc.close()
+        }
+        return listOf(svg, png, pdf)
     }
 
     private fun toInput(t: PageTransform, s: PenSample) = InputPoint(
