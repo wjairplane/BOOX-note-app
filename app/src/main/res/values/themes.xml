@@ -1,0 +1,7 @@
+<resources>
+    <!-- Plain light theme: e-ink wants high contrast, no ripples or transitions. -->
+    <style name="Theme.InkBridge" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+</resources>

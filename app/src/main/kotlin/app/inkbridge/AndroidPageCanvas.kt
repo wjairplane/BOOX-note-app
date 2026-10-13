@@ -1,0 +1,46 @@
+package app.inkbridge
+
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.Typeface
+import app.inkbridge.rm.render.PageCanvas
+
+/** [PageCanvas] on an Android [Canvas]. The caller sets up the page→pixel transform on [canvas]. */
+class AndroidPageCanvas(private val canvas: Canvas) : PageCanvas {
+    private val path = Path()
+    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeJoin = Paint.Join.ROUND
+    }
+    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+    override fun polyline(xy: FloatArray, pointCount: Int, width: Float, argb: Int, roundCap: Boolean) {
+        path.rewind()
+        path.moveTo(xy[0], xy[1])
+        for (i in 1 until pointCount) path.lineTo(xy[i * 2], xy[i * 2 + 1])
+        stroke.color = argb
+        stroke.strokeWidth = width
+        stroke.strokeCap = if (roundCap) Paint.Cap.ROUND else Paint.Cap.SQUARE
+        canvas.drawPath(path, stroke)
+    }
+
+    override fun fillRect(x: Float, y: Float, w: Float, h: Float, argb: Int) {
+        fill.color = argb
+        canvas.drawRect(x, y, x + w, y + h, fill)
+    }
+
+    override fun text(s: String, x: Float, y: Float, size: Float, bold: Boolean, italic: Boolean, argb: Int) {
+        textPaint.color = argb
+        textPaint.textSize = size
+        val style = when {
+            bold && italic -> Typeface.BOLD_ITALIC
+            bold -> Typeface.BOLD
+            italic -> Typeface.ITALIC
+            else -> Typeface.NORMAL
+        }
+        textPaint.typeface = Typeface.create(Typeface.SANS_SERIF, style)
+        canvas.drawText(s, x, y, textPaint)
+    }
+}
