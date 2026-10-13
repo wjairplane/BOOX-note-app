@@ -15,13 +15,17 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
-        // BOOX tablets are ARM; the Onyx SDK only ships ARM native libraries anyway.
+        // The Note Air5 C is 64-bit ARM; the Onyx SDK only ships ARM native libraries anyway.
         ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+            abiFilters += listOf("arm64-v8a")
         }
     }
 
     packaging {
+        // Store dex compressed: the Onyx SDK is large, and this keeps the APK small enough to move around.
+        dex {
+            useLegacyPackaging = true
+        }
         jniLibs {
             // Several Onyx SDK modules each bundle the same C++ runtime; any copy will do.
             pickFirsts += "lib/*/libc++_shared.so"
