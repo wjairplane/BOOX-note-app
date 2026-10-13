@@ -126,13 +126,19 @@ private fun LibraryScreen(
 }
 
 @Composable
-fun BlackButton(label: String, onClick: () -> Unit, enabled: Boolean = true) {
+fun BlackButton(label: String, onClick: () -> Unit, enabled: Boolean = true, selected: Boolean = false) {
+    // Selected = inverted (white on black): the clearest state indicator on e-ink.
+    val fg = if (selected) Color.White else if (enabled) Color.Black else Color.Gray
     OutlinedButton(
         onClick = onClick,
         enabled = enabled,
         border = BorderStroke(2.dp, if (enabled) Color.Black else Color.Gray),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Black, disabledContentColor = Color.Gray),
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = fg, disabledContentColor = Color.Gray,
+            containerColor = if (selected) Color.Black else Color.White,
+        ),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
-        modifier = Modifier.defaultMinSize(minHeight = 52.dp),
-    ) { Text(label, fontSize = 18.sp) }
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+        modifier = Modifier.defaultMinSize(minHeight = 52.dp, minWidth = 52.dp),
+    ) { Text(label, fontSize = 18.sp, color = fg) }
 }

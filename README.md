@@ -13,8 +13,10 @@ reMarkable 2 `.rm` v6 format, so the same notebooks work on both devices.
 | `.rm` v6 writer | done, re-serialises sample pages byte-identically; not yet tested on a real reMarkable |
 | Page renderer | done (strokes, pens, colours, layers, typed text); needs calibration against real 3.28 files |
 | Library (folder tree from `.metadata`, pages from `.content`) | done, tested on a synthetic folder |
-| Android viewer (import folder, browse, open pages) | builds; **not yet run on a device** |
-| PDF/EPUB overlay, pen input, saving, export, OCR, sync | not started |
+| Page editing: add strokes, erase, undo/redo, save to `.rm` | done and tested on the JVM (edits are appended blocks / tombstones; old bytes stay untouched) |
+| Android app (import folder, browse, open pages, draw, erase, save) | builds; **not yet run on a device**; pen feel untested |
+| Pen input via the Onyx SDK (`TouchHelper`) | written against the SDK's real API; needs on-device tuning |
+| PDF/EPUB overlay, export, OCR, sync | not started |
 
 ## Layout
 
@@ -31,6 +33,20 @@ reMarkable 2 `.rm` v6 format, so the same notebooks work on both devices.
 
 Needs JDK 17+ and the Android SDK (platform 35). The GitHub Actions workflow builds the APK on every push;
 download it from the run's artifacts and sideload it.
+
+## Writing
+
+Pick a pen (fineliner, ballpoint, pencil, highlighter) or the eraser and draw. Strokes are written into the
+page's `.rm` file in the app's own copy of the notebook; the first time a page is overwritten its previous
+version is kept as `<page>.rm.orig`. Pages save when you leave them or tap Save. Nothing is ever written back
+to the reMarkable or to the folder you imported from.
+
+Colours are saved with the classic pen-colour ids, so they open on every firmware (a reMarkable 2 shows them
+as grey shades). Pen widths and speed values are fitted to real sample pages, not copied from reMarkable code.
+
+The Onyx pen SDK is only published on `repo.boox.com` over plain HTTP. `settings.gradle.kts` limits that
+repository to the SDK's own groups, but artifacts from it are not integrity-checked in transit; if that matters
+to you, vendor the SDK's `.aar` files into the repo instead.
 
 ## Using it
 

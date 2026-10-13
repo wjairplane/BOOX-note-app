@@ -73,3 +73,26 @@ class LibraryTest {
         assertFalse(LibraryScanner.pageFile(dir, nb, 1).exists())
     }
 }
+
+class PageFilesTest {
+    @get:Rule val tmp = TemporaryFolder()
+
+    @Test fun savesAtomicallyAndKeepsOneBackupOfTheOriginal() {
+        val dir = tmp.newFolder("doc")
+        val page = File(dir, "page.rm")
+        PageFiles.save(page, byteArrayOf(1, 2, 3))                 // new page: nothing to back up
+        assertFalse(File(dir, "page.rm.orig").exists())
+        PageFiles.save(page, byteArrayOf(4, 5))                    // first overwrite: back up v1
+        assertArrayEquals(byteArrayOf(1, 2, 3), File(dir, "page.rm.orig").readBytes())
+        PageFiles.save(page, byteArrayOf(6))                       // later overwrites keep the first backup
+        assertArrayEquals(byteArrayOf(1, 2, 3), File(dir, "page.rm.orig").readBytes())
+        assertArrayEquals(byteArrayOf(6), page.readBytes())
+        assertFalse(File(dir, "page.rm.tmp").exists())
+    }
+
+    @Test fun createsMissingFolders() {
+        val page = File(tmp.root, "a/b/page.rm")
+        PageFiles.save(page, byteArrayOf(9))
+        assertArrayEquals(byteArrayOf(9), page.readBytes())
+    }
+}

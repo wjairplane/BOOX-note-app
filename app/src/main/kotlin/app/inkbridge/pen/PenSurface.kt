@@ -1,0 +1,221 @@
+package app.inkbridge.pen
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.graphics.Rect
+import android.os.Build
+import android.view.MotionEvent
+import android.view.SurfaceHolder
+import android.view.SurfaceView
+import app.inkbridge.rm.edit.PenSpec
+import app.inkbridge.rm.edit.PenTool
+import com.onyx.android.sdk.api.device.epd.EpdController
+import com.onyx.android.sdk.data.note.TouchPoint
+import com.onyx.android.sdk.pen.RawInputCallback
+import com.onyx.android.sdk.pen.TouchHelper
+import com.onyx.android.sdk.pen.data.TouchPointList
+
+/** One pen sample in view pixels. [pressure] is 0..1, tilt in degrees (0 if unknown). */
+data class PenSample(val x: Float, val y: Float, val pressure: Float, val tiltX: Float, val tiltY: Float, val timeMs: Long)
+
+/** Receives finished gestures. May be called on a non-UI thread. */
+interface PenListener {
+    fun onStroke(samples: List<PenSample>)
+    fun onErase(samples: List<PenSample>)
+}
+
+/**
+ * Page surface: shows a bitmap and collects pen input.
+ *
+ * On BOOX devices it uses Onyx's `TouchHelper` raw-drawing mode, which draws a fast live preview of
+ * the stroke on the e-ink panel; when the stroke ends we hand the samples to [PenListener] and the
+ * caller updates the bitmap, which [show] pushes to the surface. On other Android devices it falls
+ * back to ordinary touch events, so the app can be exercised without a BOOX.
+ *
+ * Everything touching the Onyx SDK is isolated here: pen *feel* (preview style, refresh behaviour)
+ * can only be tuned on a real device.
+ */
+class PenSurface(context: Context, private val listener: PenListener) : SurfaceView(context), SurfaceHolder.Callback {
+    private var bitmap: Bitmap? = null
+    private var bitmapLeft = 0f
+
+    private var touchHelper: TouchHelper? = null
+    private val useOnyx = Build.MANUFACTURER.equals("onyx", ignoreCase = true) || Build.BRAND.equals("onyx", ignoreCase = true)
+
+    var penEnabled = false
+        set(value) { field = value; applyEnabled() }
+
+    private var tool: PenSpec = PenSpec(PenTool.FINELINER)
+
+    /** The pen currently selected; used for strokes that finish after the selection changed. */
+    val currentSpec: PenSpec get() = tool
+    private var pageScale = 1f
+
+    // Fallback (non-Onyx) gesture collection.
+    private val touchSamples = ArrayList<PenSample>()
+
+    init {
+        holder.addCallback(this)
+        setZOrderOnTop(false)
+    }
+
+    /** Replace what's displayed; [left] is the bitmap's x offset inside the view. */
+    fun show(bmp: Bitmap?, left: Float) {
+        bitmap = bmp
+        bitmapLeft = left
+        draw()
+    }
+
+    /** Re-show the current bitmap (after the page changed in place). */
+    fun refresh() = draw()
+
+    /**
+     * Select the pen. [pageScale] = view pixels per page unit, used to size the live preview;
+     * [preview] selects the SDK's live-preview style (it does not affect what is saved).
+     */
+    fun setTool(spec: PenSpec, pageScale: Float) {
+        tool = spec
+        this.pageScale = pageScale
+        touchHelper?.let { applyToolToHelper(it) }
+        applyEnabled()
+    }
+
+    /** Limit pen input to the page area (view px) so strokes can't start in the margins. */
+    fun setPageArea(rect: Rect) {
+        pageArea = rect
+        if (width > 0 && useOnyx) reopenHelper()
+    }
+    private var pageArea: Rect? = null
+
+    // ---- Onyx raw drawing ----
+
+    private fun reopenHelper() {
+        touchHelper?.let { runCatching { it.closeRawDrawing() } }
+        touchHelper = null
+        val limit = pageArea ?: Rect(0, 0, width, height)
+        if (limit.isEmpty) return
+        val helper = TouchHelper.create(this, callback)
+        helper.setStrokeWidth(3f).setLimitRect(limit, emptyList()).openRawDrawing()
+        applyToolToHelper(helper)
+        touchHelper = helper
+        applyEnabled()
+    }
+
+    private fun applyToolToHelper(helper: TouchHelper) {
+        val widthPx = when (tool.tool) {
+            PenTool.HIGHLIGHTER -> 15f
+            else -> 2f * tool.thickness
+        } * pageScale
+        helper.setStrokeWidth(widthPx.coerceAtLeast(1f))
+        helper.setStrokeStyle(
+            when (tool.tool) {
+                PenTool.FINELINER -> TouchHelper.STROKE_STYLE_PENCIL   // constant width, like the real fineliner
+                PenTool.HIGHLIGHTER -> TouchHelper.STROKE_STYLE_MARKER
+                else -> TouchHelper.STROKE_STYLE_FOUNTAIN               // pressure-sensitive
+            },
+        )
+        helper.setStrokeColor(previewColor(tool))
+    }
+
+    private fun previewColor(spec: PenSpec): Int = when (spec.colorId) {
+        1 -> Color.DKGRAY
+        3 -> Color.rgb(251, 247, 25)
+        4 -> Color.rgb(0, 160, 0)
+        5 -> Color.rgb(255, 130, 170)
+        6 -> Color.rgb(78, 105, 201)
+        7 -> Color.rgb(179, 62, 57)
+        else -> Color.BLACK
+    }
+
+    private fun applyEnabled() {
+        val helper = touchHelper ?: return
+        runCatching {
+            helper.setRawDrawingEnabled(penEnabled)
+            // The eraser must not leave ink behind: let the SDK track the pen but draw nothing.
+            helper.setRawDrawingRenderEnabled(tool.tool != PenTool.ERASER)
+        }
+    }
+
+    private fun maxPressure(): Float = runCatching { EpdController.getMaxTouchPressure() }.getOrDefault(4096f).coerceAtLeast(1f)
+
+    private fun toSamples(points: List<TouchPoint>): List<PenSample> {
+        val max = maxPressure()
+        return points.map { PenSample(it.x, it.y, (it.pressure / max).coerceIn(0f, 1f), it.tiltX.toFloat(), it.tiltY.toFloat(), it.timestamp) }
+    }
+
+    private val callback = object : RawInputCallback() {
+        override fun onBeginRawDrawing(b: Boolean, p: TouchPoint) {}
+        override fun onEndRawDrawing(b: Boolean, p: TouchPoint) {}
+        override fun onRawDrawingTouchPointMoveReceived(p: TouchPoint) {}
+        override fun onRawDrawingTouchPointListReceived(list: TouchPointList) {
+            val samples = toSamples(list.points)
+            if (samples.isEmpty()) return
+            if (tool.tool == PenTool.ERASER) listener.onErase(samples) else listener.onStroke(samples)
+        }
+
+        override fun onBeginRawErasing(b: Boolean, p: TouchPoint) {}
+        override fun onEndRawErasing(b: Boolean, p: TouchPoint) {}
+        override fun onRawErasingTouchPointMoveReceived(p: TouchPoint) {}
+        // The stylus's own eraser end/button always erases, whatever tool is selected.
+        override fun onRawErasingTouchPointListReceived(list: TouchPointList) {
+            val samples = toSamples(list.points)
+            if (samples.isNotEmpty()) listener.onErase(samples)
+        }
+    }
+
+    // ---- Fallback for non-Onyx devices ----
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (useOnyx || !penEnabled) return super.onTouchEvent(event)
+        val area = pageArea
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> touchSamples.clear()
+        }
+        for (i in 0 until event.historySize) addTouch(event.getHistoricalX(i), event.getHistoricalY(i), event.getHistoricalPressure(i), event.getHistoricalEventTime(i), area)
+        addTouch(event.x, event.y, event.pressure, event.eventTime, area)
+        if (event.actionMasked == MotionEvent.ACTION_UP && touchSamples.isNotEmpty()) {
+            val done = touchSamples.toList()
+            touchSamples.clear()
+            if (tool.tool == PenTool.ERASER) listener.onErase(done) else listener.onStroke(done)
+        }
+        return true
+    }
+
+    private fun addTouch(x: Float, y: Float, pressure: Float, time: Long, area: Rect?) {
+        if (area != null && !area.contains(x.toInt(), y.toInt())) return
+        touchSamples += PenSample(x, y, pressure.coerceIn(0f, 1f), 0f, 0f, time)
+    }
+
+    // ---- drawing / lifecycle ----
+
+    private fun draw() {
+        val holder = holder
+        if (!holder.surface.isValid) return
+        val canvas = runCatching { holder.lockCanvas() }.getOrNull() ?: return
+        try {
+            canvas.drawColor(Color.WHITE)
+            bitmap?.let { canvas.drawBitmap(it, bitmapLeft, 0f, null) }
+        } finally {
+            holder.unlockCanvasAndPost(canvas)
+        }
+        // Raw-drawing mode keeps its own layer on screen; toggling it makes the panel show our bitmap.
+        touchHelper?.let { h ->
+            if (penEnabled) runCatching { h.setRawDrawingEnabled(false); h.setRawDrawingEnabled(true) }
+        }
+    }
+
+    override fun surfaceCreated(holder: SurfaceHolder) { draw() }
+    override fun surfaceChanged(holder: SurfaceHolder, format: Int, w: Int, h: Int) {
+        if (useOnyx) reopenHelper()
+        draw()
+    }
+    override fun surfaceDestroyed(holder: SurfaceHolder) {
+        touchHelper?.let { runCatching { it.setRawDrawingEnabled(false); it.closeRawDrawing() } }
+        touchHelper = null
+    }
+
+    /** Pause/resume raw drawing with the activity (the panel must be released when we're not on screen). */
+    fun onPause() { touchHelper?.let { runCatching { it.setRawDrawingEnabled(false) } } }
+    fun onResume() { applyEnabled() }
+}

@@ -18,8 +18,8 @@ class PageEditorTest {
         val original = res("Lines_v2.rm")
         val ed = PageEditor.fromBytes(original)
         val before = lines(ed.tree).size
-        val line = ed.addStroke(PenSpec(PenTool.FINELINER, thickness = 2), pts(100f, 100f, 110f, 105f, 125f, 120f))!!
-        assertEquals(PenId.FINELINER_2, line.tool)
+        val added = ed.addStroke(PenSpec(PenTool.FINELINER, thickness = 2), pts(100f, 100f, 110f, 105f, 125f, 120f))!!
+        assertEquals(PenId.FINELINER_2, added.line.tool)
 
         val bytes = ed.toBytes()
         // Existing blocks are unchanged: the old file is a strict prefix of the new one.

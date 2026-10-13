@@ -38,11 +38,14 @@ class PageEditor private constructor(initial: List<Block>) {
 
     // ---- adding strokes ----
 
+    /** A stroke just added, with the page-space offset of its layer (needed to draw it incrementally). */
+    class AddedStroke(val line: Line, val ox: Float, val oy: Float)
+
     /**
      * Add a stroke drawn at page-space [input] points. Returns the new stroke, or null if the tool
      * isn't a pen or there was no input.
      */
-    fun addStroke(spec: PenSpec, input: List<InputPoint>): Line? {
+    fun addStroke(spec: PenSpec, input: List<InputPoint>): AddedStroke? {
         val layer = activeLayer() ?: throw IllegalStateException("Page has no layer to draw on")
         val (ox, oy) = renderer.offsetOf(layer)
         val line = StrokeBuilder.build(spec, input, ox, oy) ?: return null
@@ -61,7 +64,7 @@ class PageEditor private constructor(initial: List<Block>) {
         ).also { it.minVersion = 2; it.currentVersion = 2 }
 
         commit(blocks + block)
-        return line
+        return AddedStroke(line, ox, oy)
     }
 
     // ---- erasing ----
