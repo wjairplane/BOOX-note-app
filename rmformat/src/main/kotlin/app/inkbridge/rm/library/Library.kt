@@ -20,6 +20,8 @@ data class LibraryEntry(
     val pageIds: List<String>,
     /** For PDFs: page index → PDF page number (-1 = inserted blank page), when `.content` has a redirect map. */
     val redirectMap: List<Int>,
+    /** Page background for notebooks (an app extension key in `.content`; blank when absent). */
+    val template: app.inkbridge.rm.render.PageTemplate = app.inkbridge.rm.render.PageTemplate.BLANK,
 ) {
     val isFolder get() = type == EntryType.FOLDER
 }
@@ -96,6 +98,7 @@ object LibraryScanner {
             pageIds = if (isFolder) emptyList() else content?.let(::pageIds).orEmpty(),
             redirectMap = content?.get("redirectMap")?.let { it as? JsonArray }
                 ?.mapNotNull { (it as? JsonPrimitive)?.intOrNull }.orEmpty(),
+            template = app.inkbridge.rm.render.PageTemplate.fromId(content?.str("template")),
         )
     }
 
