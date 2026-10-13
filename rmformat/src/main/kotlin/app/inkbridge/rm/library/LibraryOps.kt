@@ -82,6 +82,12 @@ object LibraryOps {
         }
     }
 
+    /** Change a notebook's page background (applies to all its pages). */
+    fun setTemplate(dir: File, id: String, template: PageTemplate) {
+        editContent(dir, id) { it + ("template" to JsonPrimitive(template.id)) }
+        touch(dir, id)
+    }
+
     // ---- pages ----
 
     /** Insert a new blank page after [afterIndex] (-1 = at the start). Returns its id. */

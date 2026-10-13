@@ -23,6 +23,8 @@ data class PenSample(val x: Float, val y: Float, val pressure: Float, val tiltX:
 interface PenListener {
     fun onStroke(samples: List<PenSample>)
     fun onErase(samples: List<PenSample>)
+    /** A finger swiped across the page: [forward] = towards the next page. */
+    fun onSwipe(forward: Boolean) {}
 }
 
 /**
@@ -45,6 +47,26 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
 
     var penEnabled = false
         set(value) { field = value; applyEnabled() }
+
+    /** Finger swipes left/right turn pages (reported through [PenListener.onSwipe]). */
+    var swipeEnabled = true
+
+    /** Let a finger draw as well; only honoured on non-Onyx devices (on a BOOX the stylus draws, the finger swipes). */
+    var fingerDraws = false
+
+    private val gestures = android.view.GestureDetector(context, object : android.view.GestureDetector.SimpleOnGestureListener() {
+        override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {
+            if (!swipeEnabled || e1 == null) return false
+            val dx = e2.x - e1.x
+            val dy = e2.y - e1.y
+            // A deliberate, mostly horizontal swipe.
+            if (kotlin.math.abs(dx) > width * 0.18f && kotlin.math.abs(dx) > kotlin.math.abs(dy) * 1.6f) {
+                listener.onSwipe(forward = dx < 0)
+                return true
+            }
+            return false
+        }
+    })
 
     private var tool: PenSpec = PenSpec(PenTool.FINELINER)
 
@@ -108,11 +130,15 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
             else -> 2f * tool.thickness
         } * pageScale
         helper.setStrokeWidth(widthPx.coerceAtLeast(1f))
+        // Live preview style only (what is saved comes from our own pen model). Guesses; tune on the device.
         helper.setStrokeStyle(
             when (tool.tool) {
-                PenTool.FINELINER -> TouchHelper.STROKE_STYLE_PENCIL   // constant width, like the real fineliner
-                PenTool.HIGHLIGHTER -> TouchHelper.STROKE_STYLE_MARKER
-                else -> TouchHelper.STROKE_STYLE_FOUNTAIN               // pressure-sensitive
+                PenTool.FINELINER, PenTool.MECHANICAL_PENCIL -> TouchHelper.STROKE_STYLE_PENCIL   // constant width
+                PenTool.MARKER, PenTool.HIGHLIGHTER -> TouchHelper.STROKE_STYLE_MARKER
+                PenTool.PENCIL -> TouchHelper.STROKE_STYLE_CHARCOAL
+                PenTool.PAINTBRUSH -> TouchHelper.STROKE_STYLE_NEO_BRUSH
+                PenTool.CALLIGRAPHY -> TouchHelper.STROKE_STYLE_SQUARE_PEN
+                else -> TouchHelper.STROKE_STYLE_FOUNTAIN                                           // ballpoint: pressure-sensitive
             },
         )
         helper.setStrokeColor(previewColor(tool))
@@ -167,6 +193,12 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
     // ---- Fallback for non-Onyx devices ----
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        val isFinger = event.getToolType(0) == MotionEvent.TOOL_TYPE_FINGER
+        // A finger swipes (turns pages) unless this is a non-Onyx device with finger drawing switched on.
+        if (isFinger && !(fingerDraws && !useOnyx && penEnabled)) {
+            gestures.onTouchEvent(event)
+            return true
+        }
         if (useOnyx || !penEnabled) return super.onTouchEvent(event)
         val area = pageArea
         when (event.actionMasked) {
@@ -213,6 +245,11 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         touchHelper?.let { runCatching { it.setRawDrawingEnabled(false); it.closeRawDrawing() } }
         touchHelper = null
+    }
+
+    /** Clear e-ink ghosting with a full-quality refresh of the panel. */
+    fun fullRefresh() {
+        runCatching { EpdController.refreshScreen(this, com.onyx.android.sdk.api.device.epd.UpdateMode.GC) }
     }
 
     /** Pause/resume raw drawing with the activity (the panel must be released when we're not on screen). */

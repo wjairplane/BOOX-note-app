@@ -14,6 +14,7 @@ import app.inkbridge.rm.edit.PenTool
 import app.inkbridge.rm.export.PageExport
 import app.inkbridge.rm.export.SvgCanvas
 import app.inkbridge.rm.library.PageFiles
+import app.inkbridge.rm.render.PageTemplate
 import android.graphics.pdf.PdfDocument
 import java.io.File
 import kotlin.math.roundToInt
@@ -22,7 +23,11 @@ import kotlin.math.roundToInt
  * One open page: the editable model, the on-screen bitmap, and the screen↔page mapping.
  * Pen callbacks may arrive on a non-UI thread, so everything that touches state is synchronized.
  */
-class PageSession(private val file: File, private val background: PdfBackground? = null) {
+class PageSession(
+    private val file: File,
+    private val background: PdfBackground? = null,
+    private val template: PageTemplate = PageTemplate.BLANK,
+) {
     private val editor: PageEditor = if (file.isFile) PageEditor.fromBytes(file.readBytes()) else PageEditor.blank()
 
     var transform: PageTransform? = null
@@ -110,7 +115,7 @@ class PageSession(private val file: File, private val background: PdfBackground?
             val png = java.io.ByteArrayOutputStream().also { bg.compress(Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
             SvgCanvas.Background(png, pl.left, pl.top, pl.width, pl.height)
         } else null
-        val svg = File(dir, "$baseName.svg").also { it.writeText(PageExport.svg(renderer, svgBackground)) }
+        val svg = File(dir, "$baseName.svg").also { it.writeText(PageExport.svg(renderer, svgBackground, template.takeIf { background == null })) }
 
         val png = File(dir, "$baseName.png")
         val full = Bitmap.createBitmap(layout.width.toInt(), layout.height.toInt(), Bitmap.Config.ARGB_8888)
@@ -118,6 +123,7 @@ class PageSession(private val file: File, private val background: PdfBackground?
             c.drawColor(Color.WHITE)
             c.translate(-layout.xMin, -layout.yMin)
             drawBackground(c)
+            if (background == null) template.draw(AndroidPageCanvas(c), layout)
             renderer.render(AndroidPageCanvas(c))
         }
         png.outputStream().use { full.compress(Bitmap.CompressFormat.PNG, 100, it) }
@@ -132,6 +138,7 @@ class PageSession(private val file: File, private val background: PdfBackground?
             page.canvas.scale(pt, pt)
             page.canvas.translate(-layout.xMin, -layout.yMin)
             drawBackground(page.canvas)
+            if (background == null) template.draw(AndroidPageCanvas(page.canvas), layout)
             renderer.render(AndroidPageCanvas(page.canvas))
             doc.finishPage(page)
             pdf.outputStream().use { doc.writeTo(it) }
@@ -152,6 +159,7 @@ class PageSession(private val file: File, private val background: PdfBackground?
         if (bg != null && p != null) {
             canvas.drawBitmap(bg, null, RectF(p.left, p.top, p.left + p.width, p.top + p.height), Paint(Paint.FILTER_BITMAP_FLAG))
         }
+        if (background == null) template.draw(AndroidPageCanvas(canvas), editor.renderer.layout)
         editor.renderer.render(AndroidPageCanvas(canvas))
     }
 

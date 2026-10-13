@@ -1,77 +1,61 @@
 # InkBridge
 
-Android notes app for the BOOX Note Air5 C that reads (and later writes) handwritten notebooks in the
-reMarkable 2 `.rm` v6 format, so the same notebooks work on both devices.
+A handwriting notes app for the **BOOX Note Air5 C** (colour e-ink, Wacom stylus) whose screens and pens are
+modelled on the **reMarkable 2**.
 
-*Not affiliated with or endorsed by reMarkable AS. The file format was studied for interoperability only.*
+**What it is:** a notebook app with a reMarkable-style *My files* screen, a *Settings* screen, and the reMarkable
+pen set (ballpoint, fineliner, marker, pencil, mechanical pencil, paintbrush, calligraphy pen, highlighter,
+eraser) with colours.
+
+**What it is not:** a viewer for reMarkable files. You create notebooks in the app; there is no import of
+reMarkable notebooks.
+
+*InkBridge is an independent project, not made by, affiliated with or endorsed by reMarkable AS. It copies the
+layout and behaviour of an interface, not artwork, fonts, icons or brush textures.*
 
 ## Status
 
-| Step | State |
+Everything below builds and the library code is unit-tested, but **the app has never been run on a device**, so
+the screens have never actually been seen rendered and the pen has never touched real hardware.
+
+| Area | State |
 |---|---|
-| `.rm` v6 parser (Kotlin) | done, checked against the reference Python parser on 13 sample pages |
-| `.rm` v6 writer | done, re-serialises sample pages byte-identically; not yet tested on a real reMarkable |
-| Page renderer | done (strokes, pens, colours, layers, typed text); needs calibration against real 3.28 files |
-| Library (folder tree from `.metadata`, pages from `.content`) | done, tested on a synthetic folder |
-| Page editing: add strokes, erase, undo/redo, save to `.rm` | done and tested on the JVM (edits are appended blocks / tombstones; old bytes stay untouched) |
-| Android app (import folder, browse, open pages, draw, erase, save) | builds; **not yet run on a device**; pen feel untested |
-| Pen input via the Onyx SDK (`TouchHelper`) | written against the SDK's real API; needs on-device tuning |
-| Export a page to SVG, PNG and PDF | done (SVG tested on the JVM; PNG/PDF untested on a device) |
-| Annotate PDFs: import a PDF, draw over it, export a flattened annotated PDF | written; **not run on a device**. The PDF-to-page alignment (top-aligned) is an unverified assumption, see `PdfPlacement` |
-| EPUB, OCR, sync | not started |
+| My files: grid/list, folders, favorites, trash, rename/move/delete, sort, page thumbnails | written, untested on device |
+| Notebook: left toolbar, pen panel (live sample of each pen), page overview, swipe to turn pages, add/delete pages | written, untested on device |
+| Pens: all nine, 3 sizes, colours | written; widths for fineliner/ballpoint/highlighter fitted to real data, the rest estimated |
+| Page templates: blank, lined, grid, dotted | done (tested on the JVM) |
+| Settings: general, pens, display (e-ink refresh), storage, about | written, untested on device |
+| Annotate PDFs: import, draw over, export flattened PDF | written, untested on device |
+| Export a page to SVG / PNG / PDF | SVG tested; PNG/PDF untested on device |
+| Pen input through the Onyx SDK | written against the SDK's real API; feel and refresh need tuning on the device |
+| EPUB, handwriting search (OCR), sync | not started |
 
 ## Layout
 
-- `rmformat/` – pure-Kotlin library (no Android dependency): parser, writer, renderer, library scanner. Unit-tested on the JVM.
-- `app/` – the Android app (Jetpack Compose, e-ink friendly black-on-white UI).
+- `rmformat/` – pure-Kotlin library, unit-tested on the JVM: the page store (`.rm` v6 line format, internal),
+  pens and renderer, editing (strokes, erase, undo), templates, library operations (notebooks, folders, trash), export.
+- `app/` – the Android app (Jetpack Compose; plain black-on-white, no animations, for e-ink).
+
+Pages are stored in the open reverse-engineered reMarkable v6 line format (a Kotlin port based on
+[rmscene](https://github.com/ricklupton/rmscene) and [rmc](https://github.com/ricklupton/rmc), MIT, © Rick Lupton),
+inside the app's private folder in the tablet's file layout. That is an internal detail: the app is not meant to
+read reMarkable files, and documents it creates have not been checked against a real reMarkable.
 
 ## Build and test
 
 ```bash
-./gradlew :rmformat:test          # parser/renderer tests; PNG renders land in rmformat/build/render-snapshots
+./gradlew :rmformat:test          # parser/renderer/library tests; PNG renders land in rmformat/build/render-snapshots
 ./gradlew :app:assembleDebug      # app/build/outputs/apk/debug/app-debug.apk
 ./gradlew -PrmOnly :rmformat:test # skip the Android module (JVM-only, faster)
 ```
 
-Needs JDK 17+ and the Android SDK (platform 35). The GitHub Actions workflow builds the APK on every push;
-download it from the run's artifacts and sideload it.
+Needs JDK 17+ and the Android SDK (platform 35). A GitHub Actions workflow builds the APK on every push.
 
-## Annotating PDFs
+## Notes
 
-Tap **Import PDF** in the library, pick a file, open it and draw. Each PDF page is drawn under your ink; the
-ink is stored per page as `.rm` v6 pages next to a copy of the PDF, in the tablet's folder layout
-(`<id>.pdf`, `<id>.metadata`, `<id>.content`, `<id>/<page>.rm`). **Export PDF** writes a new PDF with the ink
-flattened in (the original pages become ~144 dpi images, so text in the export isn't selectable).
-
-Not verified: that a reMarkable accepts these app-created documents when copied across, and that annotations line
-up with the PDF there. The app scales each PDF page to fit 1404x1872, centres it horizontally and aligns it to the top;
-the top alignment is a guess. Annotations made and viewed inside the app are always consistent.
-
-## Writing
-
-Pick a pen (fineliner, ballpoint, pencil, highlighter) or the eraser and draw. Strokes are written into the
-page's `.rm` file in the app's own copy of the notebook; the first time a page is overwritten its previous
-version is kept as `<page>.rm.orig`. Pages save when you leave them or tap Save. Nothing is ever written back
-to the reMarkable or to the folder you imported from.
-
-Colours are saved with the classic pen-colour ids, so they open on every firmware (a reMarkable 2 shows them
-as grey shades). Pen widths and speed values are fitted to real sample pages, not copied from reMarkable code.
-
-The Onyx pen SDK is only published on `repo.boox.com` over plain HTTP. `settings.gradle.kts` limits that
-repository to the SDK's own groups, but artifacts from it are not integrity-checked in transit; if that matters
-to you, vendor the SDK's `.aar` files into the repo instead.
-
-## Using it
-
-1. Copy a notebook off the reMarkable (SSH/SCP into `/home/root/.local/share/remarkable/xochitl/`): the
-   `<uuid>.metadata`, `<uuid>.content` files and the `<uuid>/` folder of `.rm` pages.
-2. Put them in a folder on the BOOX, open the app and tap **Import folder**. The app copies them into its
-   own storage and never writes to the original.
-
-Always test on **copies**; never write into the tablet's `xochitl` folder directly.
-
-## Credits
-
-The v6 format handling is a Kotlin port based on the open-source [rmscene](https://github.com/ricklupton/rmscene)
-and [rmc](https://github.com/ricklupton/rmc) (MIT, © Rick Lupton). Sample pages in
-`rmformat/src/test/resources/rmscene/` come from rmscene's test data; its licence is included alongside.
+- Colours are saved with the classic pen-colour ids, so they work wherever that format is understood.
+- The Onyx pen SDK is only published on `repo.boox.com` over plain HTTP. `settings.gradle.kts` limits that
+  repository to the SDK's own groups, but artifacts from it are not integrity-checked in transit; vendor the `.aar`
+  files into the repo if that matters to you.
+- Annotating a PDF scales each page to fit 1404x1872, centred horizontally and top-aligned (`PdfPlacement`); only
+  matters if annotated PDFs are ever exchanged with a reMarkable.

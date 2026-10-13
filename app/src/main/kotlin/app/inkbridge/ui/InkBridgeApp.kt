@@ -1,162 +1,42 @@
 package app.inkbridge.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import app.inkbridge.AppController
 import app.inkbridge.LibraryStore
-import app.inkbridge.rm.library.Library
-import app.inkbridge.rm.library.LibraryEntry
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-
-// E-ink: black on white, no tints, no motion.
-private val EInkColors = lightColorScheme(
-    primary = Color.Black, onPrimary = Color.White,
-    background = Color.White, onBackground = Color.Black,
-    surface = Color.White, onSurface = Color.Black,
-    outline = Color.Black,
-)
+import app.inkbridge.Prefs
+import app.inkbridge.Screen
+import app.inkbridge.Section
 
 @Composable
-fun InkBridgeApp(store: LibraryStore) {
+fun InkBridgeApp(store: LibraryStore, prefs: Prefs) {
     MaterialTheme(colorScheme = EInkColors) {
-        Surface(Modifier.fillMaxSize(), color = Color.White) {
+        Surface(Modifier.fillMaxSize(), color = Ink.White) {
             val scope = rememberCoroutineScope()
-            var library by remember { mutableStateOf<Library?>(null) }
-            var folderId by remember { mutableStateOf("") }
-            var open by remember { mutableStateOf<LibraryEntry?>(null) }
-            var status by remember { mutableStateOf("") }
+            val app = remember { AppController(store, prefs, scope) }
 
-            LaunchedEffect(Unit) { library = withContext(Dispatchers.IO) { store.load() } }
-
-            val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-                if (uri == null) return@rememberLauncherForActivityResult
-                scope.launch {
-                    status = "Importing…"
-                    status = try {
-                        val n = withContext(Dispatchers.IO) { store.import(uri) { c -> if (c % 25 == 0) status = "Importing… $c files" } }
-                        library = withContext(Dispatchers.IO) { store.load() }
-                        "Imported $n files"
-                    } catch (e: Exception) {
-                        "Import failed: ${e.message}"
+            when (val s = app.screen) {
+                is Screen.Files -> {
+                    // Back goes up one folder, then back to My files.
+                    BackHandler(enabled = s.folderId.isNotEmpty() || s.section != Section.MY_FILES) {
+                        app.screen = if (s.folderId.isNotEmpty()) {
+                            Screen.Files(s.section, app.library[s.folderId]?.parentId?.takeIf { it != "trash" } ?: "")
+                        } else Screen.Files()
                     }
+                    FilesScreen(app, s)
                 }
-            }
-
-            val pdfPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-                if (uri == null) return@rememberLauncherForActivityResult
-                scope.launch {
-                    status = "Importing PDF…"
-                    status = try {
-                        val entry = withContext(Dispatchers.IO) { store.importPdf(uri, folderId) }
-                        library = withContext(Dispatchers.IO) { store.load() }
-                        "Imported “${entry.name}” (${entry.pageIds.size} pages)"
-                    } catch (e: Exception) {
-                        "PDF import failed: ${e.message}"
-                    }
+                Screen.Settings -> {
+                    BackHandler { app.screen = Screen.Files() }
+                    SettingsScreen(app)
                 }
-            }
-
-            val doc = open
-            if (doc != null) {
-                BackHandler { open = null }
-                PageScreen(store, doc, onClose = { open = null })
-            } else {
-                BackHandler(enabled = folderId.isNotEmpty()) {
-                    folderId = library?.get(folderId)?.parentId?.takeIf { it != Library.TRASH } ?: ""
-                }
-                LibraryScreen(
-                    library = library,
-                    folderId = folderId,
-                    status = status,
-                    onImport = { picker.launch(null) },
-                    onImportPdf = { pdfPicker.launch(arrayOf("application/pdf")) },
-                    onOpenFolder = { folderId = it.id },
-                    onUp = { folderId = library?.get(folderId)?.parentId?.takeIf { it != Library.TRASH } ?: "" },
-                    onOpenDoc = { open = it },
-                )
+                is Screen.Notebook -> NotebookScreen(app, s)
             }
         }
     }
-}
-
-@Composable
-private fun LibraryScreen(
-    library: Library?,
-    folderId: String,
-    status: String,
-    onImport: () -> Unit,
-    onImportPdf: () -> Unit,
-    onOpenFolder: (LibraryEntry) -> Unit,
-    onUp: () -> Unit,
-    onOpenDoc: (LibraryEntry) -> Unit,
-) {
-    Column(Modifier.fillMaxSize().padding(24.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                library?.get(folderId)?.name ?: "InkBridge",
-                fontSize = 32.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f),
-            )
-            if (folderId.isNotEmpty()) BlackButton("Up", onUp)
-            Spacer(Modifier.width(12.dp))
-            BlackButton("Import PDF", onImportPdf)
-            Spacer(Modifier.width(12.dp))
-            BlackButton("Import folder", onImport)
-        }
-        if (status.isNotEmpty()) Text(status, fontSize = 18.sp, modifier = Modifier.padding(top = 8.dp))
-        Spacer(Modifier.height(16.dp))
-        val items = library?.children(folderId).orEmpty()
-        if (library != null && items.isEmpty()) {
-            Text(
-                if (library.entries.isEmpty())
-                    "Nothing here yet. Tap “Import PDF” to annotate a PDF, or copy a notebook from the reMarkable (the .metadata and .content files and the page folder) onto this device and tap “Import folder”."
-                else "This folder is empty.",
-                fontSize = 20.sp,
-            )
-        }
-        LazyColumn {
-            items(items, key = { it.id }) { e ->
-                Column(
-                    Modifier.fillMaxWidth().clickable { if (e.isFolder) onOpenFolder(e) else onOpenDoc(e) }.padding(vertical = 18.dp),
-                ) {
-                    Text((if (e.isFolder) "▸ " else "") + e.name, fontSize = 24.sp, fontWeight = if (e.isFolder) FontWeight.Bold else FontWeight.Normal)
-                    if (!e.isFolder) Text("${e.fileType} · ${e.pageIds.size} pages", fontSize = 16.sp)
-                }
-                HorizontalDivider(color = Color.Black)
-            }
-        }
-    }
-}
-
-@Composable
-fun BlackButton(label: String, onClick: () -> Unit, enabled: Boolean = true, selected: Boolean = false) {
-    // Selected = inverted (white on black): the clearest state indicator on e-ink.
-    val fg = if (selected) Color.White else if (enabled) Color.Black else Color.Gray
-    OutlinedButton(
-        onClick = onClick,
-        enabled = enabled,
-        border = BorderStroke(2.dp, if (enabled) Color.Black else Color.Gray),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = fg, disabledContentColor = Color.Gray,
-            containerColor = if (selected) Color.Black else Color.White,
-        ),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-        modifier = Modifier.defaultMinSize(minHeight = 52.dp, minWidth = 52.dp),
-    ) { Text(label, fontSize = 18.sp, color = fg) }
 }

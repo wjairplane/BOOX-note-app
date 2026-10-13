@@ -70,6 +70,9 @@ class SvgCanvas(private val layout: PageLayout) : PageCanvas {
 
 object PageExport {
     /** Render [renderer]'s page as a standalone SVG document. */
-    fun svg(renderer: PageRenderer, background: SvgCanvas.Background? = null): String =
-        SvgCanvas(renderer.layout).also { renderer.render(it) }.toSvg(background)
+    fun svg(renderer: PageRenderer, background: SvgCanvas.Background? = null, template: app.inkbridge.rm.render.PageTemplate? = null): String =
+        SvgCanvas(renderer.layout).also { c ->
+            template?.draw(c, renderer.layout)
+            renderer.render(c)
+        }.toSvg(background)
 }
