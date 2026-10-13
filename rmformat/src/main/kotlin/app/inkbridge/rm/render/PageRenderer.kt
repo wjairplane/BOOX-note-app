@@ -120,7 +120,7 @@ class PageRenderer(private val tree: SceneTree) {
         var color = 0
 
         fun flush() {
-            if (n > 0) canvas.polyline(buf, n, width, color, pen.roundCap)
+            if (n > 0) canvas.polyline(buf, n, width, color, pen.cap)
         }
 
         for ((i, p) in pts.withIndex()) {
@@ -147,7 +147,7 @@ class PageRenderer(private val tree: SceneTree) {
         if (pts.size == 1) {
             val p = pts[0]
             buf[0] = p.x + ox; buf[1] = p.y + oy; buf[2] = p.x + ox + 0.01f; buf[3] = p.y + oy
-            canvas.polyline(buf, 2, width, color, true)
+            canvas.polyline(buf, 2, width, color, PageCanvas.Cap.ROUND)
         }
     }
 

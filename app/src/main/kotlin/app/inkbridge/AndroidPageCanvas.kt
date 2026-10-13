@@ -16,13 +16,17 @@ class AndroidPageCanvas(private val canvas: Canvas) : PageCanvas {
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    override fun polyline(xy: FloatArray, pointCount: Int, width: Float, argb: Int, roundCap: Boolean) {
+    override fun polyline(xy: FloatArray, pointCount: Int, width: Float, argb: Int, cap: PageCanvas.Cap) {
         path.rewind()
         path.moveTo(xy[0], xy[1])
         for (i in 1 until pointCount) path.lineTo(xy[i * 2], xy[i * 2 + 1])
         stroke.color = argb
         stroke.strokeWidth = width
-        stroke.strokeCap = if (roundCap) Paint.Cap.ROUND else Paint.Cap.SQUARE
+        stroke.strokeCap = when (cap) {
+            PageCanvas.Cap.BUTT -> Paint.Cap.BUTT
+            PageCanvas.Cap.ROUND -> Paint.Cap.ROUND
+            PageCanvas.Cap.SQUARE -> Paint.Cap.SQUARE
+        }
         canvas.drawPath(path, stroke)
     }
 

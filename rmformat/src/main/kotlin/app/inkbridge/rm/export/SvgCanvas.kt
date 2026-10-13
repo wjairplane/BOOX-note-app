@@ -9,11 +9,11 @@ import java.util.Locale
 class SvgCanvas(private val layout: PageLayout) : PageCanvas {
     private val body = StringBuilder()
 
-    override fun polyline(xy: FloatArray, pointCount: Int, width: Float, argb: Int, roundCap: Boolean) {
+    override fun polyline(xy: FloatArray, pointCount: Int, width: Float, argb: Int, cap: PageCanvas.Cap) {
         body.append("<polyline fill=\"none\" stroke=\"").append(color(argb)).append('"')
         opacity(argb)?.let { body.append(" stroke-opacity=\"").append(it).append('"') }
         body.append(" stroke-width=\"").append(num(width)).append("\" stroke-linecap=\"")
-            .append(if (roundCap) "round" else "square").append("\" stroke-linejoin=\"round\" points=\"")
+            .append(cap.name.lowercase()).append("\" stroke-linejoin=\"round\" points=\"")
         for (i in 0 until pointCount) {
             if (i > 0) body.append(' ')
             body.append(num(xy[i * 2])).append(',').append(num(xy[i * 2 + 1]))

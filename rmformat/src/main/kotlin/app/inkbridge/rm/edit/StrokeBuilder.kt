@@ -69,7 +69,7 @@ object StrokeBuilder {
             tool = spec.tool.toolId,
             color = spec.colorId,
             points = points,
-            thicknessScale = if (spec.tool == PenTool.HIGHLIGHTER) 1.0 else spec.thickness.toDouble(),
+            thicknessScale = if (spec.tool.isHighlighter) 1.0 else spec.thickness.toDouble(),
             startingLength = 0f,
         )
     }
@@ -83,15 +83,24 @@ object StrokeBuilder {
     }
 
     /**
-     * Raw point width (file units: page units × 4).
-     * Fineliner is constant (8 × thickness in the samples); ballpoint grows ~50% with pressure;
-     * highlighter is a fixed 120. Pencil has no sample data, so it reuses the ballpoint shape.
+     * Raw point width (file units: page units x 4).
+     * FITTED to real device pages: fineliner (constant, 8 x thickness), ballpoint (grows ~50% with pressure),
+     * highlighter (fixed 120).
+     * ESTIMATED, no sample data: pencil reuses the ballpoint shape; marker, mechanical pencil, paintbrush and
+     * calligraphy use plausible shapes that the renderer's pen formulas then modulate. Tune these by feel.
      */
-    fun widthRaw(spec: PenSpec, pressure01: Float): Int = when (spec.tool) {
-        PenTool.FINELINER -> 8 * spec.thickness
-        PenTool.HIGHLIGHTER -> 120
-        PenTool.BALLPOINT, PenTool.PENCIL ->
-            (max(6 * spec.thickness, 8) * (1 + 0.5f * pressure01)).roundToInt()
-        PenTool.ERASER -> 0
+    fun widthRaw(spec: PenSpec, pressure01: Float): Int {
+        val th = spec.thickness
+        val ballpointLike = max(6 * th, 8) * (1 + 0.5f * pressure01)
+        return when (spec.tool) {
+            PenTool.FINELINER -> 8 * th
+            PenTool.HIGHLIGHTER -> 120
+            PenTool.BALLPOINT, PenTool.PENCIL -> ballpointLike.roundToInt()
+            PenTool.MARKER -> (16 * th).coerceAtLeast(16)
+            PenTool.MECHANICAL_PENCIL -> (5 * th).coerceAtLeast(6)
+            PenTool.PAINTBRUSH -> (th * (8 + 16 * pressure01)).roundToInt()
+            PenTool.CALLIGRAPHY -> (th * (8 + 12 * pressure01)).roundToInt()
+            PenTool.ERASER -> 0
+        }
     }
 }

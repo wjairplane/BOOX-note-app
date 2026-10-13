@@ -18,7 +18,7 @@ import kotlin.math.pow
 abstract class Pen(val baseWidth: Double, val baseColor: IntArray /* r,g,b,a */) {
     /** Points per drawn polyline segment; per-segment styling can't vary within one. */
     open val segmentLength: Int = 1000
-    open val roundCap: Boolean = true
+    open val cap: PageCanvas.Cap = PageCanvas.Cap.ROUND
     open val baseOpacity: Double = 1.0
 
     open fun segmentWidth(speed: Int, direction: Int, width: Int, pressure: Int, last: Double): Double = baseWidth
@@ -78,6 +78,8 @@ abstract class Pen(val baseWidth: Double, val baseColor: IntArray /* r,g,b,a */)
 
     class Pencil(w: Double, c: IntArray) : Pen(w, c) {
         override val segmentLength = 2
+        // Translucent 2-point segments: butt caps, or the overlaps at each joint show up as beads.
+        override val cap = PageCanvas.Cap.BUTT
         override fun segmentWidth(speed: Int, direction: Int, width: Int, pressure: Int, last: Double): Double {
             val w = 0.7 * ((((0.8 * baseWidth) + (0.5 * pressure / 255)) * (width / 4.0)) -
                 (0.25 * tilt(direction).pow(1.8)) - (0.6 * (speed / 4.0) / 50))
@@ -110,7 +112,7 @@ abstract class Pen(val baseWidth: Double, val baseColor: IntArray /* r,g,b,a */)
     }
 
     class Highlighter(c: IntArray) : Pen(15.0, c) {
-        override val roundCap = false
+        override val cap = PageCanvas.Cap.SQUARE
         override val baseOpacity = 0.3
     }
 

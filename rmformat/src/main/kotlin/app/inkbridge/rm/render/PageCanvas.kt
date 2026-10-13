@@ -7,8 +7,11 @@ package app.inkbridge.rm.render
  * Colours are ARGB ints.
  */
 interface PageCanvas {
+    /** How a stroke's ends are drawn. BUTT matters for translucent segments: round/square caps overlap and leave dots. */
+    enum class Cap { BUTT, ROUND, SQUARE }
+
     /** Stroked polyline through the first [pointCount] (x, y) pairs of [xy]. */
-    fun polyline(xy: FloatArray, pointCount: Int, width: Float, argb: Int, roundCap: Boolean)
+    fun polyline(xy: FloatArray, pointCount: Int, width: Float, argb: Int, cap: Cap)
 
     fun fillRect(x: Float, y: Float, w: Float, h: Float, argb: Int)
 
