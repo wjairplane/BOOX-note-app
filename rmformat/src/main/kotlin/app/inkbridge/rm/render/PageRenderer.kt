@@ -31,6 +31,39 @@ class PageRenderer(private val tree: SceneTree) {
         PageLayout(b[0], b[1], b[2], b[3])
     }
 
+    /** A stroke with the page-space offset of its (possibly text-anchored) parent group. */
+    class PlacedLine(val itemId: CrdtId, val parent: Group, val line: Line, val ox: Float, val oy: Float)
+
+    /** Visible strokes in drawing order, with parent and offset (for hit-testing and editing). */
+    fun placedLines(): List<PlacedLine> = buildList { collectLines(tree.root, 0f, 0f, this) }
+
+    private fun collectLines(g: Group, ox: Float, oy: Float, out: MutableList<PlacedLine>) {
+        for (e in g.children.orderedItems()) when (val c = e.value) {
+            is Group -> if (c.visible.value) {
+                val (ax, ay) = anchorOffset(c)
+                collectLines(c, ox + ax, oy + ay, out)
+            }
+            is Line -> out += PlacedLine(e.itemId, g, c, ox, oy)
+            else -> Unit
+        }
+    }
+
+    /** Page-space offset of a group relative to the page origin (sum of anchor offsets from the root). */
+    fun offsetOf(target: Group): Pair<Float, Float> {
+        fun find(g: Group, ox: Float, oy: Float): Pair<Float, Float>? {
+            if (g === target) return ox to oy
+            for (c in g.childItems()) if (c is Group) {
+                val (ax, ay) = anchorOffset(c)
+                find(c, ox + ax, oy + ay)?.let { return it }
+            }
+            return null
+        }
+        return find(tree.root, 0f, 0f) ?: (0f to 0f)
+    }
+
+    /** Draw one stroke (e.g. the newest one onto an existing bitmap). */
+    fun renderLine(line: Line, ox: Float, oy: Float, canvas: PageCanvas) = drawLine(line, ox, oy, canvas)
+
     fun render(canvas: PageCanvas) {
         tree.rootText?.let { drawText(it, canvas) }
         drawGroup(tree.root, 0f, 0f, canvas)
