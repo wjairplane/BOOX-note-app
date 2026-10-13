@@ -17,7 +17,8 @@ reMarkable 2 `.rm` v6 format, so the same notebooks work on both devices.
 | Android app (import folder, browse, open pages, draw, erase, save) | builds; **not yet run on a device**; pen feel untested |
 | Pen input via the Onyx SDK (`TouchHelper`) | written against the SDK's real API; needs on-device tuning |
 | Export a page to SVG, PNG and PDF | done (SVG tested on the JVM; PNG/PDF untested on a device) |
-| PDF/EPUB overlay, OCR, sync | not started |
+| Annotate PDFs: import a PDF, draw over it, export a flattened annotated PDF | written; **not run on a device**. The PDF-to-page alignment (top-aligned) is an unverified assumption, see `PdfPlacement` |
+| EPUB, OCR, sync | not started |
 
 ## Layout
 
@@ -34,6 +35,17 @@ reMarkable 2 `.rm` v6 format, so the same notebooks work on both devices.
 
 Needs JDK 17+ and the Android SDK (platform 35). The GitHub Actions workflow builds the APK on every push;
 download it from the run's artifacts and sideload it.
+
+## Annotating PDFs
+
+Tap **Import PDF** in the library, pick a file, open it and draw. Each PDF page is drawn under your ink; the
+ink is stored per page as `.rm` v6 pages next to a copy of the PDF, in the tablet's folder layout
+(`<id>.pdf`, `<id>.metadata`, `<id>.content`, `<id>/<page>.rm`). **Export PDF** writes a new PDF with the ink
+flattened in (the original pages become ~144 dpi images, so text in the export isn't selectable).
+
+Not verified: that a reMarkable accepts these app-created documents when copied across, and that annotations line
+up with the PDF there. The app scales each PDF page to fit 1404x1872, centres it horizontally and aligns it to the top;
+the top alignment is a guess. Annotations made and viewed inside the app are always consistent.
 
 ## Writing
 

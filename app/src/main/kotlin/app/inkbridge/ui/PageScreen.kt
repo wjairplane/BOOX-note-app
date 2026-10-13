@@ -13,7 +13,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import app.inkbridge.LibraryStore
+import app.inkbridge.AnnotatedPdfExporter
 import app.inkbridge.PageSession
+import app.inkbridge.PdfBackground
+import app.inkbridge.rm.library.DocumentFactory
 import app.inkbridge.pen.PenListener
 import app.inkbridge.pen.PenSample
 import app.inkbridge.pen.PenSurface
@@ -23,6 +26,7 @@ import app.inkbridge.rm.library.LibraryEntry
 import app.inkbridge.rm.library.LibraryScanner
 import app.inkbridge.rm.scene.PenColorId
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private val InkColorNames = mapOf(
@@ -37,9 +41,11 @@ private const val ERASER_RADIUS_PX = 22f
 @Composable
 fun PageScreen(store: LibraryStore, doc: LibraryEntry, onClose: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = rememberCoroutineScope()
     var index by remember(doc.id) { mutableIntStateOf(0) }
     val pageCount = doc.pageIds.size
-    val canDraw = doc.fileType == "notebook"
+    val isPdf = doc.fileType == "pdf"
+    val canDraw = doc.fileType == "notebook" || isPdf
 
     // Pen settings.
     var drawing by remember { mutableStateOf(canDraw) }
@@ -55,7 +61,13 @@ fun PageScreen(store: LibraryStore, doc: LibraryEntry, onClose: () -> Unit) {
     val session by produceState<PageSession?>(null, doc.id, index) {
         value = null
         value = withContext(Dispatchers.IO) {
-            runCatching { PageSession(LibraryScanner.pageFile(store.dir, doc, index)) }
+            runCatching {
+                // For PDFs, the page under the ink; -1 marks a blank page inserted into the PDF.
+                val background = if (isPdf) {
+                    DocumentFactory.pdfPageFor(doc, index).takeIf { it >= 0 }?.let { PdfBackground(DocumentFactory.pdfFile(store.dir, doc), it) }
+                } else null
+                PageSession(LibraryScanner.pageFile(store.dir, doc, index), background)
+            }
                 .onFailure { message = "Couldn't read this page: ${it.message}" }
                 .getOrNull()
         }
@@ -84,15 +96,37 @@ fun PageScreen(store: LibraryStore, doc: LibraryEntry, onClose: () -> Unit) {
             Spacer(Modifier.width(10.dp))
             BlackButton("Export", {
                 val s = session ?: return@BlackButton
-                message = try {
-                    val dir = java.io.File(context.getExternalFilesDir(null) ?: context.filesDir, "exports")
-                    val safe = doc.name.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').ifEmpty { "page" }
-                    val files = s.export(dir, "${safe}_p${index + 1}")
-                    "Exported ${files.joinToString { it.name }} to ${dir.absolutePath}"
-                } catch (e: Exception) {
-                    "Export failed: ${e.message}"
+                val exports = java.io.File(context.getExternalFilesDir(null) ?: context.filesDir, "exports")
+                val safe = doc.name.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').ifEmpty { "page" }
+                message = "Exporting…"
+                scope.launch {
+                    message = try {
+                        val files = withContext(Dispatchers.IO) { s.export(exports, "${safe}_p${index + 1}") }
+                        "Exported ${files.joinToString { it.name }} to ${exports.absolutePath}"
+                    } catch (e: Exception) {
+                        "Export failed: ${e.message}"
+                    }
                 }
             }, enabled = session != null)
+            if (isPdf) {
+                Spacer(Modifier.width(10.dp))
+                BlackButton("Export PDF", {
+                    save(session) // include the page being edited
+                    val exports = java.io.File(context.getExternalFilesDir(null) ?: context.filesDir, "exports")
+                    val safe = doc.name.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').ifEmpty { "document" }
+                    val out = java.io.File(exports, "${safe}_annotated.pdf")
+                    scope.launch {
+                        message = try {
+                            withContext(Dispatchers.IO) {
+                                AnnotatedPdfExporter.export(store, doc, out) { done, total -> message = "Exporting PDF… $done / $total" }
+                            }
+                            "Saved ${out.name} (${out.length() / 1024} KB) to ${exports.absolutePath}"
+                        } catch (e: Exception) {
+                            "PDF export failed: ${e.message}"
+                        }
+                    }
+                }, enabled = session != null)
+            }
         }
         // Row 2+3: pen controls.
         if (canDraw) {
@@ -126,7 +160,7 @@ fun PageScreen(store: LibraryStore, doc: LibraryEntry, onClose: () -> Unit) {
             }
         }
         if (message.isNotEmpty()) Text(message, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 12.dp))
-        if (!canDraw) Text("Drawing is off: ${doc.fileType} pages can't be shown or annotated yet.", fontSize = 16.sp, modifier = Modifier.padding(horizontal = 12.dp))
+        if (!canDraw) Text("Drawing is off: ${doc.fileType} documents can't be shown or annotated yet.", fontSize = 16.sp, modifier = Modifier.padding(horizontal = 12.dp))
         if (pageCount == 0) {
             Text("This document has no pages.", fontSize = 20.sp, modifier = Modifier.padding(24.dp))
             return@Column

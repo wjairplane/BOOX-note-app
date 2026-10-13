@@ -37,7 +37,10 @@ class SvgCanvas(private val layout: PageLayout) : PageCanvas {
         body.append(" fill=\"").append(color(argb)).append("\">").append(escape(s)).append("</text>\n")
     }
 
-    fun toSvg(): String {
+    /** A raster image drawn under everything else (e.g. the PDF page being annotated). Rect is in page units. */
+    class Background(val png: ByteArray, val x: Float, val y: Float, val width: Float, val height: Float)
+
+    fun toSvg(background: Background? = null): String {
         val sb = StringBuilder()
         sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
         sb.append("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"").append(num(layout.width))
@@ -47,6 +50,11 @@ class SvgCanvas(private val layout: PageLayout) : PageCanvas {
         sb.append("<rect x=\"").append(num(layout.xMin)).append("\" y=\"").append(num(layout.yMin))
             .append("\" width=\"").append(num(layout.width)).append("\" height=\"").append(num(layout.height))
             .append("\" fill=\"#ffffff\"/>\n")
+        background?.let {
+            sb.append("<image x=\"").append(num(it.x)).append("\" y=\"").append(num(it.y))
+                .append("\" width=\"").append(num(it.width)).append("\" height=\"").append(num(it.height))
+                .append("\" href=\"data:image/png;base64,").append(java.util.Base64.getEncoder().encodeToString(it.png)).append("\"/>\n")
+        }
         sb.append(body).append("</svg>\n")
         return sb.toString()
     }
@@ -62,5 +70,6 @@ class SvgCanvas(private val layout: PageLayout) : PageCanvas {
 
 object PageExport {
     /** Render [renderer]'s page as a standalone SVG document. */
-    fun svg(renderer: PageRenderer): String = SvgCanvas(renderer.layout).also { renderer.render(it) }.toSvg()
+    fun svg(renderer: PageRenderer, background: SvgCanvas.Background? = null): String =
+        SvgCanvas(renderer.layout).also { renderer.render(it) }.toSvg(background)
 }

@@ -58,6 +58,20 @@ fun InkBridgeApp(store: LibraryStore) {
                 }
             }
 
+            val pdfPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                if (uri == null) return@rememberLauncherForActivityResult
+                scope.launch {
+                    status = "Importing PDF…"
+                    status = try {
+                        val entry = withContext(Dispatchers.IO) { store.importPdf(uri, folderId) }
+                        library = withContext(Dispatchers.IO) { store.load() }
+                        "Imported “${entry.name}” (${entry.pageIds.size} pages)"
+                    } catch (e: Exception) {
+                        "PDF import failed: ${e.message}"
+                    }
+                }
+            }
+
             val doc = open
             if (doc != null) {
                 BackHandler { open = null }
@@ -71,6 +85,7 @@ fun InkBridgeApp(store: LibraryStore) {
                     folderId = folderId,
                     status = status,
                     onImport = { picker.launch(null) },
+                    onImportPdf = { pdfPicker.launch(arrayOf("application/pdf")) },
                     onOpenFolder = { folderId = it.id },
                     onUp = { folderId = library?.get(folderId)?.parentId?.takeIf { it != Library.TRASH } ?: "" },
                     onOpenDoc = { open = it },
@@ -86,6 +101,7 @@ private fun LibraryScreen(
     folderId: String,
     status: String,
     onImport: () -> Unit,
+    onImportPdf: () -> Unit,
     onOpenFolder: (LibraryEntry) -> Unit,
     onUp: () -> Unit,
     onOpenDoc: (LibraryEntry) -> Unit,
@@ -98,6 +114,8 @@ private fun LibraryScreen(
             )
             if (folderId.isNotEmpty()) BlackButton("Up", onUp)
             Spacer(Modifier.width(12.dp))
+            BlackButton("Import PDF", onImportPdf)
+            Spacer(Modifier.width(12.dp))
             BlackButton("Import folder", onImport)
         }
         if (status.isNotEmpty()) Text(status, fontSize = 18.sp, modifier = Modifier.padding(top = 8.dp))
@@ -106,7 +124,7 @@ private fun LibraryScreen(
         if (library != null && items.isEmpty()) {
             Text(
                 if (library.entries.isEmpty())
-                    "No notebooks yet. Copy a notebook from the reMarkable (the .metadata and .content files and the page folder) onto this device, then tap “Import folder”."
+                    "Nothing here yet. Tap “Import PDF” to annotate a PDF, or copy a notebook from the reMarkable (the .metadata and .content files and the page folder) onto this device and tap “Import folder”."
                 else "This folder is empty.",
                 fontSize = 20.sp,
             )
