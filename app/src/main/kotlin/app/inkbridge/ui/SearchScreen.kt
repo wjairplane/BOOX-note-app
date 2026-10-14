@@ -42,36 +42,36 @@ fun SearchScreen(app: AppController) {
 
     Column(Modifier.fillMaxSize()) {
         // The dark search bar of the tablet: Cancel, a magnifier, the query, and the result count.
-        Row(Modifier.fillMaxWidth().background(Ink.Dark).padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Cancel", color = Ink.White, fontSize = 18.sp, modifier = Modifier.tap { app.screen = Screen.Files() }.padding(8.dp))
-            Spacer(Modifier.width(12.dp))
-            InkIcons.Search(tint = Ink.White, size = 30.dp)
-            Spacer(Modifier.width(8.dp))
+        Row(Modifier.fillMaxWidth().background(Ink.Dark).padding(horizontal = 32.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Cancel", color = Ink.White, style = RmText.Label, modifier = Modifier.heightIn(min = Rm.Control).tap { app.screen = Screen.Files() }.wrapContentHeight(Alignment.CenterVertically))
+            Spacer(Modifier.width(32.dp))
+            InkIcons.Search(tint = Ink.White)
+            Spacer(Modifier.width(16.dp))
             BasicTextField(
                 value = query, onValueChange = { query = it }, singleLine = true,
-                textStyle = TextStyle(fontSize = 20.sp, color = Ink.White), cursorBrush = SolidColor(Ink.White),
+                textStyle = RmText.BodyLg.copy(color = Ink.White), cursorBrush = SolidColor(Ink.White),
                 modifier = Modifier.weight(1f).focusRequester(focus),
-                decorationBox = { inner -> Box { if (query.isEmpty()) Text("Search", color = Ink.Rule, fontSize = 20.sp); inner() } },
+                decorationBox = { inner -> Box { if (query.isEmpty()) Text("Search", color = Ink.Rule, style = RmText.BodyLg); inner() } },
             )
-            if (q.isNotEmpty()) Text("${results.size} found", color = Ink.White, fontSize = 16.sp, modifier = Modifier.padding(start = 8.dp))
+            if (q.isNotEmpty()) Text("${results.size} found", color = Ink.White, style = RmText.Caption, modifier = Modifier.padding(start = 16.dp))
         }
         if (q.isNotEmpty() && results.isEmpty()) {
-            Text("No notebooks, folders or PDFs match “$q”.", fontSize = 20.sp, color = Ink.Grey, modifier = Modifier.padding(28.dp))
+            Text("No notebooks, folders or PDFs match “$q”.", style = RmText.Body, color = Ink.Grey, modifier = Modifier.padding(Rm.NavigatorMargin))
         }
         LazyColumn {
             items(results, key = { it.id }) { e ->
                 Row(
                     Modifier.fillMaxWidth().tap {
                         app.screen = if (e.isFolder) Screen.Files(Section.MY_FILES, e.id) else Screen.Notebook(e.id, 0)
-                    }.padding(horizontal = 24.dp, vertical = 12.dp),
+                    }.padding(horizontal = Rm.NavigatorMargin, vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Thumb(app, e, Modifier.width(60.dp).height(80.dp))
-                    Spacer(Modifier.width(18.dp))
+                    Thumb(app, e, Modifier.width(96.dp).height(128.dp))
+                    Spacer(Modifier.width(32.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(e.name, fontSize = 21.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(e.name, style = RmText.LabelLg, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         val where = (listOf("My files") + lib.path(e.id)).joinToString("  /  ")
-                        Text(if (e.isFolder) "Folder  ·  $where" else "${e.pageIds.size} page${if (e.pageIds.size == 1) "" else "s"}  ·  $where", fontSize = 15.sp, color = Ink.Grey, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(if (e.isFolder) "Folder  ·  $where" else "${e.pageIds.size} page${if (e.pageIds.size == 1) "" else "s"}  ·  $where", style = RmText.Caption, color = Ink.Grey, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
                 Rule()

@@ -16,7 +16,8 @@ import app.inkbridge.Section
 
 @Composable
 fun InkBridgeApp(store: LibraryStore, prefs: Prefs, controller: AppController? = null) {
-    MaterialTheme(colorScheme = EInkColors) {
+    RmDensity {
+    MaterialTheme(colorScheme = EInkColors, typography = RmTypography) {
         Surface(Modifier.fillMaxSize(), color = Ink.White) {
             val scope = rememberCoroutineScope()
             val app = remember { controller ?: AppController(store, prefs, scope) }
@@ -42,5 +43,6 @@ fun InkBridgeApp(store: LibraryStore, prefs: Prefs, controller: AppController? =
                 is Screen.Notebook -> NotebookScreen(app, s)
             }
         }
+    }
     }
 }

@@ -17,6 +17,7 @@ USED = [
     "ballpoint", "fineliner", "marker", "pencil", "mechanical_pencil", "paintbrush", "calligraphy_pen",
     "highlighter", "shader", "eraser", "undo", "redo", "page_overview", "toolbar_hide", "dots_three_vertical",
     "lens", "plus", "x_medium", "stroke_thin", "stroke_medium", "stroke_thick",
+    "burger", "arrow_left", "cog", "star_fill", "folder_fill", "chevron_small_down",
 ]
 
 def convert(name):

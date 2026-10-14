@@ -10,3 +10,19 @@ They are reMarkable's assets, kept here for personal use only.
 
 The subset the app uses is converted to `app/src/main/res/drawable/rm_*.xml` by
 `tools/svg_to_vector.py`; run it again to regenerate.
+
+## What else was extracted from xochitl
+
+- `fonts/remarkable/`: the UI fonts, stored raw in the binary: reMarkable Sans (Light, Regular, Medium, Bold, ExtraBold, with italics)
+  and reMarkable Serif Small (Regular, Bold, with italics). `fonts/icon-fonts/` holds the icon/symbol fonts (icomoon, reMarkableSymbols,
+  Material Icons, Noto Emoji), `fonts/rootfs-*` the system fonts from `/usr/share/fonts` in the root filesystem.
+- `ui/tokens/`: the Ark design tokens (zstd-compressed QML in xochitl): `iconButtonLarge.qml`, `toolbar.qml`, `rM-paper-tablet.json.qml`
+  (typography, controlsHeight, iconSize), and so on. `ui/qml/Values.qml` holds the layout constants (sidebar width, create menu, foldout
+  widths). `ui/qml/WritingToolMenu.qml` is the pen menu.
+
+Key numbers (reMarkable pixels, 1404 x 1872 screen): toolbar button 112 with a 48 glyph; foldout width 480 (pen) / 376 (eraser),
+2 px black border and dividers, 32 padding, 112-high rows; buttons 80 high; labels 25 Medium, body 28, caption 22, page title 48
+reMarkable Serif Small. The app sets `1 dp = 1 reMarkable px` (`RmDensity` in `Theme.kt`) so these values are used as they are.
+
+`tools/firmware/` has the scripts used: `newc.py` (unpack the .swu cpio), `carve.py` (carve SVG/PNG), `rcc3.py`/`rcc4.py` (match Qt
+resource names to data), `flat.py` (flatten token QML).

@@ -24,35 +24,42 @@ import app.inkbridge.rm.edit.PenTool
  */
 object InkIcons {
     @Composable
-    fun Pen(tool: PenTool, modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = 40.dp) =
+    fun Pen(tool: PenTool, modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) =
         glyph(penRes(tool), modifier, tint, size)
 
-    @Composable fun Eraser(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = 40.dp) = glyph(R.drawable.rm_eraser, modifier, tint, size)
-    @Composable fun Undo(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = 40.dp) = glyph(R.drawable.rm_undo, modifier, tint, size)
-    @Composable fun Redo(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = 40.dp) = glyph(R.drawable.rm_redo, modifier, tint, size)
+    @Composable fun Eraser(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_eraser, modifier, tint, size)
+    @Composable fun Undo(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_undo, modifier, tint, size)
+    @Composable fun Redo(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_redo, modifier, tint, size)
 
     /** Page overview: four small page tiles. */
-    @Composable fun Overview(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = 40.dp) = glyph(R.drawable.rm_page_overview, modifier, tint, size)
+    @Composable fun Overview(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_page_overview, modifier, tint, size)
 
     /** The round toolbar toggle ("toolbar_hide"): a circle with a dot. */
-    @Composable fun MenuDot(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = 40.dp) = glyph(R.drawable.rm_toolbar_hide, modifier, tint, size)
+    @Composable fun MenuDot(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_toolbar_hide, modifier, tint, size)
 
     /** Thickness sample: a slanted stroke of the given [level] (1..3). */
-    @Composable fun Thickness(level: Int, modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = 40.dp) =
+    @Composable fun Thickness(level: Int, modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) =
         glyph(when (level) { 1 -> R.drawable.rm_stroke_thin; 2 -> R.drawable.rm_stroke_medium; else -> R.drawable.rm_stroke_thick }, modifier, tint, size)
 
-    @Composable fun Search(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = 40.dp) = glyph(R.drawable.rm_lens, modifier, tint, size)
-    @Composable fun Plus(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = 40.dp) = glyph(R.drawable.rm_plus, modifier, tint, size)
+    @Composable fun Search(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_lens, modifier, tint, size)
+    @Composable fun Plus(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_plus, modifier, tint, size)
 
     /** A filled round close button (white cross on black). */
-    @Composable fun CloseDisc(modifier: Modifier = Modifier, size: Dp = 40.dp) =
+    @Composable fun CloseDisc(modifier: Modifier = Modifier, size: Dp = Rm.Icon) =
         Box(modifier.size(size), contentAlignment = Alignment.Center) {
             Canvas(Modifier.size(size)) { drawCircle(Ink.Dark, radius = this.size.minDimension * 17f / 48f, center = Offset(this.size.width / 2, this.size.height / 2)) }
-            glyph(R.drawable.rm_x_medium, Modifier, Ink.White, size * 0.55f)
+            glyph(R.drawable.rm_x_medium, Modifier, Ink.White, size * 0.6f)
         }
 
     /** Three vertical dots: the "more" menu. */
-    @Composable fun More(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = 40.dp) = glyph(R.drawable.rm_dots_three_vertical, modifier, tint, size)
+    @Composable fun More(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_dots_three_vertical, modifier, tint, size)
+
+    @Composable fun Menu(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_burger, modifier, tint, size)
+    @Composable fun Back(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_arrow_left, modifier, tint, size)
+    @Composable fun Settings(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_cog, modifier, tint, size)
+    @Composable fun Star(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_star_fill, modifier, tint, size)
+    @Composable fun Folder(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_folder_fill, modifier, tint, size)
+    @Composable fun ChevronDown(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_chevron_small_down, modifier, tint, size)
 
     @DrawableRes
     private fun penRes(tool: PenTool): Int = when (tool) {

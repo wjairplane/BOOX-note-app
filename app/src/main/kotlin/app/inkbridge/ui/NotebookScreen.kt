@@ -75,7 +75,8 @@ import java.io.File
 /** Radius of the eraser in view pixels. */
 private const val ERASER_RADIUS_PX = 22f
 
-private val TOOLBAR_THICKNESS = 60.dp
+/** Toolbar buttons are 112 px square (controlsHeight.large), edge to edge. */
+private val TOOLBAR_THICKNESS = Rm.ToolButton
 
 @Composable
 fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
@@ -167,7 +168,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                     IconTile("More", { menu = true }) { InkIcons.More(tint = it) }
                     DropdownMenu(menu, { menu = false }) {
                         @Composable fun item(label: String, enabled: Boolean = true, action: () -> Unit) =
-                            DropdownMenuItem(text = { Text(label, fontSize = 20.sp) }, enabled = enabled, onClick = { menu = false; action() })
+                            DropdownMenuItem(text = { Text(label, style = RmText.Label) }, enabled = enabled, modifier = Modifier.heightIn(min = Rm.Control), onClick = { menu = false; action() })
                         item("My files") { save(session); app.screen = Screen.Files(folderId = doc.parentId.takeIf { it != "trash" } ?: "") }
                         item("Page ${pageIndex + 1} of ${doc.pageIds.size}", enabled = false) {}
                         item("Add page after this one", canDraw) { newPageAfterCurrent() }
@@ -220,11 +221,11 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 )
             }
         if (horizontal) {
-            Row(Modifier.fillMaxWidth().height(TOOLBAR_THICKNESS).then(drag).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().height(TOOLBAR_THICKNESS).then(drag), verticalAlignment = Alignment.CenterVertically) {
                 start(); Spacer(Modifier.weight(1f)); end()
             }
         } else {
-            Column(Modifier.fillMaxHeight().width(TOOLBAR_THICKNESS).then(drag).padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(Modifier.fillMaxHeight().width(TOOLBAR_THICKNESS).then(drag), horizontalAlignment = Alignment.CenterHorizontally) {
                 start(); Spacer(Modifier.weight(1f)); end()
             }
         }
@@ -234,12 +235,12 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     fun page() {
         Column(Modifier.fillMaxSize()) {
             if (message.isNotEmpty()) {
-                Row(Modifier.fillMaxWidth().background(Ink.Panel).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(message, fontSize = 15.sp, modifier = Modifier.weight(1f))
-                    EButton("OK", { message = "" }, size = 40.dp)
+                Row(Modifier.fillMaxWidth().background(Ink.Panel).padding(horizontal = 32.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(message, style = RmText.BodySm, modifier = Modifier.weight(1f))
+                    EButton("OK", { message = "" }, size = Rm.Control)
                 }
             }
-            if (!canDraw) Text("This kind of document can't be shown yet.", fontSize = 18.sp, modifier = Modifier.padding(16.dp))
+            if (!canDraw) Text("This kind of document can't be shown yet.", style = RmText.Body, modifier = Modifier.padding(32.dp))
             PageArea(
                 session = session, spec = spec, drawing = canDraw && !overview,
                 swipeEnabled = prefs.swipeToTurn, fingerDraws = prefs.fingerDrawing,
@@ -273,11 +274,13 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 ToolbarPosition.BOTTOM -> Alignment.BottomStart
                 ToolbarPosition.RIGHT -> Alignment.TopEnd
             }
+            // The foldout opens beside the toolbar, level with the pen button that was tapped (the menu button is first).
+            val along = TOOLBAR_THICKNESS * (1 + activeSlot)
             val pad = when (pos) {
-                ToolbarPosition.TOP -> PaddingValues(start = 8.dp, top = TOOLBAR_THICKNESS + 4.dp)
-                ToolbarPosition.BOTTOM -> PaddingValues(start = 8.dp, bottom = TOOLBAR_THICKNESS + 4.dp)
-                ToolbarPosition.LEFT -> PaddingValues(start = TOOLBAR_THICKNESS + 4.dp, top = 8.dp)
-                ToolbarPosition.RIGHT -> PaddingValues(end = TOOLBAR_THICKNESS + 4.dp, top = 8.dp)
+                ToolbarPosition.TOP -> PaddingValues(start = along, top = TOOLBAR_THICKNESS)
+                ToolbarPosition.BOTTOM -> PaddingValues(start = along, bottom = TOOLBAR_THICKNESS)
+                ToolbarPosition.LEFT -> PaddingValues(start = TOOLBAR_THICKNESS, top = along)
+                ToolbarPosition.RIGHT -> PaddingValues(end = TOOLBAR_THICKNESS, top = along)
             }
             Box(Modifier.align(align).padding(pad)) {
                 PenMenu(slot, onChange = { prefs.setSlot(activeSlot, it) })
@@ -305,16 +308,16 @@ internal fun nearestEdge(x: Float, y: Float, width: Float, height: Float): Toolb
 private fun IconTile(description: String, onClick: () -> Unit, selected: Boolean = false, enabled: Boolean = true, icon: @Composable (Color) -> Unit) {
     val tint = if (selected) Ink.White else if (enabled) Ink.Black else Ink.Rule
     Box(
-        Modifier.size(52.dp).background(if (selected) Ink.Dark else Ink.White).tap(enabled, onClick).semantics { contentDescription = description },
+        Modifier.size(TOOLBAR_THICKNESS).background(if (selected) Ink.Dark else Ink.White).tap(enabled, onClick).semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) { icon(tint) }
 }
 
 /** The small colour marker on a tool slot / colour tile: filled with the colour, ringed so white stays visible. */
 @Composable
-private fun ColourDot(colorId: Int, onDark: Boolean, modifier: Modifier = Modifier, size: Dp = 14.dp) {
+private fun ColourDot(colorId: Int, onDark: Boolean, modifier: Modifier = Modifier, size: Dp = 24.dp) {
     val rgba = PenPalette.lookup(colorId, null)
-    Box(modifier.size(size).background(Color(rgba[0], rgba[1], rgba[2]), CircleShape).border(1.5.dp, if (onDark) Ink.White else Ink.Black, CircleShape))
+    Box(modifier.size(size).background(Color(rgba[0], rgba[1], rgba[2]), CircleShape).border(Rm.Outline, if (onDark) Ink.White else Ink.Black, CircleShape))
 }
 
 /** The page itself: a pen surface sized to the space available. */
@@ -391,53 +394,71 @@ private fun PageArea(
 
 // -------------------------------------------------------------------------------------------------
 
-/** One square choice in the pen menu, inverted when selected. */
+/** A foldout grid cell (the firmware's FoldoutItem): 112 px high, black with white content when selected. */
 @Composable
 private fun MenuTile(selected: Boolean, description: String, onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable ColumnScope.(Color) -> Unit) {
     val fg = if (selected) Ink.White else Ink.Black
     Column(
-        modifier.size(width = 58.dp, height = 54.dp).background(if (selected) Ink.Dark else Ink.White).tap(onClick = onClick).semantics { contentDescription = description },
+        modifier.height(Rm.ToolButton).background(if (selected) Ink.Dark else Ink.White).tap(onClick = onClick).semantics { contentDescription = description },
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
     ) { content(fg) }
 }
 
+/** A foldout section title (FoldoutSectionHeader): label text with 24 px above and 16 px below. */
+@Composable
+private fun FoldoutHeader(title: String) =
+    Text(title, style = RmText.Label, color = Ink.Black, modifier = Modifier.fillMaxWidth().padding(start = Rm.FoldoutPad, end = Rm.FoldoutPad, top = 24.dp, bottom = 16.dp))
+
+/** A grid of [columns] cells inside a foldout: 32 px side padding and 32 px below (FoldoutGrid). */
+@Composable
+private fun FoldoutGrid(count: Int, columns: Int, cellWidth: Dp?, cell: @Composable (Int, Modifier) -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(start = Rm.FoldoutPad, end = Rm.FoldoutPad, bottom = Rm.FoldoutPad)) {
+        for (rowStart in 0 until count step columns) {
+            Row(Modifier.fillMaxWidth()) {
+                for (c in 0 until columns) {
+                    val m = if (cellWidth != null) Modifier.width(cellWidth) else Modifier.weight(1f)
+                    // A short last row keeps its cells aligned with the columns above it.
+                    if (rowStart + c < count) cell(rowStart + c, m) else Spacer(m)
+                }
+            }
+        }
+    }
+}
+
 /**
- * The pen menu: three stacked sections, as on the tablet. A 4 x 2 grid of the eight pens (titled with the
- * current one), the three thicknesses (titled with the current one), and a 3 x 3 grid of named colours.
+ * The pen menu (xochitl's writing-tool foldout): 480 px wide with a 2 px border. A pen grid titled with the current pen,
+ * a divider, the three thicknesses titled with the current one, a divider, then a 3-column grid of named colours.
  */
 @Composable
 private fun PenMenu(slot: ToolSlot, onChange: (ToolSlot) -> Unit) {
     val highlighter = slot.tool.usesHighlighterColors
-    Column(Modifier.width(58.dp * 4 + 16.dp).background(Ink.White).border(1.dp, Ink.Black)) {
-        Section(slot.tool.label) {
-            PenTool.PENS.filter { it != PenTool.SHADER }.chunked(4).forEach { row ->
-                Row { row.forEach { t -> MenuTile(t == slot.tool, t.label, { onChange(slot.copy(tool = t, colorId = colorFor(t, slot))) }) { fg -> InkIcons.Pen(t, tint = fg, size = 34.dp) } } }
-            }
+    val pens = PenTool.PENS.filter { it != PenTool.SHADER }
+    val thicknessNames = listOf("Thin", "Medium", "Thick")
+    Column(Modifier.width(Rm.WritingFoldoutWidth).background(Ink.White).border(Rm.Outline, Ink.Black)) {
+        FoldoutHeader(slot.tool.label)
+        // 4 columns of 104 px fill the 416 px between the paddings.
+        FoldoutGrid(pens.size, 4, 104.dp) { i, m ->
+            val t = pens[i]
+            MenuTile(t == slot.tool, t.label, { onChange(slot.copy(tool = t, colorId = colorFor(t, slot))) }, m) { fg -> InkIcons.Pen(t, tint = fg) }
         }
         Rule()
         if (!highlighter) {
-            Section(listOf("Thin", "Medium", "Thick")[slot.thickness - 1]) {
-                Row {
-                    (1..3).forEach { th ->
-                        MenuTile(th == slot.thickness, listOf("Thin", "Medium", "Thick")[th - 1], { onChange(slot.copy(thickness = th)) }) { fg -> InkIcons.Thickness(th, tint = fg, size = 34.dp) }
-                    }
-                }
+            FoldoutHeader(thicknessNames[slot.thickness - 1])
+            FoldoutGrid(3, 3, Rm.ToolButton) { i, m ->
+                val th = i + 1
+                MenuTile(th == slot.thickness, thicknessNames[i], { onChange(slot.copy(thickness = th)) }, m) { fg -> InkIcons.Thickness(th, tint = fg) }
             }
             Rule()
         }
-        Section(null) {
-            val colors = if (highlighter) PenSpec.HIGHLIGHTER_COLORS else PenSpec.INK_COLORS
-            colors.toList().chunked(3).forEach { row ->
-                Row {
-                    row.forEach { c ->
-                        val selected = c == slot.colorId
-                        MenuTile(selected, PenSpec.colorName(c), { onChange(slot.copy(colorId = c)) }) { fg ->
-                            ColourDot(c, selected, size = 20.dp)
-                            Spacer(Modifier.height(2.dp))
-                            Text(PenSpec.colorName(c), color = fg, fontSize = 12.sp)
-                        }
-                    }
-                }
+        val colors = (if (highlighter) PenSpec.HIGHLIGHTER_COLORS else PenSpec.INK_COLORS).toList()
+        Spacer(Modifier.height(Rm.FoldoutPad))
+        FoldoutGrid(colors.size, 3, null) { i, m ->
+            val c = colors[i]
+            val selected = c == slot.colorId
+            MenuTile(selected, PenSpec.colorName(c), { onChange(slot.copy(colorId = c)) }, m) { fg ->
+                ColourDot(c, selected, size = 39.dp)
+                Spacer(Modifier.height(4.dp))
+                Text(PenSpec.colorName(c), color = fg, style = RmText.LabelSm)
             }
         }
     }
@@ -450,32 +471,24 @@ private fun colorFor(tool: PenTool, slot: ToolSlot): Int {
 }
 
 @Composable
-private fun Section(title: String?, content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.padding(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 6.dp)) {
-        if (title != null) Text(title, fontSize = 13.sp, color = Ink.Dark, modifier = Modifier.padding(start = 4.dp, bottom = 2.dp))
-        content()
-    }
-}
-
-@Composable
 private fun PageOverview(app: AppController, doc: LibraryEntry, current: Int, onPick: (Int) -> Unit, onAdd: () -> Unit, onClose: () -> Unit) {
     Column(Modifier.fillMaxSize().background(Ink.White)) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("${doc.name} · ${doc.pageIds.size} page${if (doc.pageIds.size == 1) "" else "s"}", fontSize = 26.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-            if (doc.fileType == "notebook") { EButton("+ Add page", onAdd); Spacer(Modifier.width(10.dp)) }
+        Row(Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("${doc.name} · ${doc.pageIds.size} page${if (doc.pageIds.size == 1) "" else "s"}", style = RmText.TitleMd, modifier = Modifier.weight(1f))
+            if (doc.fileType == "notebook") { EButton("+ Add page", onAdd); Spacer(Modifier.width(24.dp)) }
             EButton("Close", onClose, selected = true)
         }
         Rule()
-        LazyVerticalGrid(GridCells.Adaptive(minSize = 190.dp), contentPadding = PaddingValues(20.dp), horizontalArrangement = Arrangement.spacedBy(18.dp), verticalArrangement = Arrangement.spacedBy(22.dp)) {
+        LazyVerticalGrid(GridCells.Fixed(3), contentPadding = PaddingValues(Rm.NavigatorMargin), horizontalArrangement = Arrangement.spacedBy(30.dp), verticalArrangement = Arrangement.spacedBy(32.dp)) {
             itemsIndexed(doc.pageIds) { i, _ ->
                 Column(Modifier.tap { onPick(i) }) {
                     val bmp by produceState<Bitmap?>(null, doc.id, i, doc.pageIds.getOrNull(i), doc.lastModified, doc.template) {
                         value = withContext(Dispatchers.IO) { runCatching { app.thumbnails.render(doc, i, 300) }.getOrNull() }
                     }
-                    Box(Modifier.fillMaxWidth().aspectRatio(0.75f).border(if (i == current) 5.dp else 1.5.dp, Ink.Black).background(Ink.White)) {
+                    Box(Modifier.fillMaxWidth().aspectRatio(0.75f).border(if (i == current) 6.dp else Rm.Outline, Ink.Black).background(Ink.White)) {
                         bmp?.let { Image(it.asImageBitmap(), "Page ${i + 1}", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
                     }
-                    Text("${i + 1}", fontSize = 18.sp, fontWeight = if (i == current) FontWeight.Bold else FontWeight.Normal, modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp))
+                    Text("${i + 1}", style = RmText.Label.copy(fontWeight = if (i == current) FontWeight.Bold else FontWeight.Medium), modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 12.dp))
                 }
             }
         }
