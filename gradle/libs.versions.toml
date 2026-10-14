@@ -8,6 +8,7 @@ lifecycle = "2.8.7"
 documentfile = "1.0.1"
 kotlinxSerialization = "1.7.3"
 junit = "4.13.2"
+robolectric = "4.14.1"
 onyxPen = "1.5.4.4"
 hiddenApiBypass = "4.3"
 
@@ -26,6 +27,9 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 onyx-pen = { group = "com.onyx.android.sdk", name = "onyxsdk-pen", version.ref = "onyxPen" }
 hiddenapibypass = { group = "org.lsposed.hiddenapibypass", name = "hiddenapibypass", version.ref = "hiddenApiBypass" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 [plugins]

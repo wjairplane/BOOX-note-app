@@ -20,6 +20,10 @@ class Prefs(context: Context) {
     private var _sort by mutableStateOf(runCatching { SortBy.valueOf(sp.getString("sort", "MODIFIED")!!) }.getOrDefault(SortBy.MODIFIED))
     var sortBy: SortBy get() = _sort; set(v) { _sort = v; sp.edit().putString("sort", v.name).apply() }
 
+    private var _rev by mutableStateOf(sp.getBoolean("sortReversed", false))
+    /** Reverse the sort order (oldest first / Z to A). */
+    var sortReversed: Boolean get() = _rev; set(v) { _rev = v; sp.edit().putBoolean("sortReversed", v).apply() }
+
     private var _template by mutableStateOf(PageTemplate.fromId(sp.getString("template", "lines")))
     var defaultTemplate: PageTemplate get() = _template; set(v) { _template = v; sp.edit().putString("template", v.id).apply() }
 

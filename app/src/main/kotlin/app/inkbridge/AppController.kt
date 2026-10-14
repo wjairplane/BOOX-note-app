@@ -38,8 +38,15 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
 
     init { reload() }
 
+    /** Run [block] on the main thread and wait for it (Compose state should only be written there). Call from background threads. */
+    private fun <T> onMain(block: () -> T): T = kotlinx.coroutines.runBlocking(Dispatchers.Main) { block() }
+
+    private fun publish(lib: Library) = onMain { library = lib }
+
+    private fun say(text: String) = onMain { message = text }
+
     fun reload() {
-        scope.launch(Dispatchers.IO) { library = store.load() }
+        scope.launch(Dispatchers.IO) { publish(store.load()) }
     }
 
     /** Run [block] off the main thread, then refresh. [onDone] runs after the library has been reloaded. */
@@ -47,10 +54,10 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
         scope.launch(Dispatchers.IO) {
             try {
                 block()
-                library = store.load()
-                onDone?.invoke()
+                publish(store.load())
+                onDone?.let { done -> onMain { done() } }
             } catch (e: Exception) {
-                message = "$failure: ${e.message ?: e.javaClass.simpleName}"
+                say("$failure: ${e.message ?: e.javaClass.simpleName}")
             }
         }
     }
@@ -58,8 +65,8 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
     fun newNotebook(name: String, template: PageTemplate, parentId: String) {
         io("Couldn't create the notebook", onDone = null) {
             val id = LibraryOps.createNotebook(store.dir, name, parentId, template)
-            library = store.load()
-            screen = Screen.Notebook(id, 0)
+            publish(store.load())
+            onMain { screen = Screen.Notebook(id, 0) }
         }
     }
 
@@ -83,23 +90,23 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
 
     /** Add a page after [afterIndex]; [onAdded] gets the new page's index. */
     fun addPage(e: LibraryEntry, afterIndex: Int, onAdded: (Int) -> Unit) =
-        io("Couldn't add a page") { LibraryOps.addPage(store.dir, e, afterIndex); library = store.load(); onAdded(afterIndex + 1) }
+        io("Couldn't add a page") { LibraryOps.addPage(store.dir, e, afterIndex); publish(store.load()); onMain { onAdded(afterIndex + 1) } }
 
     fun deletePage(e: LibraryEntry, index: Int, onDone: () -> Unit) =
-        io("Couldn't delete the page") { if (LibraryOps.deletePage(store.dir, e, index)) { library = store.load(); onDone() } }
+        io("Couldn't delete the page") { if (LibraryOps.deletePage(store.dir, e, index)) { publish(store.load()); onMain { onDone() } } }
 
     /** Mark a notebook as edited (bumps its modified time so it sorts to the top). */
-    fun touch(e: LibraryEntry) { scope.launch(Dispatchers.IO) { runCatching { LibraryOps.touch(store.dir, e.id); library = store.load() } } }
+    fun touch(e: LibraryEntry) { scope.launch(Dispatchers.IO) { runCatching { LibraryOps.touch(store.dir, e.id); publish(store.load()) } } }
 
     fun importPdf(uri: Uri, parentId: String) {
         message = "Importing PDF…"
         scope.launch(Dispatchers.IO) {
-            message = try {
+            try {
                 val entry = store.importPdf(uri, parentId)
-                library = store.load()
-                "Imported “${entry.name}” (${entry.pageIds.size} pages)"
+                publish(store.load())
+                say("Imported “${entry.name}” (${entry.pageIds.size} pages)")
             } catch (e: Exception) {
-                "PDF import failed: ${e.message}"
+                say("PDF import failed: ${e.message}")
             }
         }
     }

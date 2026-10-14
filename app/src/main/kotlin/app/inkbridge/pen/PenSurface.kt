@@ -223,7 +223,8 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
 
     private fun draw() {
         val holder = holder
-        if (!holder.surface.isValid) return
+        val surface = holder.surface ?: return
+        if (!surface.isValid) return
         val canvas = runCatching { holder.lockCanvas() }.getOrNull() ?: return
         try {
             canvas.drawColor(Color.WHITE)

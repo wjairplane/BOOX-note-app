@@ -17,6 +17,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Parser/renderer tests
         run: ./gradlew :rmformat:test
+      - name: App screen tests (renders the real screens to PNG on the JVM)
+        run: ./gradlew :app:testDebugUnitTest
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug
       - uses: actions/upload-artifact@v4
@@ -28,3 +30,8 @@ jobs:
         with:
           name: render-snapshots
           path: rmformat/build/render-snapshots/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-screenshots
+          path: app/build/ui-snapshots/

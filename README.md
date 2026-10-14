@@ -46,6 +46,7 @@ read reMarkable files, and documents it creates have not been checked against a 
 ```bash
 ./gradlew :rmformat:test          # parser/renderer/library tests; PNG renders land in rmformat/build/render-snapshots
 ./gradlew :app:assembleDebug      # app/build/outputs/apk/debug/app-debug.apk
+./gradlew :app:testDebugUnitTest  # renders the real screens to PNG on the JVM (Robolectric): app/build/ui-snapshots
 ./gradlew -PrmOnly :rmformat:test # skip the Android module (JVM-only, faster)
 ```
 

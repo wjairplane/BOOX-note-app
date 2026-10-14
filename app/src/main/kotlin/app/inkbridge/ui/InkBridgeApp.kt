@@ -15,11 +15,11 @@ import app.inkbridge.Screen
 import app.inkbridge.Section
 
 @Composable
-fun InkBridgeApp(store: LibraryStore, prefs: Prefs) {
+fun InkBridgeApp(store: LibraryStore, prefs: Prefs, controller: AppController? = null) {
     MaterialTheme(colorScheme = EInkColors) {
         Surface(Modifier.fillMaxSize(), color = Ink.White) {
             val scope = rememberCoroutineScope()
-            val app = remember { AppController(store, prefs, scope) }
+            val app = remember { controller ?: AppController(store, prefs, scope) }
 
             when (val s = app.screen) {
                 is Screen.Files -> {

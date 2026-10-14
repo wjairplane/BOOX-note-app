@@ -33,7 +33,7 @@ fun SettingsScreen(app: AppController) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             IconBtn(Icons.Default.ArrowBack, "Back", { app.screen = Screen.Files() })
             Spacer(Modifier.width(8.dp))
-            Text("Settings", fontSize = 32.sp, fontWeight = FontWeight.Bold)
+            Text("Settings", fontFamily = androidx.compose.ui.text.font.FontFamily.Serif, fontSize = 36.sp)
         }
         Rule()
         Row(Modifier.fillMaxSize()) {
