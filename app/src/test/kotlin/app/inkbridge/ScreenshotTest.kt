@@ -270,7 +270,10 @@ class ScreenshotTest {
         // Settings categories.
         rule.runOnUiThread { app.screen = Screen.Settings }; settle()
         rule.onNodeWithText("Display").performClick(); settle(); snapshot("settings_display")
+        rule.onNodeWithText("General").performClick(); settle()
         rule.onNodeWithText("Storage").performClick(); settle(); snapshot("settings_storage")
+        rule.onNodeWithContentDescription("Back").performClick(); settle()
+        rule.onNodeWithText("Help").performClick(); settle(); snapshot("settings_help")
         rule.onNodeWithText("About").performClick(); settle(); snapshot("settings_about")
     }
 

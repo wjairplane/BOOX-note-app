@@ -15,6 +15,8 @@ import app.inkbridge.R
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -42,7 +44,10 @@ fun GuidesScreen(app: AppController) {
         when (val v = view) {
             GuideView.Topics -> Topics(onGestures = { view = GuideView.Gestures }, onTutorial = { view = GuideView.Tutorial(0) })
             GuideView.Gestures -> Gestures()
-            is GuideView.Tutorial -> Tutorial(v.page, onPage = { view = GuideView.Tutorial(it) }, onClose = { view = GuideView.Topics })
+            is GuideView.Tutorial -> Box(Modifier.fillMaxSize()) {
+                Topics(onGestures = {}, onTutorial = {})
+                Tutorial(v.page, onPage = { view = GuideView.Tutorial(it) }, onClose = { view = GuideView.Topics })
+            }
         }
     }
 }
@@ -52,8 +57,8 @@ fun GuidesScreen(app: AppController) {
 fun NavigationBar(title: String, onBack: () -> Unit) {
     Column {
         Box(Modifier.fillMaxWidth().height(Rm.NavigationHeader)) {
-            Row(Modifier.align(Alignment.CenterStart).heightIn(min = Rm.ToolButton).tap(onClick = onBack).padding(horizontal = 16.dp).semantics { contentDescription = "Back" }, verticalAlignment = Alignment.CenterVertically) {
-                InkIcons.ChevronLeft(); Text("Back", style = RmText.Label)
+            Row(Modifier.align(Alignment.CenterStart).heightIn(min = Rm.Control).tap(onClick = onBack).padding(horizontal = 32.dp).semantics { contentDescription = "Back" }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                InkIcons.ChevronLeft(); Text("Back", style = RmText.LabelLg)
             }
             Text(title, style = RmText.LabelLgStrong, modifier = Modifier.align(Alignment.Center))
         }
@@ -80,38 +85,64 @@ private fun GuideCard(title: String, description: String, button: String, onClic
     }
 }
 
+/** A card (ArkControls.Card, vertical design): the artwork on top, then the title, the text and a button pushed to the bottom. */
+@Composable
+private fun VerticalGuideCard(title: String, description: String, button: String, onClick: () -> Unit, @DrawableRes image: Int, modifier: Modifier = Modifier) {
+    Column(modifier.border(Rm.Outline, Ink.Black).padding(64.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        Illustration(image, 270.dp, 270.dp, Modifier.align(Alignment.CenterHorizontally))
+        Text(title, style = RmText.TitleMdAlt)
+        Text(description, style = RmText.Body)
+        Spacer(Modifier.weight(1f, fill = false))
+        EButton(button, onClick)
+    }
+}
+
 @Composable
 private fun Topics(onGestures: () -> Unit, onTutorial: () -> Unit) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 64.dp, vertical = 48.dp), verticalArrangement = Arrangement.spacedBy(48.dp)) {
-        GuideCard("Gestures", "Overview of the gestures that you can use to navigate and manage your notes.", "View all", onGestures, R.drawable.rm_ill_guides, Modifier.fillMaxWidth())
-        GuideCard("Ways of working", "A short guide on how to use InkBridge and improve your workflow.", "Start tutorial", onTutorial, R.drawable.rm_ill_distraction_free_software_big, Modifier.fillMaxWidth())
+    // Two columns (88 px margins, 64 px gaps): the gestures card across the width, then the tutorial in a half-width card.
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 88.dp, end = 88.dp, bottom = 59.dp), verticalArrangement = Arrangement.spacedBy(64.dp)) {
+        GuideCard("Gestures", "Overview of all the gestures that you can use to navigate, edit, and multitask.", "View all", onGestures, R.drawable.rm_ill_guides, Modifier.fillMaxWidth())
+        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(64.dp)) {
+            VerticalGuideCard("Ways of working", "A four step guide on how to use your paper tablet and improve your workflow.", "Start tutorial", onTutorial, R.drawable.rm_ill_distraction_free_software_big, Modifier.weight(1f).fillMaxHeight())
+            Spacer(Modifier.weight(1f))
+        }
     }
 }
 
 private data class Gesture(val title: String, val description: String, @DrawableRes val image: Int)
 
-/** The firmware's gesture wording, for the gestures this app responds to. */
-private val GESTURES = listOf(
-    Gesture("Select item", "Press and hold with one finger to perform actions when selected", R.drawable.rm_ill_select_item),
-    Gesture("Flip page", "Swipe one finger horizontally to move between pages", R.drawable.rm_ill_flip_page),
-    Gesture("Zoom", "Pinch or spread two fingers to change the zoom level of the page", R.drawable.rm_ill_zoom),
-    Gesture("Pan", "Drag with two fingers to move around a zoomed-in page", R.drawable.rm_ill_pan),
+/** The firmware's gesture groups and wording, for the gestures this app responds to. */
+private val GESTURE_GROUPS = listOf(
+    "Editing" to listOf(
+        Gesture("Undo", "Tap once with two fingers to take back your last change", R.drawable.rm_ill_undo),
+        Gesture("Redo", "Tap once with three fingers to make undone actions reappear", R.drawable.rm_ill_redo),
+        Gesture("Select item", "Press and hold with one finger to perform actions when selected", R.drawable.rm_ill_select_item),
+    ),
+    "Navigation" to listOf(
+        Gesture("Pan", "Slowly navigate inside documents with two fingers, dragging the page", R.drawable.rm_ill_pan),
+        Gesture("Zoom", "Pinch/spread two fingers to change the zoom level of pages", R.drawable.rm_ill_zoom),
+        Gesture("Flip page", "Swipe one finger horizontally to move between pages", R.drawable.rm_ill_flip_page),
+    ),
 )
 
 @Composable
 private fun Gestures() {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        GESTURES.forEach { g ->
-            Row(Modifier.fillMaxWidth().padding(horizontal = 64.dp, vertical = 40.dp), verticalAlignment = Alignment.CenterVertically) {
-                Illustration(g.image, 198.dp, 144.dp)
-                Spacer(Modifier.width(48.dp))
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(g.title, style = RmText.LabelLgStrong)
-                    Text(g.description, style = RmText.Body)
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 88.dp)) {
+        GESTURE_GROUPS.forEachIndexed { gi, (group, gestures) ->
+            if (gi > 0) Box(Modifier.padding(vertical = 64.dp)) { Rule() }
+            Text(group, style = RmText.TitleLg, modifier = Modifier.padding(top = if (gi == 0) 64.dp else 0.dp))
+            // Three frameless vertical cards per row: the artwork, the title (28 Medium) and the description (25).
+            Row(Modifier.fillMaxWidth().padding(top = 32.dp), horizontalArrangement = Arrangement.spacedBy(64.dp)) {
+                gestures.forEach { g ->
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Illustration(g.image, 198.dp, 144.dp, Modifier.padding(bottom = 16.dp))
+                        Text(g.title, style = RmText.LabelLg)
+                        Text(g.description, style = RmText.BodySm)
+                    }
                 }
             }
-            Rule()
         }
+        Spacer(Modifier.height(64.dp))
     }
 }
 
@@ -138,28 +169,34 @@ private val STEPS = listOf(
     )),
 )
 
+/**
+ * The onboarding dialogue: the Guides screen fades behind it (60% white), a 2 px framed box inset 176 / 234 px holds "N of M" at the top, a close
+ * button at the top right (not on the last page), the illustration, the title, the 36 px text, and centred Back / Next buttons.
+ */
 @Composable
 private fun Tutorial(page: Int, onPage: (Int) -> Unit, onClose: () -> Unit) {
     val step = STEPS[page]
-    Column(Modifier.fillMaxSize().padding(horizontal = 96.dp, vertical = 64.dp)) {
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(24.dp)) {
-            Illustration(step.image, 384.dp, 384.dp, Modifier.align(Alignment.CenterHorizontally))
-            Text(step.title, style = RmText.TitleLg)
-            step.body.forEach { Text(it, style = RmText.Body) }
-            step.points.forEach { p ->
-                Row(verticalAlignment = Alignment.Top) {
-                    Box(Modifier.padding(top = 20.dp, end = 20.dp).size(12.dp).background(Ink.Black, androidx.compose.foundation.shape.CircleShape))
-                    Text(p, style = RmText.Body)
+    Box(Modifier.fillMaxSize().background(Ink.White.copy(alpha = 0.6f)).pointerInput(Unit) { detectTapGestures { } }) {
+        Box(Modifier.fillMaxSize().padding(horizontal = 176.dp, vertical = 234.dp).background(Ink.White).border(Rm.Outline, Ink.Black)) {
+            Text("${page + 1} of ${STEPS.size}", style = RmText.BodyLg, modifier = Modifier.align(Alignment.TopCenter).padding(top = 24.dp))
+            if (page < STEPS.lastIndex) Box(Modifier.align(Alignment.TopEnd).padding(8.dp).size(Rm.Control).tap(onClick = onClose).semantics { contentDescription = "Close" }, contentAlignment = Alignment.Center) { InkIcons.XMedium() }
+            Column(Modifier.fillMaxSize().padding(horizontal = 88.dp, vertical = 88.dp)) {
+                Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                    Illustration(step.image, 384.dp, 384.dp, Modifier.align(Alignment.CenterHorizontally))
+                    Text(step.title, style = RmText.TitleLg)
+                    step.body.forEach { Text(it, style = RmText.BodyLg) }
+                    step.points.forEach { p ->
+                        Row(verticalAlignment = Alignment.Top) {
+                            Box(Modifier.padding(top = 22.dp, end = 20.dp).size(12.dp).background(Ink.Black, androidx.compose.foundation.shape.CircleShape))
+                            Text(p, style = RmText.BodyLg)
+                        }
+                    }
+                }
+                Row(Modifier.fillMaxWidth().padding(top = 32.dp), horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally)) {
+                    if (page > 0) EButton("Back", { onPage(page - 1) }, Modifier.widthIn(min = 346.dp))
+                    if (page < STEPS.lastIndex) EButton("Next", { onPage(page + 1) }, Modifier.widthIn(min = 346.dp), selected = true) else EButton("Close", onClose, Modifier.widthIn(min = 346.dp), selected = true)
                 }
             }
-        }
-        // Page dots, then Back and Next/Close, as in the firmware's onboarding dialogue.
-        Row(Modifier.fillMaxWidth().padding(bottom = 32.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            STEPS.indices.forEach { i -> Box(Modifier.padding(horizontal = 10.dp).size(20.dp).border(Rm.Outline, Ink.Black, androidx.compose.foundation.shape.CircleShape).background(if (i == page) Ink.Black else Ink.White, androidx.compose.foundation.shape.CircleShape)) }
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End)) {
-            if (page > 0) EButton("Back", { onPage(page - 1) })
-            if (page < STEPS.lastIndex) EButton("Next", { onPage(page + 1) }, selected = true) else EButton("Close", onClose, selected = true)
         }
     }
 }

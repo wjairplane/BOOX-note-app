@@ -54,7 +54,7 @@ fun RmDensity(content: @Composable () -> Unit) {
     val metrics = LocalContext.current.resources.displayMetrics
     val short = minOf(metrics.widthPixels, metrics.heightPixels).toFloat()
     val base = LocalDensity.current
-    CompositionLocalProvider(LocalDensity provides Density(density = short / RM_WIDTH, fontScale = base.fontScale), content = content)
+    CompositionLocalProvider(LocalDensity provides Density(density = short / RM_WIDTH, fontScale = 1f), content = content)
 }
 
 private const val RM_WIDTH = 1404f
@@ -119,9 +119,10 @@ object Ink {
     val Black = Color.Black
     val Dark = Color.Black
     val White = Color.White
-    val Grey = Color(0xFF6E6E6E)
-    val Rule = Color(0xFF9A9A9A)
-    val Panel = Color(0xFFF1F1F1)
+    // The firmware is only black and white (secondary text is black too); the one other value is the disabled text/icon grey.
+    val Grey = Color(0xFF000000)
+    val Rule = Color(0xFF959595)
+    val Panel = Color(0xFFFFFFFF)
 }
 
 val EInkColors = lightColorScheme(
@@ -268,34 +269,73 @@ fun NotificationBar(message: String, onAction: () -> Unit, modifier: Modifier = 
     }
 }
 
-/** One row in a list of choices (the firmware's Cell): 48 px marker, body text, 24 px padding; the current one is filled. */
+/** A choice with a radio marker (the firmware's radioButton: 80 px row, 48 px `radio_on` / `radio_off` icon, 16 px gap, 28 Medium label). */
 @Composable
 fun ChoiceRow(label: String, selected: Boolean, onClick: () -> Unit, sub: String? = null) {
-    Row(Modifier.fillMaxWidth().tap(onClick = onClick).padding(vertical = 24.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(Rm.Icon).border(Rm.Outline, Ink.Black, CircleShape).padding(10.dp)) {
-            if (selected) Box(Modifier.fillMaxSize().background(Ink.Black, CircleShape))
+    Row(Modifier.fillMaxWidth().heightIn(min = 80.dp).tap(onClick = onClick).padding(vertical = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        // radio_off: a ring 39 px across with a 3 px stroke; radio_on adds a 21 px dot.
+        Box(Modifier.size(Rm.Icon), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(39.dp).border(3.dp, Ink.Black, CircleShape), contentAlignment = Alignment.Center) { if (selected) Box(Modifier.size(21.dp).background(Ink.Black, CircleShape)) }
         }
-        Spacer(Modifier.width(24.dp))
         Column {
-            Text(label, style = RmText.Body)
-            if (sub != null) Text(sub, style = RmText.Caption, color = Ink.Grey)
+            Text(label, style = RmText.LabelLg)
+            if (sub != null) Text(sub, style = RmText.BodySm)
         }
     }
 }
 
-/** A row with an on/off toggle: a pill with a 32 px handle, as the firmware's Toggle. */
+/**
+ * The firmware's Panel with a Toggle: the label (28 Medium) and a black description (28), and an 80 x 48 pill with a 32 px handle on the right
+ * (off: white with a 2 px border and the handle on the left; on: black with a white handle on the right).
+ */
 @Composable
 fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit, sub: String? = null) {
-    Row(Modifier.fillMaxWidth().tap { onChange(!checked) }.padding(vertical = 24.dp), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(label, style = RmText.Body)
-            if (sub != null) Text(sub, style = RmText.Caption, color = Ink.Grey)
+    Row(Modifier.fillMaxWidth().tap { onChange(!checked) }.padding(vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(label, style = RmText.LabelLg)
+            if (sub != null) Text(sub, style = RmText.Body)
         }
         Spacer(Modifier.width(24.dp))
         Box(
-            Modifier.size(width = 104.dp, height = 56.dp).background(if (checked) Ink.Black else Ink.White, CircleShape).border(Rm.Outline, Ink.Black, CircleShape).padding(horizontal = 12.dp),
+            Modifier.size(width = 80.dp, height = 48.dp).background(if (checked) Ink.Black else Ink.White, CircleShape).border(Rm.Outline, Ink.Black, CircleShape).padding(horizontal = 6.dp),
             contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart,
         ) { Box(Modifier.size(32.dp).background(if (checked) Ink.White else Ink.Black, CircleShape)) }
+    }
+}
+
+/**
+ * The firmware's Cell: a list box with a 2 px border, rows of label and status text (and a chevron on rows that open a page),
+ * separated by 2 px dividers.
+ */
+@Composable
+fun CellList(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    Column(modifier.fillMaxWidth().border(Rm.Outline, Ink.Black), content = content)
+}
+
+@Composable
+fun CellRow(label: String, status: String? = null, onClick: (() -> Unit)? = null, divider: Boolean = true) {
+    Row(
+        Modifier.fillMaxWidth().then(if (onClick != null) Modifier.tap(onClick = onClick) else Modifier).padding(horizontal = 24.dp, vertical = 24.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = RmText.Body, modifier = Modifier.weight(1f))
+        if (status != null) Text(status, style = RmText.BodySm)
+        if (onClick != null) { Spacer(Modifier.width(16.dp)); InkIcons.ChevronRight() }
+    }
+    if (divider) Rule()
+}
+
+/** A row of equally wide buttons where the chosen one is filled (the firmware's ContextualMenu used as a choice, e.g. Battery > Standby). */
+@Composable
+fun SegmentedRow(options: List<String>, selectedIndex: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+    Row(modifier.fillMaxWidth().border(Rm.Outline, Ink.Black)) {
+        options.forEachIndexed { i, label ->
+            val sel = i == selectedIndex
+            if (i > 0) Box(Modifier.width(Rm.Outline).height(Rm.Control).background(Ink.Black))
+            Box(Modifier.weight(1f).height(Rm.Control).background(if (sel) Ink.Black else Ink.White).tap { onSelect(i) }.semantics { contentDescription = label }, contentAlignment = Alignment.Center) {
+                Text(label, style = RmText.Label, color = if (sel) Ink.White else Ink.Black, maxLines = 1)
+            }
+        }
     }
 }
 
