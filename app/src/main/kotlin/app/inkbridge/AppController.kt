@@ -13,7 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /** Which list of the file browser is showing. */
-enum class Section(val title: String) { MY_FILES("My files"), FAVORITES("Favorites"), TAGS("Tags"), TRASH("Trash") }
+enum class Section(val title: String) { MY_FILES("My files"), NOTEBOOKS("Notebooks"), PDFS("PDFs"), FAVORITES("Favorites"), TAGS("Tags"), TRASH("Trash") }
 
 sealed interface Screen {
     data class Files(val section: Section = Section.MY_FILES, val folderId: String = "") : Screen

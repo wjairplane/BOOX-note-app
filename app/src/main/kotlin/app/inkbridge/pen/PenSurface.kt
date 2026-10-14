@@ -25,6 +25,10 @@ interface PenListener {
     fun onErase(samples: List<PenSample>)
     /** A finger swiped across the page: [forward] = towards the next page. */
     fun onSwipe(forward: Boolean) {}
+    /** A stroke made with the selection tool (a lasso, or a drag of the current selection). */
+    fun onLasso(samples: List<PenSample>) {}
+    /** A pinch / two-finger drag ended: zoom by [factor] around ([focusX], [focusY]), then pan by ([panX], [panY]) view pixels. */
+    fun onViewGesture(factor: Float, focusX: Float, focusY: Float, panX: Float, panY: Float) {}
 }
 
 /**
@@ -65,6 +69,34 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
                 return true
             }
             return false
+        }
+    })
+
+    // Pinch to zoom and drag with two fingers to pan: reported once, when the fingers lift (e-ink can't follow a live zoom).
+    private var gestureScale = 1f
+    private var gestureFocusX = 0f
+    private var gestureFocusY = 0f
+    private var gesturePanX = 0f
+    private var gesturePanY = 0f
+    private var lastFocusX = 0f
+    private var lastFocusY = 0f
+    private var multiTouch = false
+    private val scaleDetector = android.view.ScaleGestureDetector(context, object : android.view.ScaleGestureDetector.SimpleOnScaleGestureListener() {
+        override fun onScaleBegin(d: android.view.ScaleGestureDetector): Boolean {
+            gestureScale = 1f; gesturePanX = 0f; gesturePanY = 0f
+            gestureFocusX = d.focusX; gestureFocusY = d.focusY; lastFocusX = d.focusX; lastFocusY = d.focusY
+            return true
+        }
+        override fun onScale(d: android.view.ScaleGestureDetector): Boolean {
+            gestureScale *= d.scaleFactor
+            gesturePanX += d.focusX - lastFocusX; gesturePanY += d.focusY - lastFocusY
+            lastFocusX = d.focusX; lastFocusY = d.focusY
+            return true
+        }
+        override fun onScaleEnd(d: android.view.ScaleGestureDetector) {
+            if (kotlin.math.abs(gestureScale - 1f) > 0.04f || kotlin.math.hypot(gesturePanX, gesturePanY) > 24f) {
+                listener.onViewGesture(gestureScale, gestureFocusX, gestureFocusY, gesturePanX, gesturePanY)
+            }
         }
     })
 
@@ -127,13 +159,14 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
     private fun applyToolToHelper(helper: TouchHelper) {
         val widthPx = when (tool.tool) {
             PenTool.HIGHLIGHTER -> 15f
+            PenTool.SELECTION -> 2f
             else -> 2f * tool.thickness
         } * pageScale
         helper.setStrokeWidth(widthPx.coerceAtLeast(1f))
         // Live preview style only (what is saved comes from our own pen model). Guesses; tune on the device.
         helper.setStrokeStyle(
             when (tool.tool) {
-                PenTool.FINELINER, PenTool.MECHANICAL_PENCIL -> TouchHelper.STROKE_STYLE_PENCIL   // constant width
+                PenTool.FINELINER, PenTool.MECHANICAL_PENCIL, PenTool.SELECTION -> TouchHelper.STROKE_STYLE_PENCIL   // constant width
                 PenTool.MARKER, PenTool.HIGHLIGHTER -> TouchHelper.STROKE_STYLE_MARKER
                 PenTool.PENCIL -> TouchHelper.STROKE_STYLE_CHARCOAL
                 PenTool.PAINTBRUSH -> TouchHelper.STROKE_STYLE_NEO_BRUSH
@@ -177,7 +210,11 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         override fun onRawDrawingTouchPointListReceived(list: TouchPointList) {
             val samples = toSamples(list.points)
             if (samples.isEmpty()) return
-            if (tool.tool == PenTool.ERASER) listener.onErase(samples) else listener.onStroke(samples)
+            when (tool.tool) {
+                PenTool.ERASER -> listener.onErase(samples)
+                PenTool.SELECTION -> listener.onLasso(samples)
+                else -> listener.onStroke(samples)
+            }
         }
 
         override fun onBeginRawErasing(b: Boolean, p: TouchPoint) {}
@@ -196,7 +233,11 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         val isFinger = event.getToolType(0) == MotionEvent.TOOL_TYPE_FINGER
         // A finger swipes (turns pages) unless this is a non-Onyx device with finger drawing switched on.
         if (isFinger && !(fingerDraws && !useOnyx && penEnabled)) {
-            gestures.onTouchEvent(event)
+            scaleDetector.onTouchEvent(event)
+            if (event.pointerCount > 1 || scaleDetector.isInProgress) multiTouch = true
+            // A pinch or two-finger drag must not also count as a page-turning swipe.
+            if (!multiTouch) gestures.onTouchEvent(event)
+            if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) multiTouch = false
             return true
         }
         if (useOnyx || !penEnabled) return super.onTouchEvent(event)
@@ -209,7 +250,11 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         if (event.actionMasked == MotionEvent.ACTION_UP && touchSamples.isNotEmpty()) {
             val done = touchSamples.toList()
             touchSamples.clear()
-            if (tool.tool == PenTool.ERASER) listener.onErase(done) else listener.onStroke(done)
+            when (tool.tool) {
+                PenTool.ERASER -> listener.onErase(done)
+                PenTool.SELECTION -> listener.onLasso(done)
+                else -> listener.onStroke(done)
+            }
         }
         return true
     }

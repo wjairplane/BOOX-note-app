@@ -2,6 +2,7 @@ package app.inkbridge
 
 import android.app.Application
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.hasSetTextAction
@@ -12,6 +13,12 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.longClick
+import android.os.SystemClock
+import android.view.InputDevice
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
+import app.inkbridge.pen.PenSurface
 import app.inkbridge.rm.edit.InputPoint
 import app.inkbridge.rm.edit.PageEditor
 import app.inkbridge.rm.edit.PenSpec
@@ -181,5 +188,116 @@ class ScreenshotTest {
         rule.onNodeWithContentDescription("More").performClick(); settle() // closes the menu
         rule.runOnUiThread { app.prefs.toolbarPosition = ToolbarPosition.BOTTOM }; settle(); snapshot("notebook_bottom")
         rule.onNodeWithContentDescription("More").performClick(); settle(); snapshot("menu_more")
+    }
+
+    // ---- helpers for the extra scenarios ----
+
+    private fun launch(): AppController {
+        val ctx = RuntimeEnvironment.getApplication() as Application
+        val store = LibraryStore(ctx)
+        seed(store)
+        val app = AppController(store, Prefs(ctx), kotlinx.coroutines.MainScope())
+        rule.setContent { InkBridgeApp(store, Prefs(ctx), app) }
+        settle()
+        return app
+    }
+
+    private fun findSurface(v: View): PenSurface? =
+        if (v is PenSurface) v else (v as? ViewGroup)?.let { g -> (0 until g.childCount).firstNotNullOfOrNull { findSurface(g.getChildAt(it)) } }
+
+    /** A stylus stroke through [points] (view pixels of the page surface), the way a pen on a non-BOOX device arrives. */
+    private fun stylusStroke(points: List<Pair<Float, Float>>) {
+        val view = findSurface(rule.activity.window.decorView)!!
+        val t0 = SystemClock.uptimeMillis()
+        fun event(action: Int, x: Float, y: Float, t: Long): MotionEvent {
+            val props = arrayOf(MotionEvent.PointerProperties().apply { id = 0; toolType = MotionEvent.TOOL_TYPE_STYLUS })
+            val coords = arrayOf(MotionEvent.PointerCoords().apply { this.x = x; this.y = y; pressure = 0.5f; size = 1f })
+            return MotionEvent.obtain(t0, t, action, 1, props, coords, 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_STYLUS, 0)
+        }
+        rule.runOnUiThread {
+            points.forEachIndexed { i, (x, y) ->
+                val action = when (i) { 0 -> MotionEvent.ACTION_DOWN; points.lastIndex -> MotionEvent.ACTION_UP; else -> MotionEvent.ACTION_MOVE }
+                view.dispatchTouchEvent(event(action, x, y, t0 + i * 8L))
+            }
+        }
+    }
+
+    /** Every dialog, popup and list view of the file browser and settings. */
+    @Test fun dialogsAndViews() {
+        val app = launch()
+
+        rule.onNodeWithContentDescription("Create").performClick(); settle()
+        rule.onNodeWithText("Notebook").performClick(); settle(); snapshot("dialog_new_notebook")
+        rule.onAllNodesWithText("Cancel").onLast().performClick(); settle()
+
+        // Press and hold, then each action that opens a dialog.
+        rule.onNodeWithText("Journal").performTouchInput { longClick() }; settle()
+        rule.onNodeWithText("Rename").performClick(); settle(); snapshot("dialog_rename")
+        rule.onAllNodesWithText("Cancel").onLast().performClick(); settle()
+        rule.onNodeWithText("Move").performClick(); settle(); snapshot("dialog_move")
+        rule.onAllNodesWithText("Cancel").onLast().performClick(); settle()
+        rule.onNodeWithText("Delete").performClick(); settle(); snapshot("dialog_delete")
+        rule.onNodeWithText("Move to trash").performClick(); settle()
+        org.junit.Assert.assertEquals(1, app.library.trash.size)
+
+        // The trash: its own create-menu button, the empty-trash dialog, and restore/delete in the action bar.
+        rule.onNodeWithContentDescription("Menu").performClick(); settle()
+        rule.onNodeWithText("Trash").performClick(); settle(); snapshot("trash_view")
+        rule.onNodeWithContentDescription("Empty trash").performClick(); settle(); snapshot("dialog_empty_trash")
+        rule.onAllNodesWithText("Cancel").onLast().performClick(); settle()
+        rule.onNodeWithText("Journal").performTouchInput { longClick() }; settle(); snapshot("trash_selection")
+        rule.onNodeWithText("Restore").performClick(); settle()
+        org.junit.Assert.assertEquals(0, app.library.trash.size)
+
+        // "Filter by": Notebooks and PDFs.
+        rule.runOnUiThread { app.screen = Screen.Files() }; settle()
+        rule.onNodeWithContentDescription("Menu").performClick(); settle()
+        rule.onNodeWithText("Filter by").performClick(); settle(); snapshot("sidebar_filter")
+        rule.onNodeWithText("Notebooks").performClick(); settle(); snapshot("notebooks_view")
+        rule.onNodeWithContentDescription("Menu").performClick(); settle()
+        rule.onNodeWithText("PDFs").performClick(); settle(); snapshot("pdfs_view")
+        rule.runOnUiThread { app.screen = Screen.Files() }; settle()
+
+        // Settings categories.
+        rule.runOnUiThread { app.screen = Screen.Settings }; settle()
+        rule.onNodeWithText("Display").performClick(); settle(); snapshot("settings_display")
+        rule.onNodeWithText("Storage").performClick(); settle(); snapshot("settings_storage")
+        rule.onNodeWithText("About").performClick(); settle(); snapshot("settings_about")
+    }
+
+    /** The notebook's selection tool, layers, view controls and page dialog. */
+    @Test fun notebookTools() {
+        val app = launch()
+        val nb = app.library.entries.first { it.name == "Meeting notes" }
+        rule.runOnUiThread { app.prefs.toolbarPosition = ToolbarPosition.LEFT; app.screen = Screen.Notebook(nb.id, 0) }; settle()
+
+        // Selection tool: a lasso around the handwriting, then duplicate and delete from the selection's menu.
+        rule.onNodeWithContentDescription("Selection tool").performClick(); settle()
+        stylusStroke(listOf(150f to 150f, 900f to 150f, 900f to 800f, 150f to 800f, 150f to 150f)); settle(); snapshot("selection_tool")
+        rule.onNodeWithContentDescription("Duplicate").performClick(); settle(); snapshot("selection_duplicated")
+        rule.onNodeWithContentDescription("Delete").performClick(); settle(); snapshot("selection_deleted")
+        rule.onNodeWithContentDescription("Writing tool 1: Fineliner").performClick(); settle() // back to a pen
+
+        // Layers.
+        rule.onNodeWithContentDescription("More").performClick(); settle()
+        rule.onNodeWithText("Layers").performClick(); settle(); snapshot("layers_menu")
+        rule.onNodeWithText("New layer").performClick(); settle(); snapshot("layers_menu_two")
+        rule.onNodeWithContentDescription("Hide Layer 1").performClick(); settle(); snapshot("layers_hidden")
+        rule.onNodeWithContentDescription("More").performClick(); settle() // back
+        rule.onNodeWithContentDescription("More").performClick(); settle() // close
+
+        // Adjust view: fit to height zooms in a little (the toolbar leaves the page area narrower than the page).
+        rule.onNodeWithContentDescription("More").performClick(); settle()
+        rule.onNodeWithText("Adjust view").performClick(); settle(); snapshot("view_menu")
+        rule.onNodeWithText("Fit to height").performClick(); settle(); snapshot("zoomed_page")
+
+        // Page dialogs: add a page, then delete it.
+        rule.onNodeWithContentDescription("More").performClick(); settle()
+        rule.onNodeWithText("Add page").performClick(); settle()
+        rule.onNodeWithText("Add page after").performClick(); settle()
+        org.junit.Assert.assertEquals(2, app.library[nb.id]!!.pageIds.size)
+        rule.onNodeWithContentDescription("More").performClick(); settle()
+        rule.onNodeWithText("Delete page").performClick(); settle(); snapshot("dialog_delete_page")
+        rule.onAllNodesWithText("Cancel").onLast().performClick(); settle()
     }
 }

@@ -156,6 +156,8 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
                     when (s.section) {
                         Section.MY_FILES -> "Nothing here yet.\nTap + to make a notebook or a folder, or to import a PDF to annotate."
                         Section.FAVORITES -> "No favorites yet.\nPress and hold a notebook or folder in My files, then tap Favorite."
+                        Section.NOTEBOOKS -> "No notebooks yet.\nTap + to make one."
+                        Section.PDFS -> "No PDFs yet.\nImport one from the menu to annotate it."
                         Section.TAGS -> "No tagged items yet.\nPress and hold a notebook or folder in My files, then tap Tag."
                         Section.TRASH -> "The trash is empty."
                     },
@@ -187,6 +189,7 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
             var createOpen by remember { mutableStateOf(false) }
             val showCreate = s.section != Section.TRASH
             val creates = s.section == Section.MY_FILES
+            val canNotebook = s.section == Section.MY_FILES || s.section == Section.NOTEBOOKS
             Box(Modifier.align(Alignment.BottomCenter).padding(bottom = Rm.CreateMenuBottomMargin)) {
                 // The 4 px white ring around the outline, so the pill stays crisp over thumbnails.
                 Row(
@@ -214,7 +217,7 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
                                 icon(); Spacer(Modifier.width(20.dp))
                                 Column { Text(title, style = RmText.LabelLgStrong); Text(caption, style = RmText.Caption) }
                             }
-                        if (creates) action({ InkIcons.Notebook() }, "Notebook", "Record ideas, write, and sketch") { dialog = Dialogs.NewNotebook }
+                        if (canNotebook) action({ InkIcons.Notebook() }, "Notebook", "Record ideas, write, and sketch") { dialog = Dialogs.NewNotebook }
                         if (creates) action({ InkIcons.FolderOutline() }, "Folder", "Organize your content") { dialog = Dialogs.NewFolder }
                         action({ InkIcons.QuickSheet() }, "Quick sheet", "Jot down your thoughts") { app.newQuickSheet() }
                     }
@@ -256,6 +259,9 @@ internal fun middleEllipsis(name: String, head: Int = 8, tail: Int = 6): String 
 private fun visibleEntries(lib: Library, s: Screen.Files, sort: SortBy, reversed: Boolean, tags: Set<String>, documentsOnly: Boolean): List<LibraryEntry> {
     val base = when (s.section) {
         Section.MY_FILES -> lib.children(s.folderId)
+        // "Filter by": every notebook (or PDF) outside the trash, whichever folder it is in.
+        Section.NOTEBOOKS -> lib.entries.filter { !it.isFolder && it.fileType == "notebook" && it.parentId != Library.TRASH }
+        Section.PDFS -> lib.entries.filter { !it.isFolder && it.fileType == "pdf" && it.parentId != Library.TRASH }
         Section.FAVORITES -> lib.entries.filter { it.pinned && it.parentId != Library.TRASH }
         // Tagged items anywhere outside the trash; with chips selected, only those carrying every selected tag.
         Section.TAGS -> lib.entries.filter { it.parentId != Library.TRASH && it.tags.isNotEmpty() && it.tags.containsAll(tags) && (!documentsOnly || !it.isFolder) }
@@ -534,13 +540,23 @@ private fun Sidebar(app: AppController, s: Screen.Files, onClose: () -> Unit, on
                 }
             }
             item("My files", s.section == Section.MY_FILES, { app.screen = Screen.Files(Section.MY_FILES); onClose() }) { InkIcons.MyFiles(tint = it) }
+            // "Filter by" unfolds into Notebooks and PDFs; once one is chosen the item shows it.
+            var filterOpen by remember { mutableStateOf(s.section == Section.NOTEBOOKS || s.section == Section.PDFS) }
+            val active = s.section.takeIf { it == Section.NOTEBOOKS || it == Section.PDFS }
+            item(active?.title ?: "Filter by", active != null && !filterOpen, { filterOpen = !filterOpen }) {
+                if (active == Section.PDFS) InkIcons.Document(tint = it) else if (active == Section.NOTEBOOKS) InkIcons.Notebook(tint = it) else InkIcons.Filter(tint = it)
+            }
+            if (filterOpen) {
+                item("Notebooks", s.section == Section.NOTEBOOKS, { app.screen = Screen.Files(Section.NOTEBOOKS); onClose() }) { InkIcons.Notebook(tint = it) }
+                item("PDFs", s.section == Section.PDFS, { app.screen = Screen.Files(Section.PDFS); onClose() }) { InkIcons.Document(tint = it) }
+            }
             item("Favorites", s.section == Section.FAVORITES, { app.screen = Screen.Files(Section.FAVORITES); onClose() }) { InkIcons.StarOutline(tint = it) }
             item("Tags", s.section == Section.TAGS, { app.screen = Screen.Files(Section.TAGS); onClose() }) { InkIcons.Tag(tint = it) }
             item("Import PDF", false, { onClose(); onImport() }) { InkIcons.Import(tint = it) }
             Spacer(Modifier.weight(1f))
             item("Trash", s.section == Section.TRASH, { app.screen = Screen.Files(Section.TRASH); onClose() }) { InkIcons.Trash(tint = it) }
             Rule()
-            item("Guides", false, { app.screen = Screen.Guides; onClose() }) { InkIcons.Help(tint = it) }
+            item("Guides", false, { app.screen = Screen.Guides; onClose() }) { InkIcons.Compass(tint = it) }
             item("Settings", false, { app.screen = Screen.Settings; onClose() }) { InkIcons.Settings(tint = it) }
         }
         // Tap outside to close. (No scrim animation: it would smear on e-ink.)

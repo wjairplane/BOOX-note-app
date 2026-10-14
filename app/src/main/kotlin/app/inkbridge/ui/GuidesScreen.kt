@@ -5,7 +5,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
+import app.inkbridge.R
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,63 +61,78 @@ fun NavigationBar(title: String, onBack: () -> Unit) {
     }
 }
 
-/** A card (ArkControls.Card): 2 px border, 64 px padding, serif title, body text and an optional button. */
+/** The firmware's illustrations are single-colour line art; sizes are their own (dp == px here). */
 @Composable
-private fun GuideCard(title: String, description: String, button: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Column(modifier.border(Rm.Outline, Ink.Black).padding(64.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
-        Text(title, style = RmText.TitleMdAlt)
-        Text(description, style = RmText.Body)
-        EButton(button, onClick)
+private fun Illustration(@DrawableRes id: Int, width: Dp, height: Dp, modifier: Modifier = Modifier) =
+    Image(painterResource(id), contentDescription = null, modifier = modifier.size(width, height), colorFilter = ColorFilter.tint(Ink.Black))
+
+/** A card (ArkControls.Card, horizontal design): 2 px border, 64 px padding, serif title, body text, a button, and the artwork. */
+@Composable
+private fun GuideCard(title: String, description: String, button: String, onClick: () -> Unit, @DrawableRes image: Int, modifier: Modifier = Modifier) {
+    Row(modifier.border(Rm.Outline, Ink.Black).padding(64.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+            Text(title, style = RmText.TitleMdAlt)
+            Text(description, style = RmText.Body)
+            EButton(button, onClick)
+        }
+        Spacer(Modifier.width(48.dp))
+        Illustration(image, 192.dp, 192.dp)
     }
 }
 
 @Composable
 private fun Topics(onGestures: () -> Unit, onTutorial: () -> Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 64.dp, vertical = 48.dp), verticalArrangement = Arrangement.spacedBy(48.dp)) {
-        GuideCard("Gestures", "Overview of the gestures that you can use to navigate and manage your notes.", "View all", onGestures, Modifier.fillMaxWidth())
-        GuideCard("Ways of working", "A short guide on how to use InkBridge and improve your workflow.", "Start tutorial", onTutorial, Modifier.fillMaxWidth())
+        GuideCard("Gestures", "Overview of the gestures that you can use to navigate and manage your notes.", "View all", onGestures, R.drawable.rm_ill_guides, Modifier.fillMaxWidth())
+        GuideCard("Ways of working", "A short guide on how to use InkBridge and improve your workflow.", "Start tutorial", onTutorial, R.drawable.rm_ill_distraction_free_software_big, Modifier.fillMaxWidth())
     }
 }
 
-private data class Gesture(val title: String, val description: String)
+private data class Gesture(val title: String, val description: String, @DrawableRes val image: Int)
 
 /** The firmware's gesture wording, for the gestures this app responds to. */
 private val GESTURES = listOf(
-    Gesture("Select item", "Press and hold with one finger to perform actions when selected"),
-    Gesture("Flip page", "Swipe one finger horizontally to move between pages"),
+    Gesture("Select item", "Press and hold with one finger to perform actions when selected", R.drawable.rm_ill_select_item),
+    Gesture("Flip page", "Swipe one finger horizontally to move between pages", R.drawable.rm_ill_flip_page),
+    Gesture("Zoom", "Pinch or spread two fingers to change the zoom level of the page", R.drawable.rm_ill_zoom),
+    Gesture("Pan", "Drag with two fingers to move around a zoomed-in page", R.drawable.rm_ill_pan),
 )
 
 @Composable
 private fun Gestures() {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         GESTURES.forEach { g ->
-            Column(Modifier.fillMaxWidth().padding(horizontal = 64.dp, vertical = 40.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(g.title, style = RmText.LabelLgStrong)
-                Text(g.description, style = RmText.Body)
+            Row(Modifier.fillMaxWidth().padding(horizontal = 64.dp, vertical = 40.dp), verticalAlignment = Alignment.CenterVertically) {
+                Illustration(g.image, 198.dp, 144.dp)
+                Spacer(Modifier.width(48.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(g.title, style = RmText.LabelLgStrong)
+                    Text(g.description, style = RmText.Body)
+                }
             }
             Rule()
         }
     }
 }
 
-private data class Step(val title: String, val body: List<String>, val points: List<String> = emptyList())
+private data class Step(val title: String, @DrawableRes val image: Int, val body: List<String>, val points: List<String> = emptyList())
 
 /** "Ways of working" from the firmware, without the steps about the cloud apps and typed text. */
 private val STEPS = listOf(
-    Step("Ways of working", listOf(
+    Step("Ways of working", R.drawable.rm_ill_distraction_free_software_big, listOf(
         "These next steps will show you how to use and navigate InkBridge, introducing you to some important features.",
         "Find more detailed help in Guides.",
     )),
-    Step("Types of documents", listOf("Use the plus icon below to create new items."), listOf(
+    Step("Types of documents", R.drawable.rm_ill_document_types, listOf("Use the plus icon below to create new items."), listOf(
         "Organize your content into folders",
         "Record ideas, write, and sketch in notebooks",
         "Add quick sheets to jot down your thoughts",
     )),
-    Step("Touch gestures", listOf("Browse pages and manage your files using your fingers. Find the full overview in Guides."), listOf(
+    Step("Touch gestures", R.drawable.rm_ill_touch_gestures, listOf("Browse pages and manage your files using your fingers. Find the full overview in Guides."), listOf(
         "To perform actions, press and hold the item",
         "Swipe sideways to turn the page",
     )),
-    Step("Writing and reading", listOf(
+    Step("Writing and reading", R.drawable.rm_ill_writing_and_reading, listOf(
         "Pages of notebooks can be as long or short as you need, allowing you to focus and stay uninterrupted as you work.",
         "Take notes in different styles with your pen.",
     )),
@@ -122,6 +143,7 @@ private fun Tutorial(page: Int, onPage: (Int) -> Unit, onClose: () -> Unit) {
     val step = STEPS[page]
     Column(Modifier.fillMaxSize().padding(horizontal = 96.dp, vertical = 64.dp)) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+            Illustration(step.image, 384.dp, 384.dp, Modifier.align(Alignment.CenterHorizontally))
             Text(step.title, style = RmText.TitleLg)
             step.body.forEach { Text(it, style = RmText.Body) }
             step.points.forEach { p ->

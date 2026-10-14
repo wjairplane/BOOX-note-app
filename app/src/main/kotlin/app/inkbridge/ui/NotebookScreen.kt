@@ -40,6 +40,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -96,6 +97,8 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     // Two quick-switch writing tools (like the tablet's toolbar), plus the eraser.
     var activeSlot by remember(doc.id) { mutableIntStateOf(0) }
     var erasing by remember(doc.id) { mutableStateOf(false) }
+    var selecting by remember(doc.id) { mutableStateOf(false) }
+    var selectionRect by remember { mutableStateOf<android.graphics.RectF?>(null) }
     var panel by remember { mutableStateOf(false) }
     var collapsed by remember { mutableStateOf(false) }
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
@@ -113,7 +116,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     var message by remember { mutableStateOf("") }
 
     val slot = prefs.slot(activeSlot)
-    val spec = if (erasing) PenSpec(PenTool.ERASER) else PenSpec(slot.tool, slot.colorId, slot.thickness)
+    val spec = if (selecting) PenSpec(PenTool.SELECTION) else if (erasing) PenSpec(PenTool.ERASER) else PenSpec(slot.tool, slot.colorId, slot.thickness)
 
     val session by produceState<PageSession?>(null, doc.id, pageIndex, doc.template, doc.pageIds.getOrNull(pageIndex)) {
         value = null
@@ -132,7 +135,13 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     }
     DisposableEffect(session) { val s = session; onDispose { save(s) } }
 
-    fun goTo(i: Int) { if (i in doc.pageIds.indices && i != pageIndex) { save(session); pageIndex = i; if (prefs.refreshEveryStrokes > 0) surface?.fullRefresh() } }
+    fun leaveSelection() {
+        if (!selecting) return
+        selecting = false; selectionRect = null
+        session?.clearSelection(); surface?.refresh()
+    }
+
+    fun goTo(i: Int) { if (i in doc.pageIds.indices && i != pageIndex) { save(session); selectionRect = null; pageIndex = i; if (prefs.refreshEveryStrokes > 0) surface?.fullRefresh() } }
     fun newPageAfterCurrent() { save(session); app.addPage(doc, pageIndex) { pageIndex = it } }
 
     val pos = prefs.toolbarPosition
@@ -151,10 +160,10 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 // Two writing tools: tap the other one to switch, tap the active one to open its foldout.
                 for (i in 0..1) {
                     val s = prefs.slot(i)
-                    val active = !erasing && activeSlot == i
+                    val active = !erasing && !selecting && activeSlot == i
                     Box {
                         IconTile("Writing tool ${i + 1}: ${s.tool.label}", {
-                            if (active) panel = !panel else { activeSlot = i; erasing = false; panel = false; eraserMenu = false }
+                            if (active) panel = !panel else { leaveSelection(); activeSlot = i; erasing = false; panel = false; eraserMenu = false }
                         }, selected = active) { tint ->
                             Box {
                                 InkIcons.Pen(s.tool, tint = tint)
@@ -166,7 +175,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 }
                 // The eraser: tap to pick it, tap again for its foldout (tool, thickness, erase all).
                 Box {
-                    IconTile("Eraser", { if (erasing) eraserMenu = !eraserMenu else { erasing = true; panel = false; eraserMenu = false } }, selected = erasing) { InkIcons.Eraser(tint = it) }
+                    IconTile("Eraser", { if (erasing) eraserMenu = !eraserMenu else { leaveSelection(); erasing = true; panel = false; eraserMenu = false } }, selected = erasing) { InkIcons.Eraser(tint = it) }
                     RmMenu(eraserMenu && erasing, { eraserMenu = false }, side, Rm.EraserFoldoutMinWidth) {
                         EraserMenu(eraserThickness, onThickness = { eraserThickness = it }, onEraseAll = {
                             eraserMenu = false
@@ -174,8 +183,9 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                         })
                     }
                 }
-                IconTile("Undo", { if (session?.undo() == true) { surface?.refresh(); revision++ } }, enabled = session?.canUndo == true) { InkIcons.Undo(tint = it) }
-                IconTile("Redo", { if (session?.redo() == true) { surface?.refresh(); revision++ } }, enabled = session?.canRedo == true) { InkIcons.Redo(tint = it) }
+                IconTile("Selection tool", { selecting = true; erasing = false; panel = false; eraserMenu = false; menu = false }, selected = selecting) { InkIcons.SelectionTool(tint = it) }
+                IconTile("Undo", { if (session?.undo() == true) { selectionRect = null; surface?.refresh(); revision++ } }, enabled = session?.canUndo == true) { InkIcons.Undo(tint = it) }
+                IconTile("Redo", { if (session?.redo() == true) { selectionRect = null; surface?.refresh(); revision++ } }, enabled = session?.canRedo == true) { InkIcons.Redo(tint = it) }
             }
         }
         val end: @Composable () -> Unit = {
@@ -192,13 +202,45 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                             null -> {
                                 if (canDraw) RmFoldoutItem("Add page", { menuPage = "add" }, chevron = true) { InkIcons.PageAdd(tint = it) }
                                 RmFoldoutItem("Delete page", { close(); confirmDelete = true }, enabled = doc.pageIds.size > 1) { InkIcons.Trash(tint = it) }
-                                if (!isPdf) RmFoldoutItem("Template", { menuPage = "template" }, chevron = true, topDivider = true) { InkIcons.Template(tint = it) }
-                                RmFoldoutItem("Share", { menuPage = "share" }, chevron = true, topDivider = !isPdf) { InkIcons.Share(tint = it) }
+                                if (canDraw) RmFoldoutItem("Layers", { menuPage = "layers" }, chevron = true, topDivider = true) { InkIcons.Layers(tint = it) }
+                                if (!isPdf) RmFoldoutItem("Template", { menuPage = "template" }, chevron = true) { InkIcons.Template(tint = it) }
+                                RmFoldoutItem("Adjust view", { menuPage = "view" }, chevron = true) { InkIcons.Sliders(tint = it) }
+                                RmFoldoutItem("Share", { menuPage = "share" }, chevron = true) { InkIcons.Share(tint = it) }
                                 RmFoldoutItem("Refresh screen", { close(); surface?.fullRefresh() }, topDivider = true) { InkIcons.Refresh(tint = it) }
                             }
                             "add" -> {
                                 RmFoldoutItem("Add page before", { close(); save(session); app.addPage(doc, pageIndex - 1) { pageIndex = it } }) { InkIcons.PageAdd(tint = it) }
                                 RmFoldoutItem("Add page after", { close(); newPageAfterCurrent() }) { InkIcons.PageAdd(tint = it) }
+                            }
+                            "layers" -> {
+                                @Suppress("UNUSED_EXPRESSION") revision
+                                val layers = session?.layers().orEmpty()
+                                // The topmost layer first, as the firmware lists them.
+                                layers.reversed().forEach { l ->
+                                    Row(Modifier.fillMaxWidth().height(Rm.ToolButton).background(if (l.current) Ink.Black else Ink.White), verticalAlignment = Alignment.CenterVertically) {
+                                        val fg = if (l.current) Ink.White else Ink.Black
+                                        Box(Modifier.size(Rm.ToolButton).tap { session?.setLayerVisible(l.id, !l.visible); surface?.refresh(); revision++ }.semantics { contentDescription = (if (l.visible) "Hide " else "Show ") + l.label }, contentAlignment = Alignment.Center) {
+                                            if (l.visible) InkIcons.Eye(tint = fg) else InkIcons.EyeClosed(tint = fg)
+                                        }
+                                        Text(l.label, style = RmText.Label, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).fillMaxHeight().tap { session?.selectLayer(l.id); revision++ }.wrapContentHeight(Alignment.CenterVertically))
+                                        if (layers.size > 1) Box(Modifier.size(Rm.ToolButton).tap { if (session?.deleteLayer(l.id) == true) { selectionRect = null; surface?.refresh(); revision++ } }.semantics { contentDescription = "Delete " + l.label }, contentAlignment = Alignment.Center) { InkIcons.Trash(tint = fg) }
+                                    }
+                                }
+                                RmFoldoutItem("New layer", { session?.addLayer("Layer ${layers.size + 1}"); surface?.refresh(); revision++ }, topDivider = true) { InkIcons.PlusCircle(tint = it) }
+                            }
+                            "view" -> {
+                                fun changeView(block: (PageSession) -> Unit) {
+                                    val s = session ?: return
+                                    close()
+                                    scope.launch(Dispatchers.Default) {
+                                        block(s)
+                                        withContext(Dispatchers.Main) { surface?.let { v -> pushView(v, s); v.setTool(v.currentSpec, s.transform?.scale ?: 1f) }; selectionRect = s.selectionRect(); revision++ }
+                                    }
+                                }
+                                RmFoldoutItem("Fit to width", { changeView { it.fitWidth() } }, selected = false) { InkIcons.FitToWidth(tint = it) }
+                                RmFoldoutItem("Fit to height", { changeView { it.fitHeight() } }) { InkIcons.FitToHeight(tint = it) }
+                                RmFoldoutItem("Fit to custom view", { changeView { it.fitCustom() } }, enabled = session?.customView != null) { InkIcons.FitCustom(tint = it) }
+                                RmFoldoutItem("Whole page", { changeView { it.fitPage() } }, topDivider = true) { InkIcons.Overview(tint = it) }
                             }
                             "template" -> PageTemplate.entries.forEach { t ->
                                 RmFoldoutItem(t.label, { close(); save(session); app.setTemplate(doc, t) }, selected = doc.template == t)
@@ -277,6 +319,15 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 session = session, spec = spec, drawing = canDraw && !overview,
                 swipeEnabled = prefs.swipeToTurn, fingerDraws = prefs.fingerDrawing,
                 eraserRadius = ERASER_RADII[eraserThickness - 1],
+                selectionRect = selectionRect, onSelectionRect = { selectionRect = it },
+                onSelectionAction = { action ->
+                    val s = session
+                    if (s != null) {
+                        val done = if (action == "delete") s.deleteSelection() else s.duplicateSelection()
+                        if (done) { surface?.refresh(); revision++ }
+                        selectionRect = s.selectionRect()
+                    }
+                },
                 onSurface = { surface = it },
                 onChanged = {
                     revision++
@@ -285,6 +336,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                     if (every > 0 && strokes % every == 0) surface?.fullRefresh()
                 },
                 onSwipe = { forward ->
+                    if ((session?.zoom ?: 1f) > 1.01f) return@PageArea // zoomed in: two fingers pan, a swipe doesn't turn the page
                     if (forward) { if (pageIndex < doc.pageIds.lastIndex) goTo(pageIndex + 1) else if (canDraw) newPageAfterCurrent() }
                     else goTo(pageIndex - 1)
                 },
@@ -337,8 +389,11 @@ private fun ColourDot(colorId: Int, onDark: Boolean, modifier: Modifier = Modifi
 @Composable
 private fun PageArea(
     session: PageSession?, spec: PenSpec, drawing: Boolean, swipeEnabled: Boolean, fingerDraws: Boolean, eraserRadius: Float,
+    selectionRect: android.graphics.RectF?, onSelectionRect: (android.graphics.RectF?) -> Unit, onSelectionAction: (String) -> Unit,
     onSurface: (PenSurface?) -> Unit, onChanged: () -> Unit, onSwipe: (Boolean) -> Unit,
 ) {
+    val scope = rememberCoroutineScope()
+    val currentOnSelectionRect by rememberUpdatedState(onSelectionRect)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var surface by remember { mutableStateOf<PenSurface?>(null) }
     var layoutVersion by remember { mutableIntStateOf(0) }
@@ -368,10 +423,7 @@ private fun PageArea(
             val s = session ?: return@LaunchedEffect
             val view = surface ?: return@LaunchedEffect
             withContext(Dispatchers.Default) { s.resize(w, h) }
-            val t = s.transform ?: return@LaunchedEffect
-            val bmp = s.bitmap ?: return@LaunchedEffect
-            view.setPageArea(Rect(t.offsetX.toInt(), 0, t.offsetX.toInt() + bmp.width, bmp.height))
-            view.show(bmp, t.offsetX)
+            pushView(view, s)
             layoutVersion++
         }
 
@@ -390,6 +442,18 @@ private fun PageArea(
                     override fun onStroke(samples: List<PenSample>) = apply(samples) { s, sp -> s.addStroke(sp, samples) }
                     override fun onErase(samples: List<PenSample>) = apply(samples) { s, _ -> s.erase(samples, currentEraserRadius) }
                     override fun onSwipe(forward: Boolean) { currentOnSwipe(forward) }
+                    override fun onLasso(samples: List<PenSample>) {
+                        val s = currentSession ?: return
+                        if (s.selectionStroke(samples)) { currentOnSelectionRect(s.selectionRect()); surface?.refresh(); currentOnChanged() }
+                    }
+                    override fun onViewGesture(factor: Float, focusX: Float, focusY: Float, panX: Float, panY: Float) {
+                        val s = currentSession ?: return
+                        val view = surface ?: return
+                        scope.launch(Dispatchers.Default) {
+                            s.viewGesture(factor, focusX, focusY, panX, panY)
+                            withContext(Dispatchers.Main) { pushView(view, s); view.setTool(view.currentSpec, s.transform?.scale ?: 1f); currentOnSelectionRect(s.selectionRect()); currentOnChanged() }
+                        }
+                    }
 
                     private fun apply(samples: List<PenSample>, edit: (PageSession, PenSpec) -> Boolean) {
                         val s = currentSession ?: return
@@ -400,7 +464,37 @@ private fun PageArea(
                 }).also { surface = it; onSurface(it) }
             },
         )
+
+        // The selection's menu (the firmware's contextual menu: black, a 2 px border, icon over label), above the dashed frame.
+        selectionRect?.let { r ->
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            val menuH = with(density) { Rm.NavigationHeader.roundToPx() }
+            val x = r.centerX().toInt()
+            val above = r.top - menuH - 24
+            val y = (if (above >= 0) above else r.bottom + 24).toInt().coerceIn(0, (h - menuH).coerceAtLeast(0))
+            Row(
+                Modifier.offset { androidx.compose.ui.unit.IntOffset((x - with(density) { 150.dp.roundToPx() }).coerceIn(0, (w - with(density) { 300.dp.roundToPx() }).coerceAtLeast(0)), y) }
+                    .height(Rm.NavigationHeader).background(Ink.Black).border(Rm.Outline, Ink.Black),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                @Composable fun action(label: String, id: String, icon: @Composable () -> Unit) =
+                    Column(Modifier.width(150.dp).fillMaxHeight().tap { onSelectionAction(id) }.semantics { contentDescription = label }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                        icon(); Text(label, style = RmText.LabelSmLow, color = Ink.White)
+                    }
+                action("Duplicate", "duplicate") { InkIcons.Duplicate(tint = Ink.White) }
+                action("Delete", "delete") { InkIcons.Trash(tint = Ink.White) }
+            }
+        }
     }
+}
+
+/** Show the session's bitmap on the surface and limit pen input to the visible part of the page. */
+private fun pushView(view: PenSurface, s: PageSession) {
+    val t = s.transform ?: return
+    val bmp = s.bitmap ?: return
+    val r = t.visiblePageRect()
+    view.setPageArea(Rect(r[0].toInt(), r[1].toInt(), r[2].toInt(), r[3].toInt()))
+    view.show(bmp, 0f)
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -489,7 +583,7 @@ private fun EraserMenu(thickness: Int, onThickness: (Int) -> Unit, onEraseAll: (
         FoldoutGrid(3, 3, Rm.ToolButton) { i, m ->
             MenuTile(i + 1 == thickness, names[i], { onThickness(i + 1) }, m) { fg -> InkIcons.Thickness(i + 1, tint = fg) }
         }
-        RmFoldoutItem("Erase all strokes", onEraseAll, topDivider = true) { InkIcons.Trash(tint = it) }
+        RmFoldoutItem("Erase all strokes", onEraseAll, topDivider = true) { InkIcons.EraseAll(tint = it) }
     }
 }
 

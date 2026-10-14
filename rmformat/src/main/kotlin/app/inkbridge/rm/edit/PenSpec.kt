@@ -19,9 +19,11 @@ enum class PenTool(val label: String, val toolId: Int) {
     HIGHLIGHTER("Highlighter", PenId.HIGHLIGHTER_2),
     SHADER("Shader", PenId.SHADER),
     /** Not a pen: removes whole strokes it touches. */
-    ERASER("Eraser", PenId.ERASER);
+    ERASER("Eraser", PenId.ERASER),
+    /** Not a pen either: the lasso that selects strokes. */
+    SELECTION("Selection tool", -1);
 
-    val isPen: Boolean get() = this != ERASER
+    val isPen: Boolean get() = this != ERASER && this != SELECTION
 
     /** Highlighters use their own colour set and a fixed width. */
     val isHighlighter: Boolean get() = this == HIGHLIGHTER

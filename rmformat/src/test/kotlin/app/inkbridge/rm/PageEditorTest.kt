@@ -151,6 +151,104 @@ class PageEditorTest {
         assertTrue(t.offsetX > 0)
     }
 
+    @Test fun zoomingKeepsTheFocusPointAndNeverLeavesAGap() {
+        val layout = app.inkbridge.rm.render.PageLayout(-702f, 702f, 0f, 1872f)
+        val fit = PageTransform(layout, 1404f, 1872f)
+        assertEquals(1f, fit.scale, 1e-6f); assertEquals(0f, fit.offsetX, 1e-3f)
+        // Zoom 2x around a point: the page point under the finger stays under the finger.
+        val z = fit.zoomedAround(2f, 700f, 900f)
+        assertEquals(fit.toPageX(700f), z.toPageX(700f), 1e-2f); assertEquals(fit.toPageY(900f), z.toPageY(900f), 1e-2f)
+        assertEquals(2f, z.scale, 1e-6f)
+        // Panning is clamped to the page: the left/top edges can't move past the view's edges.
+        val far = z.pannedBy(5000f, 5000f)
+        assertEquals(0f, far.offsetX, 1e-3f); assertEquals(0f, far.offsetY, 1e-3f)
+        val farther = z.pannedBy(-99999f, -99999f)
+        assertEquals(1404f - 2808f, farther.offsetX, 1e-3f); assertEquals(1872f - 3744f, farther.offsetY, 1e-3f)
+        // The zoom is limited, and the visible page area never exceeds the view.
+        assertEquals(PageTransform.MAX_ZOOM, fit.zoomedAround(99f, 0f, 0f).zoom, 1e-6f)
+        assertEquals(1f, fit.zoomedAround(0.1f, 0f, 0f).zoom, 1e-6f)
+        val r = z.visiblePageRect(); assertEquals(0f, r[0], 1e-3f); assertEquals(1404f, r[2], 1e-3f)
+        // Fit to width in a view that is wider than the page's shape (a toolbar at the side): the page overflows vertically.
+        val wide = PageTransform(layout, 1600f, 1872f)
+        val w = wide.fitWidth()
+        assertEquals(1600f / 1404f, w.scale, 1e-4f); assertEquals(0f, w.offsetX, 1e-3f)
+        val h = wide.fitHeight()
+        assertEquals(1872f / 1872f, h.scale, 1e-4f)
+    }
+
+    @Test fun layersCanBeAddedHiddenRenamedSwitchedAndDeleted() {
+        val ed = PageEditor.blank()
+        assertEquals(listOf("Layer 1"), ed.layers().map { it.label })
+        ed.addStroke(PenSpec(PenTool.FINELINER), pts(10f, 20f, 30f, 40f))
+        val first = ed.layers().single().id
+
+        val second = ed.addLayer("Notes")
+        assertEquals(listOf("Layer 1", "Notes"), ed.layers().map { it.label })
+        assertEquals(second, ed.layers().single { it.current }.id) // a new layer becomes current
+        ed.addStroke(PenSpec(PenTool.BALLPOINT), pts(50f, 60f, 70f, 80f))
+        assertEquals(2, lines(ed.tree).size)
+        assertEquals(1, (ed.tree[second]).childItems().size)
+
+        // Hiding a layer removes its strokes from the rendering; a hidden layer can't be drawn on.
+        ed.setLayerVisible(second, false)
+        assertEquals(1, ed.renderer.placedLines().size)
+        assertEquals(first, ed.layers().single { it.current }.id)
+        ed.setLayerVisible(second, true)
+        ed.setCurrentLayer(first)
+        assertEquals(first, ed.layers().single { it.current }.id)
+        ed.renameLayer(second, "  Margin notes ")
+        assertEquals("Margin notes", ed.layers().last().label)
+
+        // Everything survives a save and reload.
+        val again = PageEditor.fromBytes(ed.toBytes())
+        assertEquals(listOf("Layer 1", "Margin notes"), again.layers().map { it.label })
+        assertEquals(first, again.layers().single { it.current }.id)
+        assertEquals(2, again.renderer.placedLines().size)
+
+        // Deleting a layer removes its strokes; the last layer can't be deleted; undo brings it back.
+        assertTrue(ed.deleteLayer(second))
+        assertEquals(listOf("Layer 1"), ed.layers().map { it.label })
+        assertEquals(1, ed.renderer.placedLines().size)
+        assertFalse(ed.deleteLayer(first))
+        assertTrue(ed.undo())
+        assertEquals(2, ed.layers().size)
+        assertEquals(2, PageEditor.fromBytes(ed.toBytes()).renderer.placedLines().size)
+    }
+
+    @Test fun lassoSelectsMovesDuplicatesAndDeletesStrokes() {
+        val ed = PageEditor.blank()
+        ed.addStroke(PenSpec(PenTool.FINELINER), pts(100f, 100f, 140f, 110f, 180f, 100f))   // inside the lasso
+        ed.addStroke(PenSpec(PenTool.FINELINER), pts(120f, 150f, 160f, 150f))                // inside
+        ed.addStroke(PenSpec(PenTool.FINELINER), pts(600f, 600f, 640f, 640f))                // far away
+        val lasso = listOf(50f to 50f, 250f to 50f, 250f to 250f, 50f to 250f)
+        val picked = ed.selectInside(lasso)
+        assertEquals(2, picked.size)
+        assertEquals(0, ed.selectInside(listOf(0f to 0f, 10f to 0f)).size) // not a region
+        val b = ed.boundsOf(picked)!!
+        assertEquals(100f, b.left, 1e-3f); assertEquals(180f, b.right, 1e-3f); assertEquals(100f, b.top, 1e-3f); assertEquals(150f, b.bottom, 1e-3f)
+
+        // Move: only the selected strokes shift, in one undo step.
+        val before = ed.toBytes()
+        assertEquals(2, ed.moveStrokes(picked, 300f, -40f))
+        val moved = ed.boundsOf(picked)!!
+        assertEquals(400f, moved.left, 1e-3f); assertEquals(60f, moved.top, 1e-3f)
+        assertEquals(3, lines(ed.tree).size)
+        assertTrue(ed.undo()); assertArrayEquals(before, ed.toBytes())
+
+        // Duplicate: copies appear next to the originals and are valid on reload.
+        val copies = ed.duplicateStrokes(picked, 20f, 20f)
+        assertEquals(2, copies.size); assertTrue(copies.none { it in picked })
+        assertEquals(5, lines(ed.tree).size)
+        assertEquals(5, lines(PageEditor.fromBytes(ed.toBytes()).tree).size)
+        val cb = ed.boundsOf(copies)!!
+        assertEquals(120f, cb.left, 1e-3f); assertEquals(120f, cb.top, 1e-3f)
+
+        // Delete.
+        assertEquals(2, ed.deleteStrokes(picked))
+        assertEquals(3, lines(PageEditor.fromBytes(ed.toBytes()).tree).size)
+        assertEquals(0, ed.deleteStrokes(picked)) // already gone
+    }
+
     @Test fun rendersEditedPageToPng() {
         val ed = PageEditor.fromBytes(res("Lines_v2.rm"))
         ed.addStroke(PenSpec(PenTool.BALLPOINT, PenColorId.RED, 3), (0..40).map { InputPoint(100f + it * 8, 700f + Math.sin(it / 4.0).toFloat() * 40, 0.3f + it / 60f, 0f, 0f, it * 5L) })

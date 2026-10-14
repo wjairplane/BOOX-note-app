@@ -93,6 +93,21 @@ object InkIcons {
     @Composable fun XCircle(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_x_circle, modifier, tint, size)
     @Composable fun Refresh(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_rotate, modifier, tint, size)
 
+    @Composable fun SelectionTool(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_selection_tool, modifier, tint, size)
+    @Composable fun FitToWidth(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_fit_to_width, modifier, tint, size)
+    @Composable fun FitToHeight(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_fit_to_height, modifier, tint, size)
+    @Composable fun FitCustom(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_fit_custom, modifier, tint, size)
+    @Composable fun Eye(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_eye, modifier, tint, size)
+    @Composable fun EyeClosed(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_eye_closed, modifier, tint, size)
+    @Composable fun Layers(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_layers, modifier, tint, size)
+    @Composable fun PlusCircle(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_plus_circle, modifier, tint, size)
+    @Composable fun EraseAll(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_erase_all, modifier, tint, size)
+    @Composable fun Filter(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_filter, modifier, tint, size)
+    @Composable fun Compass(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_compass, modifier, tint, size)
+    @Composable fun RestoreIcon(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_restore, modifier, tint, size)
+
+    @Composable fun Document(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_document, modifier, tint, size)
+
     @DrawableRes
     private fun penRes(tool: PenTool): Int = when (tool) {
         PenTool.BALLPOINT -> R.drawable.rm_ballpoint
@@ -105,6 +120,7 @@ object InkIcons {
         PenTool.HIGHLIGHTER -> R.drawable.rm_highlighter
         PenTool.SHADER -> R.drawable.rm_shader
         PenTool.ERASER -> R.drawable.rm_eraser
+        PenTool.SELECTION -> R.drawable.rm_selection_tool
     }
 
     @Composable

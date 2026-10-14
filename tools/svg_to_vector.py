@@ -21,10 +21,15 @@ USED = [
     "my_files", "star", "star_inverted", "trashcan", "text_edit", "move", "arrow_counter_clockwise",
     "tag", "duplicate", "notebook", "folder", "quick_sheet", "trashcan_delete", "question_circle", "chevron_left", "chevron_right", "chevron_up",
     "share", "x_circle", "rotate", "page_add", "template", "export", "import", "checkmark", "sliders_horizontal",
+    "document", "erase_all", "selection_tool", "fit_to_width", "fit_to_height", "fit_custom", "restore", "compass", "filter", "eye", "eye_closed", "layers", "plus_circle", "text_edit",
 ]
 
-def convert(name):
-    s = open(os.path.join(SRC, name + ".svg"), encoding="utf8").read()
+ILLUSTRATIONS = os.path.join(ROOT, "reference/remarkable-3.27.1.0/illustrations")
+# Guides artwork: converted as rm_ill_<name>.xml
+USED_ILLUSTRATIONS = ["guides", "select_item", "flip_page", "zoom", "pan", "touch_gestures", "document_types", "writing_and_reading", "distraction_free_software_big"]
+
+def convert(name, src=SRC, prefix="rm_"):
+    s = open(os.path.join(src, name + ".svg"), encoding="utf8").read()
     if re.search(r"<(g|rect|circle|ellipse|clipPath|defs|line|polygon|polyline)\b", s):
         sys.exit(f"{name}: unsupported element")
     vb = re.search(r'viewBox="0 0 (\d+) (\d+)"', s)
@@ -44,8 +49,9 @@ def convert(name):
         out.append(f'    <path android:fillColor="#FF000000"{" android:fillType=\"evenOdd\"" if even else ""}')
         out.append(f'        android:pathData="{d}" />')
     out.append("</vector>")
-    open(os.path.join(DST, f"rm_{name}.xml"), "w").write("\n".join(out) + "\n")
+    open(os.path.join(DST, f"{prefix}{name}.xml"), "w").write("\n".join(out) + "\n")
 
 os.makedirs(DST, exist_ok=True)
 for n in USED: convert(n)
-print(f"wrote {len(USED)} drawables to {os.path.normpath(DST)}")
+for n in USED_ILLUSTRATIONS: convert(n, ILLUSTRATIONS, "rm_ill_")
+print(f"wrote {len(USED) + len(USED_ILLUSTRATIONS)} drawables to {os.path.normpath(DST)}")
