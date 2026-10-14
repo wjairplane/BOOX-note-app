@@ -51,6 +51,15 @@ class PenSamplerTest {
         assertEquals(78, l.colorRgba!![0]) // blue's red channel
     }
 
+    @Test fun highlighterHasTheSixRealColoursIncludingOrange() {
+        assertEquals(listOf("Yellow", "Blue", "Pink", "Orange", "Green", "Gray"), PenSpec.HIGHLIGHTER_COLORS.map { PenSpec.colorName(it) })
+        val ed = PageEditor.blank()
+        ed.addStroke(PenSpec(PenTool.HIGHLIGHTER, PenColorId.ORANGE), wave(200f, false))
+        val l = PageEditor.fromBytes(ed.toBytes()).tree.walk().filterIsInstance<app.inkbridge.rm.scene.Line>().single()
+        assertEquals(PenColorId.HIGHLIGHT, l.color)
+        assertEquals(listOf(255, 195, 140, 255), l.colorRgba!!.toList())
+    }
+
     @Test fun pensHaveSensibleWidthsAcrossPressure() {
         for (tool in PenTool.PENS) for (th in 1..3) for (p in listOf(0f, 0.5f, 1f)) {
             val w = StrokeBuilder.widthRaw(PenSpec(tool, thickness = th), p)

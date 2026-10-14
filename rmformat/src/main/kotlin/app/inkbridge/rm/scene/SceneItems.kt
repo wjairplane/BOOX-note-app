@@ -57,6 +57,9 @@ object PenColorId {
     const val CYAN = 11
     const val MAGENTA = 12
     const val YELLOW_2 = 13
+
+    /** Not a file colour id: the app's own marker for orange, which is stored as [HIGHLIGHT] plus an explicit RGBA. */
+    const val ORANGE = 100
 }
 
 /**

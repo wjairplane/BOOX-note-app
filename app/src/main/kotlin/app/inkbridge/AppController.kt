@@ -18,6 +18,7 @@ enum class Section(val title: String) { MY_FILES("My files"), FAVORITES("Favorit
 sealed interface Screen {
     data class Files(val section: Section = Section.MY_FILES, val folderId: String = "") : Screen
     data object Settings : Screen
+    data object Search : Screen
     data class Notebook(val docId: String, val page: Int = 0) : Screen
 }
 

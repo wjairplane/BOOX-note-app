@@ -45,7 +45,8 @@ data class PenSpec(val tool: PenTool, val colorId: Int = PenColorId.BLACK, val t
     }
 
     companion object {
-        val HIGHLIGHTER_COLORS = intArrayOf(PenColorId.YELLOW, PenColorId.GREEN, PenColorId.PINK, PenColorId.BLUE, PenColorId.GRAY)
+        /** The highlighter's six colours, in the pen menu's order. */
+        val HIGHLIGHTER_COLORS = intArrayOf(PenColorId.YELLOW, PenColorId.BLUE, PenColorId.PINK, PenColorId.ORANGE, PenColorId.GREEN, PenColorId.GRAY)
 
         /** The nine colours of the pen menu, in its 3 x 3 order (rows: neutrals, primaries, light colours). */
         val INK_COLORS = intArrayOf(
@@ -59,6 +60,7 @@ data class PenSpec(val tool: PenTool, val colorId: Int = PenColorId.BLACK, val t
             PenColorId.BLACK -> "Black"; PenColorId.GRAY -> "Gray"; PenColorId.WHITE -> "White"
             PenColorId.YELLOW -> "Yellow"; PenColorId.GREEN -> "Green"; PenColorId.PINK -> "Pink"
             PenColorId.BLUE -> "Blue"; PenColorId.RED -> "Red"; PenColorId.CYAN -> "Cyan"; PenColorId.MAGENTA -> "Magenta"
+            PenColorId.ORANGE -> "Orange"
             else -> "Colour $id"
         }
     }

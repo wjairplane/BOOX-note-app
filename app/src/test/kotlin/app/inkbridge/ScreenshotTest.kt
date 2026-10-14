@@ -4,7 +4,9 @@ import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performClick
 import app.inkbridge.rm.edit.InputPoint
 import app.inkbridge.rm.edit.PageEditor
@@ -76,9 +78,14 @@ class ScreenshotTest {
         rule.setContent { InkBridgeApp(store, Prefs(ctx), app) }
         settle(); snapshot("files")
 
-        // Create menu
-        rule.onNodeWithText("＋").performClick(); settle(); snapshot("create_menu")
-        rule.onNodeWithText("✕").performClick(); settle()
+        // Create menu (the pill gains a round close button while open)
+        rule.onNodeWithContentDescription("Create").performClick(); settle(); snapshot("create_menu")
+        rule.onNodeWithContentDescription("Close").performClick(); settle()
+
+        // Search
+        rule.onNodeWithContentDescription("Search").performClick(); settle()
+        rule.onNode(hasSetTextAction()).performTextInput("ee"); settle(); snapshot("search")
+        rule.runOnUiThread { app.screen = Screen.Files() }; settle()
 
         // Sidebar
         rule.onNodeWithContentDescription("Menu").performClick(); settle(); snapshot("sidebar")
@@ -98,6 +105,10 @@ class ScreenshotTest {
         rule.onNodeWithContentDescription("Writing tool 2: Highlighter").performClick(); settle()
         rule.onNodeWithContentDescription("Page overview").performClick(); settle(); snapshot("overview")
         rule.onNodeWithText("Close").performClick(); settle()
+
+        // Hiding the toolbar leaves only the round button
+        rule.onNodeWithContentDescription("Hide toolbar").performClick(); settle(); snapshot("notebook_collapsed")
+        rule.onNodeWithContentDescription("Show toolbar").performClick(); settle()
 
         // The other toolbar positions
         rule.runOnUiThread { app.prefs.toolbarPosition = ToolbarPosition.LEFT }; settle()

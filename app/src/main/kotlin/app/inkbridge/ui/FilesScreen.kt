@@ -34,6 +34,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -161,17 +163,17 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
             }
         }
 
-        // --- create: a pill at the bottom of the screen that opens a "Create now" card ---
+        // --- bottom pill: search and create (open: a "Create now" card above it, and a round close button) ---
         if (s.section == Section.MY_FILES) {
             var createOpen by remember { mutableStateOf(false) }
             Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 if (createOpen) {
-                    Column(Modifier.width(380.dp).background(Ink.White).border(1.5.dp, Ink.Black, RoundedCornerShape(10.dp)).padding(vertical = 8.dp)) {
-                        Text("Create now", fontSize = 15.sp, color = Ink.Grey, modifier = Modifier.padding(start = 20.dp, top = 8.dp, bottom = 4.dp))
+                    Column(Modifier.width(300.dp).background(Ink.White).border(1.dp, Ink.Black, RoundedCornerShape(6.dp)).padding(vertical = 6.dp)) {
+                        Text("Create now", fontSize = 14.sp, color = Ink.Grey, modifier = Modifier.padding(start = 18.dp, top = 6.dp, bottom = 2.dp))
                         @Composable fun row(title: String, sub: String, action: () -> Unit) =
-                            Column(Modifier.fillMaxWidth().tap { createOpen = false; action() }.padding(horizontal = 20.dp, vertical = 12.dp)) {
-                                Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                                Text(sub, fontSize = 15.sp, color = Ink.Grey)
+                            Column(Modifier.fillMaxWidth().tap { createOpen = false; action() }.padding(horizontal = 18.dp, vertical = 10.dp)) {
+                                Text(title, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                                Text(sub, fontSize = 14.sp, color = Ink.Grey)
                             }
                         row("Notebook", "Record ideas, write, and sketch") { dialog = Dialogs.NewNotebook }
                         row("Folder", "Organise your content") { dialog = Dialogs.NewFolder }
@@ -179,11 +181,16 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
                     }
                     Spacer(Modifier.height(12.dp))
                 }
-                Box(
-                    Modifier.size(width = 120.dp, height = 56.dp).background(Ink.White, RoundedCornerShape(28.dp)).border(1.5.dp, Ink.Black, RoundedCornerShape(28.dp))
-                        .tap { createOpen = !createOpen },
-                    contentAlignment = Alignment.Center,
-                ) { Text(if (createOpen) "✕" else "＋", fontSize = 28.sp) }
+                Row(
+                    Modifier.height(56.dp).background(Ink.White, RoundedCornerShape(28.dp)).border(1.dp, Ink.Black, RoundedCornerShape(28.dp)).padding(horizontal = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(Modifier.size(48.dp).tap { createOpen = false; app.screen = Screen.Search }.semantics { contentDescription = "Search" }, contentAlignment = Alignment.Center) { InkIcons.Search(size = 32.dp) }
+                    Box(Modifier.size(48.dp).tap { createOpen = !createOpen }.semantics { contentDescription = "Create" }, contentAlignment = Alignment.Center) { InkIcons.Plus(size = 32.dp) }
+                    if (createOpen) {
+                        Box(Modifier.size(48.dp).tap { createOpen = false }.semantics { contentDescription = "Close" }, contentAlignment = Alignment.Center) { InkIcons.CloseDisc(size = 38.dp) }
+                    }
+                }
             }
         }
 
@@ -209,6 +216,10 @@ private fun open(app: AppController, e: LibraryEntry, s: Screen.Files) {
     if (s.section == Section.TRASH) return // trashed items are managed, not opened
     app.screen = if (e.isFolder) Screen.Files(Section.MY_FILES, e.id) else Screen.Notebook(e.id, 0)
 }
+
+/** Long names are shortened in the middle ("FY27 budge…verview"), keeping both the start and the end readable, as on the tablet. */
+internal fun middleEllipsis(name: String, head: Int = 8, tail: Int = 6): String =
+    if (name.length <= head + tail + 1) name else name.take(head).trimEnd() + "…" + name.takeLast(tail).trimStart()
 
 private fun visibleEntries(lib: Library, s: Screen.Files, sort: SortBy, reversed: Boolean): List<LibraryEntry> {
     val base = when (s.section) {
@@ -236,7 +247,7 @@ private fun Card(app: AppController, e: LibraryEntry, s: Screen.Files, lib: Libr
                 Thumb(app, e, Modifier.fillMaxWidth().aspectRatio(0.75f))
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.Top) {
-                    Text(e.name, fontSize = 18.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    Text(middleEllipsis(e.name), fontSize = 17.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                     if (e.pinned) Text("★", fontSize = 18.sp, modifier = Modifier.padding(start = 6.dp))
                 }
                 Text(pages, fontSize = 14.sp, color = Ink.Grey, maxLines = 1)
@@ -305,7 +316,7 @@ private fun EntryMenu(show: Boolean, dismiss: () -> Unit, app: AppController, e:
  * (the same cues the tablet uses to tell document types apart at a glance).
  */
 @Composable
-private fun Thumb(app: AppController, e: LibraryEntry, modifier: Modifier) {
+internal fun Thumb(app: AppController, e: LibraryEntry, modifier: Modifier) {
     val shape = RoundedCornerShape(6.dp)
     if (e.isFolder) {
         Box(modifier.border(1.dp, Ink.Rule, shape).background(Ink.Panel, shape), contentAlignment = Alignment.Center) { FolderGlyph(Modifier.size(width = 40.dp, height = 31.dp)) }

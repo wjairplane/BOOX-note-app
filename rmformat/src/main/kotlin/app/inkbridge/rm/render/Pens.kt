@@ -140,6 +140,7 @@ object PenPalette {
         PenColorId.YELLOW_2 to intArrayOf(247, 232, 81),
         // "HIGHLIGHT" shares one id; the real shade normally comes in the explicit RGBA field.
         PenColorId.HIGHLIGHT to intArrayOf(251, 247, 25),
+        PenColorId.ORANGE to intArrayOf(255, 195, 140),
     )
 
     /** RGBA for a pen colour id, preferring the explicit RGBA stored with the stroke. */

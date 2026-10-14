@@ -71,9 +71,11 @@ object StrokeBuilder {
         }
         // The shader is stored the way newer firmware stores it: the "highlight" colour id plus an explicit,
         // translucent RGBA (the sample pages use alpha 64..128 of 255).
-        val shaderRgba = if (spec.tool == PenTool.SHADER) {
+        val needsRgba = spec.tool == PenTool.SHADER || spec.colorId == PenColorId.ORANGE
+        val shaderRgba = if (needsRgba) {
             val c = PenPalette.lookup(spec.colorId, null)
-            intArrayOf(c[0], c[1], c[2], SHADER_ALPHA)
+            // Shader: translucent. Orange highlighter: opaque RGBA (the pen's own opacity makes it a highlight).
+            intArrayOf(c[0], c[1], c[2], if (spec.tool == PenTool.SHADER) SHADER_ALPHA else 255)
         } else null
         return Line(
             tool = spec.tool.toolId,

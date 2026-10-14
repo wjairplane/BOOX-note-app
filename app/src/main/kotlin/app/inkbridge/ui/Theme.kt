@@ -28,6 +28,9 @@ import androidx.compose.ui.window.Dialog
 /** E-ink palette: pure black on white, one mid grey for secondary text and rules. No tints, no motion. */
 object Ink {
     val Black = Color.Black
+
+    /** Fill of selected/primary elements: a soft black, as on the tablet. */
+    val Dark = Color(0xFF1E1E1E)
     val White = Color.White
     val Grey = Color(0xFF6E6E6E)
     val Rule = Color(0xFF9A9A9A)
@@ -63,8 +66,8 @@ fun EButton(
     Box(
         modifier
             .defaultMinSize(minWidth = size, minHeight = size)
-            .border(BorderStroke(if (enabled) 1.5.dp else 1.dp, if (enabled) Ink.Black else Ink.Rule), RoundedCornerShape(3.dp))
-            .background(if (selected) Ink.Black else Ink.White, RoundedCornerShape(3.dp))
+            .border(BorderStroke(1.dp, if (enabled) Ink.Black else Ink.Rule), RoundedCornerShape(2.dp))
+            .background(if (selected) Ink.Dark else Ink.White, RoundedCornerShape(2.dp))
             .tap(enabled, onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center,
@@ -76,7 +79,7 @@ fun EButton(
 fun IconBtn(icon: ImageVector, description: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, selected: Boolean = false) {
     val fg = if (selected) Ink.White else if (enabled) Ink.Black else Ink.Rule
     Box(
-        modifier.size(56.dp).background(if (selected) Ink.Black else Ink.White).tap(enabled, onClick),
+        modifier.size(56.dp).background(if (selected) Ink.Dark else Ink.White).tap(enabled, onClick),
         contentAlignment = Alignment.Center,
     ) { Icon(icon, contentDescription = description, tint = fg, modifier = Modifier.size(30.dp)) }
 }

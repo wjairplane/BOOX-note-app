@@ -66,7 +66,7 @@ import java.io.File
 /** Radius of the eraser in view pixels. */
 private const val ERASER_RADIUS_PX = 22f
 
-private val TOOLBAR_THICKNESS = 68.dp
+private val TOOLBAR_THICKNESS = 60.dp
 
 @Composable
 fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
@@ -88,6 +88,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     var activeSlot by remember(doc.id) { mutableIntStateOf(0) }
     var erasing by remember(doc.id) { mutableStateOf(false) }
     var panel by remember { mutableStateOf(false) }
+    var collapsed by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
     var overview by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
@@ -126,43 +127,9 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     fun toolbar() {
         @Suppress("UNUSED_EXPRESSION") revision
         val start: @Composable () -> Unit = {
-            Box {
-                IconTile("Menu", { menu = true }) { InkIcons.MenuDot(tint = it) }
-                DropdownMenu(menu, { menu = false }) {
-                    @Composable fun item(label: String, enabled: Boolean = true, action: () -> Unit) =
-                        DropdownMenuItem(text = { Text(label, fontSize = 20.sp) }, enabled = enabled, onClick = { menu = false; action() })
-                    item("My files") { save(session); app.screen = Screen.Files(folderId = doc.parentId.takeIf { it != "trash" } ?: "") }
-                    item("Add page after this one", canDraw) { newPageAfterCurrent() }
-                    item("Delete this page", doc.pageIds.size > 1) { confirmDelete = true }
-                    if (!isPdf) PageTemplate.entries.forEach { t -> item("Template: ${t.label}${if (doc.template == t) "  ✓" else ""}") { save(session); app.setTemplate(doc, t) } }
-                    item("Refresh the screen") { surface?.fullRefresh() }
-                    item("Export this page (SVG, PNG, PDF)", session != null) {
-                        val s = session ?: return@item
-                        val dir = File(context.getExternalFilesDir(null) ?: context.filesDir, "exports")
-                        val safe = doc.name.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').ifEmpty { "page" }
-                        message = "Exporting…"
-                        scope.launch {
-                            message = try {
-                                val files = withContext(Dispatchers.IO) { s.export(dir, "${safe}_p${pageIndex + 1}") }
-                                "Exported ${files.joinToString { it.name }} to ${dir.absolutePath}"
-                            } catch (e: Exception) { "Export failed: ${e.message}" }
-                        }
-                    }
-                    if (isPdf) item("Export annotated PDF") {
-                        save(session)
-                        val dir = File(context.getExternalFilesDir(null) ?: context.filesDir, "exports")
-                        val safe = doc.name.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').ifEmpty { "document" }
-                        val out = File(dir, "${safe}_annotated.pdf")
-                        scope.launch {
-                            message = try {
-                                withContext(Dispatchers.IO) { AnnotatedPdfExporter.export(app.store, doc, out) { d, t -> message = "Exporting PDF… $d / $t" } }
-                                "Saved ${out.name} (${out.length() / 1024} KB) to ${dir.absolutePath}"
-                            } catch (e: Exception) { "PDF export failed: ${e.message}" }
-                        }
-                    }
-                }
-            }
-            if (canDraw) {
+            // The round button hides the rest of the toolbar (and brings it back).
+            IconTile(if (collapsed) "Show toolbar" else "Hide toolbar", { collapsed = !collapsed; panel = false }) { InkIcons.MenuDot(tint = it) }
+            if (!collapsed && canDraw) {
                 // Two writing tools: tap the other one to switch, tap the active one to open its menu.
                 for (i in 0..1) {
                     val s = prefs.slot(i)
@@ -182,15 +149,54 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
             }
         }
         val end: @Composable () -> Unit = {
-            Text("${pageIndex + 1}/${doc.pageIds.size}", fontSize = 16.sp, color = Ink.Grey, modifier = Modifier.padding(horizontal = 6.dp))
-            IconTile("Page overview", { save(session); overview = true }) { InkIcons.Overview(tint = it) }
+            if (!collapsed) {
+                IconTile("Page overview", { save(session); overview = true }) { InkIcons.Overview(tint = it) }
+                Box {
+                    IconTile("More", { menu = true }) { InkIcons.More(tint = it) }
+                    DropdownMenu(menu, { menu = false }) {
+                        @Composable fun item(label: String, enabled: Boolean = true, action: () -> Unit) =
+                            DropdownMenuItem(text = { Text(label, fontSize = 20.sp) }, enabled = enabled, onClick = { menu = false; action() })
+                        item("My files") { save(session); app.screen = Screen.Files(folderId = doc.parentId.takeIf { it != "trash" } ?: "") }
+                        item("Page ${pageIndex + 1} of ${doc.pageIds.size}", enabled = false) {}
+                        item("Add page after this one", canDraw) { newPageAfterCurrent() }
+                        item("Delete this page", doc.pageIds.size > 1) { confirmDelete = true }
+                        if (!isPdf) PageTemplate.entries.forEach { t -> item("Template: ${t.label}${if (doc.template == t) "  ✓" else ""}") { save(session); app.setTemplate(doc, t) } }
+                        item("Refresh the screen") { surface?.fullRefresh() }
+                        item("Export this page (SVG, PNG, PDF)", session != null) {
+                            val s = session ?: return@item
+                            val dir = File(context.getExternalFilesDir(null) ?: context.filesDir, "exports")
+                            val safe = doc.name.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').ifEmpty { "page" }
+                            message = "Exporting…"
+                            scope.launch {
+                                message = try {
+                                    val files = withContext(Dispatchers.IO) { s.export(dir, "${safe}_p${pageIndex + 1}") }
+                                    "Exported ${files.joinToString { it.name }} to ${dir.absolutePath}"
+                                } catch (e: Exception) { "Export failed: ${e.message}" }
+                            }
+                        }
+                        if (isPdf) item("Export annotated PDF") {
+                            save(session)
+                            val dir = File(context.getExternalFilesDir(null) ?: context.filesDir, "exports")
+                            val safe = doc.name.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').ifEmpty { "document" }
+                            val out = File(dir, "${safe}_annotated.pdf")
+                            scope.launch {
+                                message = try {
+                                    withContext(Dispatchers.IO) { AnnotatedPdfExporter.export(app.store, doc, out) { d, t -> message = "Exporting PDF… $d / $t" } }
+                                    "Saved ${out.name} (${out.length() / 1024} KB) to ${dir.absolutePath}"
+                                } catch (e: Exception) { "PDF export failed: ${e.message}" }
+                            }
+                        }
+                    }
+                }
+            }
         }
+        // No frame around the toolbar: its icons sit straight on the page, as on the tablet.
         if (horizontal) {
-            Row(Modifier.fillMaxWidth().height(TOOLBAR_THICKNESS).border(1.dp, Ink.Rule).padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().height(TOOLBAR_THICKNESS).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 start(); Spacer(Modifier.weight(1f)); end()
             }
         } else {
-            Column(Modifier.fillMaxHeight().width(TOOLBAR_THICKNESS).border(1.dp, Ink.Rule).padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(Modifier.fillMaxHeight().width(TOOLBAR_THICKNESS).padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 start(); Spacer(Modifier.weight(1f)); end()
             }
         }
@@ -265,7 +271,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
 private fun IconTile(description: String, onClick: () -> Unit, selected: Boolean = false, enabled: Boolean = true, icon: @Composable (Color) -> Unit) {
     val tint = if (selected) Ink.White else if (enabled) Ink.Black else Ink.Rule
     Box(
-        Modifier.size(56.dp).background(if (selected) Ink.Black else Ink.White).tap(enabled, onClick).semantics { contentDescription = description },
+        Modifier.size(52.dp).background(if (selected) Ink.Dark else Ink.White).tap(enabled, onClick).semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) { icon(tint) }
 }
@@ -356,7 +362,7 @@ private fun PageArea(
 private fun MenuTile(selected: Boolean, description: String, onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable ColumnScope.(Color) -> Unit) {
     val fg = if (selected) Ink.White else Ink.Black
     Column(
-        modifier.size(width = 92.dp, height = 78.dp).background(if (selected) Ink.Black else Ink.White).tap(onClick = onClick).semantics { contentDescription = description },
+        modifier.size(width = 58.dp, height = 54.dp).background(if (selected) Ink.Dark else Ink.White).tap(onClick = onClick).semantics { contentDescription = description },
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
     ) { content(fg) }
 }
@@ -368,10 +374,10 @@ private fun MenuTile(selected: Boolean, description: String, onClick: () -> Unit
 @Composable
 private fun PenMenu(slot: ToolSlot, onChange: (ToolSlot) -> Unit) {
     val highlighter = slot.tool.usesHighlighterColors
-    Column(Modifier.width(92.dp * 3 + 24.dp).background(Ink.White).border(1.dp, Ink.Black)) {
+    Column(Modifier.width(58.dp * 3 + 16.dp).background(Ink.White).border(1.dp, Ink.Black)) {
         Section(slot.tool.label) {
             PenTool.PENS.chunked(3).forEach { row ->
-                Row { row.forEach { t -> MenuTile(t == slot.tool, t.label, { onChange(slot.copy(tool = t, colorId = colorFor(t, slot))) }) { fg -> InkIcons.Pen(t, tint = fg) } } }
+                Row { row.forEach { t -> MenuTile(t == slot.tool, t.label, { onChange(slot.copy(tool = t, colorId = colorFor(t, slot))) }) { fg -> InkIcons.Pen(t, tint = fg, size = 34.dp) } } }
             }
         }
         Rule()
@@ -379,7 +385,7 @@ private fun PenMenu(slot: ToolSlot, onChange: (ToolSlot) -> Unit) {
             Section(listOf("Thin", "Medium", "Thick")[slot.thickness - 1]) {
                 Row {
                     (1..3).forEach { th ->
-                        MenuTile(th == slot.thickness, listOf("Thin", "Medium", "Thick")[th - 1], { onChange(slot.copy(thickness = th)) }) { fg -> InkIcons.Thickness(th, tint = fg) }
+                        MenuTile(th == slot.thickness, listOf("Thin", "Medium", "Thick")[th - 1], { onChange(slot.copy(thickness = th)) }) { fg -> InkIcons.Thickness(th, tint = fg, size = 34.dp) }
                     }
                 }
             }
@@ -392,9 +398,9 @@ private fun PenMenu(slot: ToolSlot, onChange: (ToolSlot) -> Unit) {
                     row.forEach { c ->
                         val selected = c == slot.colorId
                         MenuTile(selected, PenSpec.colorName(c), { onChange(slot.copy(colorId = c)) }) { fg ->
-                            ColourDot(c, selected, size = 26.dp)
-                            Spacer(Modifier.height(4.dp))
-                            Text(PenSpec.colorName(c), color = fg, fontSize = 15.sp)
+                            ColourDot(c, selected, size = 20.dp)
+                            Spacer(Modifier.height(2.dp))
+                            Text(PenSpec.colorName(c), color = fg, fontSize = 12.sp)
                         }
                     }
                 }
@@ -411,8 +417,8 @@ private fun colorFor(tool: PenTool, slot: ToolSlot): Int {
 
 @Composable
 private fun Section(title: String?, content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp)) {
-        if (title != null) Text(title, fontSize = 16.sp, color = Ink.Grey, modifier = Modifier.padding(bottom = 4.dp))
+    Column(Modifier.padding(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 6.dp)) {
+        if (title != null) Text(title, fontSize = 13.sp, color = Ink.Dark, modifier = Modifier.padding(start = 4.dp, bottom = 2.dp))
         content()
     }
 }

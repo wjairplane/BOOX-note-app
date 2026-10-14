@@ -23,7 +23,7 @@ the screens have never actually been seen rendered and the pen has never touched
 | Area | State |
 |---|---|
 | My files: grid/list, folders, favorites, trash, rename/move/delete, sort, page thumbnails | written, untested on device |
-| Notebook: icon toolbar (top by default; top/bottom/left/right in Settings), two writing-tool slots, three-section pen menu (9 pens, 3 thicknesses, 9 named colours), eraser, undo/redo, page overview, swipe to turn pages, add/delete pages | written; layout checked against photos of firmware 3.22+, untested on device |
+| Notebook: icon toolbar (top by default; top/bottom/left/right in Settings), borderless, collapsible with the ⊙ button; two writing-tool slots with colour dots, narrow three-section pen menu (9 pens, 3 thicknesses, 9 named ink colours; six highlighter colours incl. orange), eraser, undo/redo, page overview, ⋮ menu (My files, page info, add/delete page, template, refresh, export), swipe to turn pages | written; layout checked against photos of firmware 3.22+, untested on device |
 | Pens: ballpoint, fineliner, marker, pencil, mechanical pencil, paintbrush, calligraphy, highlighter, shader; 3 sizes; colours | written; widths for fineliner/ballpoint/highlighter/shader fitted to real data, the rest estimated |
 | Page templates: blank, lined, grid, dotted | done (tested on the JVM) |
 | Settings: general, display (e-ink refresh), accessibility (toolbar position), storage, about | written, untested on device |

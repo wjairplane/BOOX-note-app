@@ -55,6 +55,26 @@ object InkIcons {
         drawLine(tint, Offset(15f, 38f), Offset(33f, 10f), strokeWidth = 2f + level * 2.6f, cap = StrokeCap.Round)
     }
 
+    @Composable fun Search(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = 40.dp) = icon(modifier, size) {
+        drawCircle(tint, radius = 10f, center = Offset(21f, 21f), style = Stroke(LINE))
+        line(tint, 28.5f, 28.5f, 38f, 38f)
+    }
+
+    @Composable fun Plus(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = 40.dp) = icon(modifier, size) {
+        line(tint, 24f, 11f, 24f, 37f); line(tint, 11f, 24f, 37f, 24f)
+    }
+
+    /** A filled round close button (white cross on black). */
+    @Composable fun CloseDisc(modifier: Modifier = Modifier, size: Dp = 40.dp) = icon(modifier, size) {
+        drawCircle(Ink.Dark, radius = 17f, center = Offset(24f, 24f))
+        line(Ink.White, 17f, 17f, 31f, 31f); line(Ink.White, 31f, 17f, 17f, 31f)
+    }
+
+    /** Three vertical dots: the "more" menu. */
+    @Composable fun More(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = 40.dp) = icon(modifier, size) {
+        for (y in listOf(12f, 24f, 36f)) drawCircle(tint, 3f, Offset(24f, y))
+    }
+
     // ---- drawing helpers ----
 
     @Composable
@@ -78,55 +98,32 @@ object InkIcons {
         line(tint, x(14f), 22f, x(22f), 27f)
     }
 
+    /** Common base of every pen icon: a small "A"-frame (flared body with a crossbar), as on the tablet's own icons. */
+    private fun DrawScope.penBase(c: Color) {
+        outline(c, poly(13f, 44f, 35f, 44f, 30f, 25f, 18f, 25f))
+        line(c, 15.5f, 36f, 32.5f, 36f)
+    }
+
     private fun DrawScope.drawPen(tool: PenTool, c: Color) {
+        penBase(c)
         when (tool) {
-            PenTool.BALLPOINT -> {
-                outline(c, poly(24f, 8f, 30f, 24f, 30f, 44f, 18f, 44f, 18f, 24f))
-                drawCircle(c, 2.6f, Offset(24f, 8f))
-                line(c, 18f, 34f, 30f, 34f)
-            }
-            PenTool.FINELINER -> {
-                outline(c, poly(24f, 4f, 27.5f, 20f, 27.5f, 44f, 20.5f, 44f, 20.5f, 20f))
-                fill(c, poly(24f, 4f, 25.8f, 12f, 22.2f, 12f))
-                line(c, 20.5f, 30f, 27.5f, 30f)
-            }
-            PenTool.MARKER -> {
-                outline(c, poly(20f, 8f, 28f, 8f, 32f, 24f, 32f, 44f, 16f, 44f, 16f, 24f))
-                fill(c, poly(20f, 8f, 28f, 8f, 32f, 24f, 16f, 24f))
-            }
-            PenTool.PENCIL -> {
-                outline(c, poly(24f, 5f, 31f, 22f, 17f, 22f))
-                fill(c, poly(24f, 5f, 26.6f, 11.5f, 21.4f, 11.5f))
-                outline(c, poly(17f, 22f, 31f, 22f, 31f, 44f, 17f, 44f))
-                line(c, 17f, 29f, 31f, 29f)
-            }
-            PenTool.MECHANICAL_PENCIL -> {
-                line(c, 24f, 4f, 24f, 14f)
-                outline(c, poly(20f, 14f, 28f, 14f, 30f, 22f, 18f, 22f))
-                outline(c, poly(18f, 22f, 30f, 22f, 30f, 44f, 18f, 44f))
-                for (y in listOf(29f, 34f, 39f)) line(c, 21f, y, 27f, y)
-            }
-            PenTool.PAINTBRUSH -> {
-                fill(c, Path().apply { moveTo(24f, 4f); cubicTo(31f, 12f, 31f, 20f, 28f, 26f); lineTo(20f, 26f); cubicTo(17f, 20f, 17f, 12f, 24f, 4f); close() })
-                outline(c, poly(20f, 26f, 28f, 26f, 28f, 32f, 20f, 32f))
-                outline(c, poly(21.5f, 32f, 26.5f, 32f, 26f, 44f, 22f, 44f))
-            }
+            PenTool.BALLPOINT -> { outline(c, poly(18f, 25f, 30f, 25f, 24f, 13f)); drawCircle(c, 2.8f, Offset(24f, 8.5f)) }
+            PenTool.FINELINER -> fill(c, poly(21.5f, 25f, 26.5f, 25f, 24f, 7f))
+            PenTool.MARKER -> fill(c, poly(18f, 25f, 30f, 25f, 30f, 14f, 24f, 9f, 18f, 14f))
+            PenTool.PENCIL -> { outline(c, poly(18f, 25f, 30f, 25f, 24f, 7f)); fill(c, poly(24f, 7f, 26.4f, 13.5f, 21.6f, 13.5f)) }
+            PenTool.MECHANICAL_PENCIL -> { outline(c, poly(21f, 25f, 27f, 25f, 26f, 13f, 22f, 13f)); line(c, 24f, 13f, 24f, 6f) }
+            PenTool.PAINTBRUSH -> fill(c, Path().apply {
+                moveTo(24f, 6f); cubicTo(31f, 12f, 32f, 19f, 30f, 25f); lineTo(18f, 25f); cubicTo(16f, 19f, 17f, 12f, 24f, 6f); close()
+            })
             PenTool.CALLIGRAPHY -> {
-                outline(c, poly(24f, 4f, 33f, 17f, 24f, 27f, 15f, 17f))
-                fill(c, poly(24f, 4f, 33f, 17f, 24f, 18f))
-                line(c, 24f, 18f, 24f, 27f)
-                outline(c, poly(19f, 27f, 29f, 27f, 29f, 44f, 19f, 44f))
+                outline(c, poly(24f, 7f, 31f, 16f, 24f, 25f, 17f, 16f))
+                fill(c, poly(24f, 7f, 31f, 16f, 24f, 16f))
+                line(c, 24f, 16f, 24f, 25f)
             }
-            PenTool.HIGHLIGHTER -> {
-                outline(c, poly(16f, 8f, 32f, 8f, 35f, 22f, 13f, 22f))
-                fill(c, poly(16f, 8f, 32f, 8f, 33.5f, 15f, 14.5f, 15f))
-                outline(c, poly(13f, 22f, 35f, 22f, 35f, 44f, 13f, 44f))
-                line(c, 18f, 33f, 30f, 33f)
-            }
+            PenTool.HIGHLIGHTER -> fill(c, poly(15f, 25f, 33f, 25f, 33f, 14f, 27f, 8f, 15f, 14f))
             PenTool.SHADER -> {
-                outline(c, poly(11f, 8f, 37f, 8f, 37f, 28f, 11f, 28f))
-                for (k in 0..3) line(c, 15f + k * 7f, 26f, 22f + k * 7f - 7f + 3f, 10f)
-                outline(c, poly(19f, 28f, 29f, 28f, 29f, 44f, 19f, 44f))
+                outline(c, poly(15f, 25f, 33f, 25f, 33f, 10f, 15f, 10f))
+                for (k in 0..2) line(c, 18f + k * 6f, 25f, 24f + k * 6f - 6f, 10f)
             }
             PenTool.ERASER -> Unit
         }
