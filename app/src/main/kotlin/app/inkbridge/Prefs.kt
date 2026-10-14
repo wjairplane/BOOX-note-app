@@ -52,7 +52,7 @@ class Prefs(context: Context) {
         sp.edit().putString(if (i == 0) "slotA" else "slotB", v.encode()).apply()
     }
 
-    private var _tbPos by mutableStateOf(runCatching { ToolbarPosition.valueOf(sp.getString("toolbar", "TOP")!!) }.getOrDefault(ToolbarPosition.TOP))
+    private var _tbPos by mutableStateOf(runCatching { ToolbarPosition.valueOf(sp.getString("toolbar", "LEFT")!!) }.getOrDefault(ToolbarPosition.LEFT))
     var toolbarPosition: ToolbarPosition get() = _tbPos; set(v) { _tbPos = v; sp.edit().putString("toolbar", v.name).apply() }
 
     private var _swipe by mutableStateOf(sp.getBoolean("swipe", true))

@@ -24,7 +24,16 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect as UiRect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -89,6 +98,9 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     var erasing by remember(doc.id) { mutableStateOf(false) }
     var panel by remember { mutableStateOf(false) }
     var collapsed by remember { mutableStateOf(false) }
+    var dragOffset by remember { mutableStateOf(Offset.Zero) }
+    var toolbarBounds by remember { mutableStateOf(UiRect.Zero) }
+    var rootSize by remember { mutableStateOf(IntSize.Zero) }
     var menu by remember { mutableStateOf(false) }
     var overview by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
@@ -191,12 +203,28 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
             }
         }
         // No frame around the toolbar: its icons sit straight on the page, as on the tablet.
+        // Press and hold the toolbar, then drag it to another edge (the tablet's "moveable toolbar").
+        val drag = Modifier
+            .onGloballyPositioned { toolbarBounds = it.boundsInRoot() }
+            .graphicsLayer { translationX = dragOffset.x; translationY = dragOffset.y }
+            .pointerInput(Unit) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = { panel = false; menu = false },
+                    onDrag = { change, amount -> change.consume(); dragOffset += amount },
+                    onDragEnd = {
+                        val c = toolbarBounds.center
+                        prefs.toolbarPosition = nearestEdge(c.x, c.y, rootSize.width.toFloat(), rootSize.height.toFloat())
+                        dragOffset = Offset.Zero
+                    },
+                    onDragCancel = { dragOffset = Offset.Zero },
+                )
+            }
         if (horizontal) {
-            Row(Modifier.fillMaxWidth().height(TOOLBAR_THICKNESS).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().height(TOOLBAR_THICKNESS).then(drag).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 start(); Spacer(Modifier.weight(1f)); end()
             }
         } else {
-            Column(Modifier.fillMaxHeight().width(TOOLBAR_THICKNESS).padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(Modifier.fillMaxHeight().width(TOOLBAR_THICKNESS).then(drag).padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 start(); Spacer(Modifier.weight(1f)); end()
             }
         }
@@ -230,7 +258,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().onSizeChanged { rootSize = it }) {
         when (pos) {
             ToolbarPosition.TOP -> Column(Modifier.fillMaxSize()) { toolbar(); Box(Modifier.weight(1f)) { page() } }
             ToolbarPosition.BOTTOM -> Column(Modifier.fillMaxSize()) { Box(Modifier.weight(1f)) { page() }; toolbar() }
@@ -264,6 +292,12 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
         val idx = pageIndex
         app.deletePage(doc, idx) { pageIndex = (idx - 1).coerceAtLeast(0).coerceAtMost(doc.pageIds.size - 2) }
     }
+}
+
+/** Which screen edge a toolbar dropped with its centre at ([x], [y]) should snap to. */
+internal fun nearestEdge(x: Float, y: Float, width: Float, height: Float): ToolbarPosition {
+    val d = mapOf(ToolbarPosition.LEFT to x, ToolbarPosition.RIGHT to width - x, ToolbarPosition.TOP to y, ToolbarPosition.BOTTOM to height - y)
+    return d.minBy { it.value }.key
 }
 
 /** A toolbar button: icon only, inverted when selected. [description] doubles as its accessibility label. */
@@ -368,15 +402,15 @@ private fun MenuTile(selected: Boolean, description: String, onClick: () -> Unit
 }
 
 /**
- * The pen menu: three stacked sections, as on the tablet. A 3 x 3 grid of the nine pens (titled with the
+ * The pen menu: three stacked sections, as on the tablet. A 4 x 2 grid of the eight pens (titled with the
  * current one), the three thicknesses (titled with the current one), and a 3 x 3 grid of named colours.
  */
 @Composable
 private fun PenMenu(slot: ToolSlot, onChange: (ToolSlot) -> Unit) {
     val highlighter = slot.tool.usesHighlighterColors
-    Column(Modifier.width(58.dp * 3 + 16.dp).background(Ink.White).border(1.dp, Ink.Black)) {
+    Column(Modifier.width(58.dp * 4 + 16.dp).background(Ink.White).border(1.dp, Ink.Black)) {
         Section(slot.tool.label) {
-            PenTool.PENS.chunked(3).forEach { row ->
+            PenTool.PENS.filter { it != PenTool.SHADER }.chunked(4).forEach { row ->
                 Row { row.forEach { t -> MenuTile(t == slot.tool, t.label, { onChange(slot.copy(tool = t, colorId = colorFor(t, slot))) }) { fg -> InkIcons.Pen(t, tint = fg, size = 34.dp) } } }
             }
         }
