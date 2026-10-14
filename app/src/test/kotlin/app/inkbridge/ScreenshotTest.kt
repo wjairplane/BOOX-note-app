@@ -20,6 +20,7 @@ import android.view.View
 import android.view.ViewGroup
 import app.inkbridge.pen.PenSurface
 import app.inkbridge.rm.edit.InputPoint
+import app.inkbridge.rm.edit.SelectionGesture
 import app.inkbridge.rm.edit.PageEditor
 import app.inkbridge.rm.edit.PenSpec
 import app.inkbridge.rm.edit.PenTool
@@ -54,6 +55,13 @@ class ScreenshotTest {
         val bmp = android.graphics.Bitmap.createBitmap(decor.width.coerceAtLeast(1), decor.height.coerceAtLeast(1), android.graphics.Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(bmp)
         decor.draw(canvas)
+        // The page itself lives on a SurfaceView, which a view capture leaves out: lay its bitmap over the capture, darkest wins
+        // (so the toolbar and menus drawn by Compose stay on top of the white page).
+        findSurface(decor)?.let { v ->
+            val bitmap = v.shownBitmap ?: return@let
+            val at = IntArray(2).also { v.getLocationInWindow(it) }
+            canvas.drawBitmap(bitmap, at[0].toFloat(), at[1].toFloat(), android.graphics.Paint().apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DARKEN) })
+        }
         runCatching {
             val wmg = Class.forName("android.view.WindowManagerGlobal")
             val global = wmg.getMethod("getInstance").invoke(null)
@@ -274,6 +282,15 @@ class ScreenshotTest {
         // Selection tool: a lasso around the handwriting, then duplicate and delete from the selection's menu.
         rule.onNodeWithContentDescription("Selection tool").performClick(); settle()
         stylusStroke(listOf(150f to 150f, 900f to 150f, 900f to 800f, 150f to 800f, 150f to 150f)); settle(); snapshot("selection_tool")
+        // Copy it (the bar then offers Paste), paste a copy, then resize the pasted strokes by a corner handle and turn them by the round one.
+        rule.onNodeWithContentDescription("Copy").performClick(); settle(); snapshot("selection_copied")
+        rule.onNodeWithContentDescription("Paste").performClick(); settle(); snapshot("selection_pasted")
+        val surface = findSurface(rule.activity.window.decorView)!!
+        val corner = surface.selectionFrameProvider()!!.corners()[2]
+        stylusStroke(listOf(corner.first to corner.second, corner.first + 80f to corner.second + 60f, corner.first + 160f to corner.second + 120f)); settle(); snapshot("selection_resized")
+        val frame = surface.selectionFrameProvider()!!
+        val handle = frame.rotateHandle(SelectionGesture.ROTATE_OFFSET)
+        stylusStroke(listOf(handle.first to handle.second, handle.first + 120f to handle.second + 60f, frame.right + 80f to frame.centerY)); settle(); snapshot("selection_rotated")
         rule.onNodeWithContentDescription("Duplicate").performClick(); settle(); snapshot("selection_duplicated")
         rule.onNodeWithContentDescription("Delete").performClick(); settle(); snapshot("selection_deleted")
         rule.onNodeWithContentDescription("Writing tool 1: Fineliner").performClick(); settle() // back to a pen
@@ -283,8 +300,15 @@ class ScreenshotTest {
         rule.onNodeWithText("Layers").performClick(); settle(); snapshot("layers_menu")
         rule.onNodeWithText("New layer").performClick(); settle(); snapshot("layers_menu_two")
         rule.onNodeWithContentDescription("Hide Layer 1").performClick(); settle(); snapshot("layers_hidden")
-        rule.onNodeWithContentDescription("More").performClick(); settle() // back
-        rule.onNodeWithContentDescription("More").performClick(); settle() // close
+        // A layer's options: rename, move, merge. (Layer 2 is on top; Layer 1 is hidden.)
+        rule.onNodeWithContentDescription("Options for Layer 2").performClick(); settle(); snapshot("layer_options")
+        rule.onNodeWithText("Move down").performClick(); settle(); snapshot("layers_reordered")
+        rule.onNodeWithContentDescription("Options for Layer 1").performClick(); settle()
+        rule.onNodeWithText("Merge down").performClick(); settle(); snapshot("layers_merged")
+        rule.onNodeWithContentDescription("Hide background").performClick(); settle(); snapshot("layers_background_hidden")
+        rule.onNodeWithContentDescription("Options for Layer 2").performClick(); settle()
+        rule.onNodeWithText("Rename").performClick(); settle(); snapshot("dialog_rename_layer")
+        rule.onNodeWithText("Cancel").performClick(); settle()
 
         // Adjust view: fit to height zooms in a little (the toolbar leaves the page area narrower than the page).
         rule.onNodeWithContentDescription("More").performClick(); settle()

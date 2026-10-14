@@ -50,6 +50,7 @@ import app.inkbridge.AndroidPageCanvas
 import app.inkbridge.AnnotatedPdfExporter
 import app.inkbridge.AppController
 import app.inkbridge.PageSession
+import app.inkbridge.StrokeClipboard
 import app.inkbridge.PdfBackground
 import app.inkbridge.Screen
 import app.inkbridge.pen.PenListener
@@ -110,6 +111,9 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     var eraserThickness by remember { mutableIntStateOf(2) }
     var overview by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var layerOptions by remember { mutableStateOf<app.inkbridge.rm.scene.CrdtId?>(null) } // the layer whose option menu is open
+    var renamingLayer by remember { mutableStateOf<app.inkbridge.rm.scene.CrdtId?>(null) }
+    var layerName by remember { mutableStateOf("") }
     var revision by remember { mutableIntStateOf(0) }
     var surface by remember { mutableStateOf<PenSurface?>(null) }
     var strokes by remember { mutableIntStateOf(0) }
@@ -193,7 +197,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 IconTile("Page overview", { save(session); overview = true }) { InkIcons.Overview(tint = it) }
                 Box {
                     // The three dots open the notebook menu; inside a sub-menu the button becomes a back chevron.
-                    IconTile("More", { if (menu && menuPage != null) menuPage = null else { menu = !menu; menuPage = null } }, selected = menu) {
+                    IconTile("More", { if (menu && menuPage == "layer") menuPage = "layers" else if (menu && menuPage != null) menuPage = null else { menu = !menu; menuPage = null } }, selected = menu) {
                         if (menuPage != null) InkIcons.ChevronLeft(tint = it) else InkIcons.More(tint = it)
                     }
                     RmMenu(menu, { menu = false; menuPage = null }, side, Rm.FoldoutMinWidth) {
@@ -223,10 +227,30 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                                             if (l.visible) InkIcons.Eye(tint = fg) else InkIcons.EyeClosed(tint = fg)
                                         }
                                         Text(l.label, style = RmText.Label, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).fillMaxHeight().tap { session?.selectLayer(l.id); revision++ }.wrapContentHeight(Alignment.CenterVertically))
-                                        if (layers.size > 1) Box(Modifier.size(Rm.ToolButton).tap { if (session?.deleteLayer(l.id) == true) { selectionRect = null; surface?.refresh(); revision++ } }.semantics { contentDescription = "Delete " + l.label }, contentAlignment = Alignment.Center) { InkIcons.Trash(tint = fg) }
+                                        Box(Modifier.size(Rm.ToolButton).tap { layerOptions = l.id; menuPage = "layer" }.semantics { contentDescription = "Options for " + l.label }, contentAlignment = Alignment.Center) { InkIcons.More(tint = fg) }
                                     }
                                 }
                                 RmFoldoutItem("New layer", { session?.addLayer("Layer ${layers.size + 1}"); surface?.refresh(); revision++ }, topDivider = true) { InkIcons.PlusCircle(tint = it) }
+                                // The page's template (or the PDF page) can be hidden like a layer.
+                                val bgVisible = session?.backgroundVisible() ?: true
+                                Row(Modifier.fillMaxWidth().height(Rm.ToolButton).tap { session?.setBackgroundVisible(!bgVisible); surface?.refresh(); revision++ }.semantics { contentDescription = (if (bgVisible) "Hide " else "Show ") + "background" }, verticalAlignment = Alignment.CenterVertically) {
+                                    Box(Modifier.size(Rm.ToolButton), contentAlignment = Alignment.Center) { if (bgVisible) InkIcons.Eye(tint = Ink.Black) else InkIcons.EyeClosed(tint = Ink.Black) }
+                                    Text(if (isPdf) "PDF page" else "Template", style = RmText.Label, color = Ink.Black)
+                                }
+                            }
+                            "layer" -> {
+                                @Suppress("UNUSED_EXPRESSION") revision
+                                val all = session?.layers().orEmpty()
+                                val idx = all.indexOfFirst { it.id == layerOptions }
+                                val layer = all.getOrNull(idx)
+                                if (layer != null) {
+                                    fun edit(done: Boolean) { if (done) { selectionRect = null; surface?.refresh(); revision++ } }
+                                    RmFoldoutItem("Rename", { close(); layerName = layer.label; renamingLayer = layer.id }) { InkIcons.Rename(tint = it) }
+                                    RmFoldoutItem("Move up", { edit(session?.moveLayer(layer.id, true) == true); menuPage = "layers" }, enabled = idx < all.lastIndex) { InkIcons.ChevronUp(tint = it) }
+                                    RmFoldoutItem("Move down", { edit(session?.moveLayer(layer.id, false) == true); menuPage = "layers" }, enabled = idx > 0) { InkIcons.ChevronDown(tint = it) }
+                                    RmFoldoutItem("Merge down", { edit(session?.mergeLayerDown(layer.id) == true); menuPage = "layers" }, enabled = idx > 0) { InkIcons.Layers(tint = it) }
+                                    RmFoldoutItem("Delete layer", { edit(session?.deleteLayer(layer.id) == true); menuPage = "layers" }, enabled = all.size > 1, topDivider = true) { InkIcons.Trash(tint = it) }
+                                }
                             }
                             "view" -> {
                                 fun changeView(block: (PageSession) -> Unit) {
@@ -319,11 +343,17 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 session = session, spec = spec, drawing = canDraw && !overview,
                 swipeEnabled = prefs.swipeToTurn, fingerDraws = prefs.fingerDrawing,
                 eraserRadius = ERASER_RADII[eraserThickness - 1],
-                selectionRect = selectionRect, onSelectionRect = { selectionRect = it },
+                selecting = selecting, selectionRect = selectionRect, onSelectionRect = { selectionRect = it },
                 onSelectionAction = { action ->
                     val s = session
                     if (s != null) {
-                        val done = if (action == "delete") s.deleteSelection() else s.duplicateSelection()
+                        val done = when (action) {
+                            "delete" -> s.deleteSelection()
+                            "cut" -> s.cutSelection()
+                            "copy" -> s.copySelection().also { if (it) revision++ }
+                            "paste" -> s.pasteClipboard()
+                            else -> s.duplicateSelection()
+                        }
                         if (done) { surface?.refresh(); revision++ }
                         selectionRect = s.selectionRect()
                     }
@@ -353,6 +383,13 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
         }
 
         if (overview) PageOverview(app, doc, pageIndex, onPick = { overview = false; goTo(it) }, onAdd = { overview = false; app.addPage(doc, doc.pageIds.lastIndex) { pageIndex = it } }, onClose = { overview = false })
+    }
+
+    renamingLayer?.let { id ->
+        EDialog("Rename layer", { renamingLayer = null }, actions = {
+            EButton("Cancel", { renamingLayer = null })
+            EButton("Rename", { session?.renameLayer(id, layerName); renamingLayer = null; surface?.refresh(); revision++ }, enabled = layerName.isNotBlank(), selected = layerName.isNotBlank())
+        }) { NameField(layerName) { layerName = it } }
     }
 
     if (confirmDelete) ConfirmDialog("Delete this page?", "Page ${pageIndex + 1} and its handwriting will be deleted.", "Delete", { confirmDelete = false }) {
@@ -389,7 +426,7 @@ private fun ColourDot(colorId: Int, onDark: Boolean, modifier: Modifier = Modifi
 @Composable
 private fun PageArea(
     session: PageSession?, spec: PenSpec, drawing: Boolean, swipeEnabled: Boolean, fingerDraws: Boolean, eraserRadius: Float,
-    selectionRect: android.graphics.RectF?, onSelectionRect: (android.graphics.RectF?) -> Unit, onSelectionAction: (String) -> Unit,
+    selecting: Boolean, selectionRect: android.graphics.RectF?, onSelectionRect: (android.graphics.RectF?) -> Unit, onSelectionAction: (String) -> Unit,
     onSurface: (PenSurface?) -> Unit, onChanged: () -> Unit, onSwipe: (Boolean) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -461,28 +498,46 @@ private fun PageArea(
                         if (samples.isEmpty()) return
                         if (edit(s, view.currentSpec)) { view.refresh(); currentOnChanged() }
                     }
-                }).also { surface = it; onSurface(it) }
+                }).also { v ->
+                    v.selectionFrameProvider = { currentSession?.selectionFrame() }
+                    v.zoomProvider = { currentSession?.zoom ?: 1f }
+                    surface = v; onSurface(v)
+                }
             },
         )
 
         // The selection's menu (the firmware's contextual menu: black, a 2 px border, icon over label), above the dashed frame.
-        selectionRect?.let { r ->
+        // With nothing selected it holds just Paste, when something has been copied.
+        val pasteReady = StrokeClipboard.hasContent
+        if (selectionRect != null || (selecting && pasteReady)) {
+            val r = selectionRect
             val density = androidx.compose.ui.platform.LocalDensity.current
             val menuH = with(density) { Rm.NavigationHeader.roundToPx() }
-            val x = r.centerX().toInt()
-            val above = r.top - menuH - 24
-            val y = (if (above >= 0) above else r.bottom + 24).toInt().coerceIn(0, (h - menuH).coerceAtLeast(0))
+            val buttonW = 140.dp
+            val count = if (r == null) 1 else if (pasteReady) 5 else 4
+            val barW = with(density) { (buttonW * count).roundToPx() }
+            val x = (r?.centerX() ?: (w / 2f)).toInt()
+            // Above the rotate handle (72 px over the frame), or below the frame when there is no room.
+            val above = (r?.top ?: 0f) - menuH - 120
+            val y = (if (r == null) 24 else if (above >= 0) above.toInt() else (r.bottom + 24).toInt()).coerceIn(0, (h - menuH).coerceAtLeast(0))
             Row(
-                Modifier.offset { androidx.compose.ui.unit.IntOffset((x - with(density) { 150.dp.roundToPx() }).coerceIn(0, (w - with(density) { 300.dp.roundToPx() }).coerceAtLeast(0)), y) }
+                Modifier.offset { androidx.compose.ui.unit.IntOffset((x - barW / 2).coerceIn(0, (w - barW).coerceAtLeast(0)), y) }
                     .height(Rm.NavigationHeader).background(Ink.Black).border(Rm.Outline, Ink.Black),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 @Composable fun action(label: String, id: String, icon: @Composable () -> Unit) =
-                    Column(Modifier.width(150.dp).fillMaxHeight().tap { onSelectionAction(id) }.semantics { contentDescription = label }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                    Column(Modifier.width(buttonW).fillMaxHeight().tap { onSelectionAction(id) }.semantics { contentDescription = label }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                         icon(); Text(label, style = RmText.LabelSmLow, color = Ink.White)
                     }
-                action("Duplicate", "duplicate") { InkIcons.Duplicate(tint = Ink.White) }
-                action("Delete", "delete") { InkIcons.Trash(tint = Ink.White) }
+                if (r != null) {
+                    action("Cut", "cut") { InkIcons.Scissors(tint = Ink.White) }
+                    action("Copy", "copy") { InkIcons.Copy(tint = Ink.White) }
+                }
+                if (pasteReady) action("Paste", "paste") { InkIcons.Paste(tint = Ink.White) }
+                if (r != null) {
+                    action("Duplicate", "duplicate") { InkIcons.Duplicate(tint = Ink.White) }
+                    action("Delete", "delete") { InkIcons.Trash(tint = Ink.White) }
+                }
             }
         }
     }

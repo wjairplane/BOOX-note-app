@@ -10,6 +10,7 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import app.inkbridge.rm.edit.PenSpec
 import app.inkbridge.rm.edit.PenTool
+import app.inkbridge.rm.edit.SelectionGesture
 import com.onyx.android.sdk.api.device.epd.EpdController
 import com.onyx.android.sdk.data.note.TouchPoint
 import com.onyx.android.sdk.pen.RawInputCallback
@@ -44,6 +45,9 @@ interface PenListener {
  */
 class PenSurface(context: Context, private val listener: PenListener) : SurfaceView(context), SurfaceHolder.Callback {
     private var bitmap: Bitmap? = null
+
+    /** What is currently shown (a SurfaceView's content isn't part of a normal view capture, so screenshot tests draw this themselves). */
+    internal val shownBitmap: Bitmap? get() = bitmap
     private var bitmapLeft = 0f
 
     private var touchHelper: TouchHelper? = null
@@ -72,7 +76,8 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         }
     })
 
-    // Pinch to zoom and drag with two fingers to pan: reported once, when the fingers lift (e-ink can't follow a live zoom).
+    // Pinch to zoom and drag with two fingers to pan. The page follows the fingers live (the bitmap is scaled and moved,
+    // drawn in a fast panel mode); when the fingers lift, the listener re-renders the page sharply at the new zoom.
     private var gestureScale = 1f
     private var gestureFocusX = 0f
     private var gestureFocusY = 0f
@@ -81,24 +86,113 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
     private var lastFocusX = 0f
     private var lastFocusY = 0f
     private var multiTouch = false
+    private var lastPreviewMs = 0L
+
+    /** The current zoom (1 = whole page), so the live pinch preview can stop where the real zoom would. */
+    var zoomProvider: () -> Float = { 1f }
+    private val zoomNow: Float get() = zoomProvider()
+
     private val scaleDetector = android.view.ScaleGestureDetector(context, object : android.view.ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScaleBegin(d: android.view.ScaleGestureDetector): Boolean {
             gestureScale = 1f; gesturePanX = 0f; gesturePanY = 0f
             gestureFocusX = d.focusX; gestureFocusY = d.focusY; lastFocusX = d.focusX; lastFocusY = d.focusY
+            beginFastPreview()
             return true
         }
         override fun onScale(d: android.view.ScaleGestureDetector): Boolean {
-            gestureScale *= d.scaleFactor
+            gestureScale = (gestureScale * d.scaleFactor).coerceIn(1f / zoomNow, MAX_ZOOM / zoomNow)
             gesturePanX += d.focusX - lastFocusX; gesturePanY += d.focusY - lastFocusY
             lastFocusX = d.focusX; lastFocusY = d.focusY
+            val now = android.os.SystemClock.uptimeMillis()
+            if (now - lastPreviewMs >= PREVIEW_INTERVAL_MS) { lastPreviewMs = now; drawZoomPreview() }
             return true
         }
         override fun onScaleEnd(d: android.view.ScaleGestureDetector) {
+            endFastPreview()
             if (kotlin.math.abs(gestureScale - 1f) > 0.04f || kotlin.math.hypot(gesturePanX, gesturePanY) > 24f) {
                 listener.onViewGesture(gestureScale, gestureFocusX, gestureFocusY, gesturePanX, gesturePanY)
-            }
+            } else draw()
         }
     })
+
+    private var fastPreview = false
+
+    /** Switch the panel to a fast, low-fidelity update mode and park the pen layer while something is being previewed. */
+    private fun beginFastPreview() {
+        if (fastPreview) return
+        fastPreview = true
+        runCatching { EpdController.setViewDefaultUpdateMode(this, com.onyx.android.sdk.api.device.epd.UpdateMode.DU) }
+        touchHelper?.let { runCatching { it.setRawDrawingEnabled(false) } }
+    }
+
+    private fun endFastPreview() {
+        if (!fastPreview) return
+        fastPreview = false
+        runCatching { EpdController.resetViewUpdateMode(this) }
+        applyEnabled()
+    }
+
+    private fun drawZoomPreview() {
+        val bmp = bitmap ?: return
+        val m = android.graphics.Matrix().apply {
+            postTranslate(bitmapLeft, 0f)
+            postScale(gestureScale, gestureScale, gestureFocusX, gestureFocusY)
+            postTranslate(gesturePanX, gesturePanY)
+        }
+        drawPreviewCanvas { it.drawBitmap(bmp, m, null) }
+    }
+
+    // Selection drag preview: the frame follows the pen (move / resize / rotate) while the strokes stay put until the pen lifts.
+    private var dragHit: SelectionGesture.Hit? = null
+    private var dragStartX = 0f
+    private var dragStartY = 0f
+    private var dragMode = false
+
+    /** The selection frame in view px (null when nothing is selected), for the live drag preview. */
+    var selectionFrameProvider: () -> SelectionGesture.Frame? = { null }
+
+    private fun beginSelectionDrag(x: Float, y: Float) {
+        dragHit = null
+        if (tool.tool != PenTool.SELECTION) return
+        val hit = selectionFrameProvider()?.let { SelectionGesture.hit(it, x, y) } ?: return
+        if (hit.mode == SelectionGesture.Mode.NONE) return
+        dragHit = hit; dragStartX = x; dragStartY = y
+        // While a selection is dragged the pen trail would be noise: only the frame is shown.
+        touchHelper?.let { runCatching { it.setRawDrawingRenderEnabled(false) } }
+        runCatching { EpdController.setViewDefaultUpdateMode(this, com.onyx.android.sdk.api.device.epd.UpdateMode.DU) }
+        dragMode = true
+    }
+
+    private fun moveSelectionDrag(x: Float, y: Float) {
+        val hit = dragHit ?: return
+        val frame = selectionFrameProvider() ?: return
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - lastPreviewMs < PREVIEW_INTERVAL_MS) return
+        lastPreviewMs = now
+        val outline = SelectionGesture.mapped(frame, SelectionGesture.transform(hit, dragStartX, dragStartY, x, y))
+        val bmp = bitmap
+        drawPreviewCanvas { c ->
+            bmp?.let { c.drawBitmap(it, bitmapLeft, 0f, null) }
+            val paint = android.graphics.Paint().apply { style = android.graphics.Paint.Style.STROKE; color = Color.BLACK; strokeWidth = 4f; pathEffect = android.graphics.DashPathEffect(floatArrayOf(14f, 10f), 0f) }
+            val path = android.graphics.Path().apply { moveTo(outline[0].first, outline[0].second); outline.drop(1).forEach { lineTo(it.first, it.second) }; close() }
+            c.drawPath(path, paint)
+        }
+    }
+
+    private fun endSelectionDrag() {
+        if (!dragMode) return
+        dragMode = false; dragHit = null
+        runCatching { EpdController.resetViewUpdateMode(this) }
+        touchHelper?.let { runCatching { it.setRawDrawingRenderEnabled(tool.tool != PenTool.ERASER) } }
+    }
+
+    /** Draw one preview frame (no pen-layer toggling: that is only for the final, sharp picture). */
+    private fun drawPreviewCanvas(content: (android.graphics.Canvas) -> Unit) {
+        val surface = holder.surface ?: return
+        if (!surface.isValid) return
+        val canvas = runCatching { holder.lockCanvas() }.getOrNull() ?: return
+        try { canvas.drawColor(Color.WHITE); content(canvas) } finally { holder.unlockCanvasAndPost(canvas) }
+    }
 
     private var tool: PenSpec = PenSpec(PenTool.FINELINER)
 
@@ -204,9 +298,9 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
     }
 
     private val callback = object : RawInputCallback() {
-        override fun onBeginRawDrawing(b: Boolean, p: TouchPoint) {}
-        override fun onEndRawDrawing(b: Boolean, p: TouchPoint) {}
-        override fun onRawDrawingTouchPointMoveReceived(p: TouchPoint) {}
+        override fun onBeginRawDrawing(b: Boolean, p: TouchPoint) { beginSelectionDrag(p.x, p.y) }
+        override fun onEndRawDrawing(b: Boolean, p: TouchPoint) { endSelectionDrag() }
+        override fun onRawDrawingTouchPointMoveReceived(p: TouchPoint) { moveSelectionDrag(p.x, p.y) }
         override fun onRawDrawingTouchPointListReceived(list: TouchPointList) {
             val samples = toSamples(list.points)
             if (samples.isEmpty()) return
@@ -243,7 +337,9 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         if (useOnyx || !penEnabled) return super.onTouchEvent(event)
         val area = pageArea
         when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> touchSamples.clear()
+            MotionEvent.ACTION_DOWN -> { touchSamples.clear(); beginSelectionDrag(event.x, event.y) }
+            MotionEvent.ACTION_MOVE -> moveSelectionDrag(event.x, event.y)
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> endSelectionDrag()
         }
         for (i in 0 until event.historySize) addTouch(event.getHistoricalX(i), event.getHistoricalY(i), event.getHistoricalPressure(i), event.getHistoricalEventTime(i), area)
         addTouch(event.x, event.y, event.pressure, event.eventTime, area)
@@ -301,4 +397,9 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
     /** Pause/resume raw drawing with the activity (the panel must be released when we're not on screen). */
     fun onPause() { touchHelper?.let { runCatching { it.setRawDrawingEnabled(false) } } }
     fun onResume() { applyEnabled() }
+
+    private companion object {
+        const val MAX_ZOOM = 4f
+        const val PREVIEW_INTERVAL_MS = 45L
+    }
 }

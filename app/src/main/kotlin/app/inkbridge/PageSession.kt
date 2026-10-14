@@ -11,6 +11,7 @@ import app.inkbridge.rm.edit.PageEditor
 import app.inkbridge.rm.edit.PageTransform
 import app.inkbridge.rm.edit.PenSpec
 import app.inkbridge.rm.edit.PenTool
+import app.inkbridge.rm.edit.SelectionGesture
 import app.inkbridge.rm.export.PageExport
 import app.inkbridge.rm.export.SvgCanvas
 import app.inkbridge.rm.library.PageFiles
@@ -125,20 +126,36 @@ class PageSession(
     fun selectionStroke(samples: List<PenSample>): Boolean {
         val t = transform ?: return false
         if (samples.size < 2) { val had = selection.isNotEmpty(); selection = emptySet(); if (had) redrawAll(); return had }
-        val pagePath = samples.map { t.toPageX(it.x) to t.toPageY(it.y) }
-        val bounds = if (selection.isEmpty()) null else editor.boundsOf(selection)
-        if (bounds != null) {
-            val pad = 24f
-            val (sx, sy) = pagePath.first()
-            if (sx in (bounds.left - pad)..(bounds.right + pad) && sy in (bounds.top - pad)..(bounds.bottom + pad)) {
-                val dx = pagePath.last().first - sx; val dy = pagePath.last().second - sy
-                if (kotlin.math.hypot(dx, dy) > 8f) { editor.moveStrokes(selection, dx, dy); redrawAll() }
+        val frame = selectionFrame()
+        if (frame != null) {
+            val first = samples.first(); val last = samples.last()
+            val hit = SelectionGesture.hit(frame, first.x, first.y)
+            if (hit.mode != SelectionGesture.Mode.NONE) {
+                val m = SelectionGesture.transform(hit, first.x, first.y, last.x, last.y)
+                // Too short to be a deliberate move: leave the selection as it is.
+                if (kotlin.math.hypot(last.x - first.x, last.y - first.y) > 8f * t.scale) {
+                    val o = viewOrigin(t)
+                    editor.transformStrokes(selection, SelectionGesture.viewToPage(m, t.scale, o.first, o.second))
+                    redrawAll()
+                }
                 return true
             }
         }
-        selection = editor.selectInside(pagePath)
+        selection = editor.selectInside(samples.map { t.toPageX(it.x) to t.toPageY(it.y) })
         redrawAll()
         return true
+    }
+
+    /** `view = scale * page + origin` for the current transform. */
+    private fun viewOrigin(t: PageTransform) = (t.offsetX - t.scale * t.layout.xMin) to (t.offsetY - t.scale * t.layout.yMin)
+
+    /** The selection's frame in view pixels (the dashed rectangle, with a little room), or null when nothing is selected. */
+    @Synchronized
+    fun selectionFrame(): SelectionGesture.Frame? {
+        val t = transform ?: return null
+        val b = (if (selection.isEmpty()) null else editor.boundsOf(selection)) ?: return null
+        val pad = 14f
+        return SelectionGesture.Frame(t.toViewX(b.left - pad), t.toViewY(b.top - pad), t.toViewX(b.right + pad), t.toViewY(b.bottom + pad))
     }
 
     /** The selection's bounds in view pixels, or null when nothing is selected. */
@@ -169,12 +186,39 @@ class PageSession(
         return true
     }
 
+    @Synchronized
+    fun copySelection(): Boolean {
+        if (selection.isEmpty()) return false
+        val lines = editor.copyStrokes(selection)
+        if (lines.isEmpty()) return false
+        StrokeClipboard.lines = lines
+        return true
+    }
+
+    @Synchronized
+    fun cutSelection(): Boolean = copySelection().also { if (it) deleteSelection() }
+
+    /** Paste the clipboard onto the current layer a little down and to the right of where it was copied; selects the pasted strokes. */
+    @Synchronized
+    fun pasteClipboard(): Boolean {
+        val ids = editor.pasteStrokes(StrokeClipboard.lines, 40f, 40f)
+        if (ids.isEmpty()) return false
+        selection = ids
+        redrawAll()
+        return true
+    }
+
     // ---- layers ----
 
     @Synchronized fun layers(): List<PageEditor.LayerInfo> = editor.layers()
     @Synchronized fun addLayer(label: String) { editor.addLayer(label); redrawAll() }
     @Synchronized fun selectLayer(id: CrdtId) { editor.setCurrentLayer(id); redrawAll() }
     @Synchronized fun setLayerVisible(id: CrdtId, visible: Boolean) { editor.setLayerVisible(id, visible); redrawAll() }
+    @Synchronized fun renameLayer(id: CrdtId, label: String) { editor.renameLayer(id, label); redrawAll() }
+    @Synchronized fun moveLayer(id: CrdtId, up: Boolean): Boolean = editor.moveLayer(id, up).also { if (it) redrawAll() }
+    @Synchronized fun mergeLayerDown(id: CrdtId): Boolean = editor.mergeLayerDown(id).also { if (it) { selection = emptySet(); redrawAll() } }
+    @Synchronized fun backgroundVisible(): Boolean = editor.backgroundVisible
+    @Synchronized fun setBackgroundVisible(v: Boolean) { editor.setBackgroundVisible(v); redrawAll() }
     @Synchronized fun deleteLayer(id: CrdtId): Boolean = editor.deleteLayer(id).also { if (it) { selection = emptySet(); redrawAll() } }
 
     /** Add a stroke from view-pixel [samples]. Returns true if the page changed. */
@@ -228,8 +272,9 @@ class PageSession(
         val layout = renderer.layout
 
         // The PDF page (if any) at 1 pixel per page unit; used by all three formats.
+        val showBackground = editor.backgroundVisible
         val pl = background?.placement
-        val bg = background?.render(pl!!.width.roundToInt())
+        val bg = if (showBackground) background?.render(pl!!.width.roundToInt()) else null
         fun drawBackground(c: Canvas) {
             if (bg != null && pl != null) c.drawBitmap(bg, null, RectF(pl.left, pl.top, pl.left + pl.width, pl.top + pl.height), Paint(Paint.FILTER_BITMAP_FLAG))
         }
@@ -238,7 +283,7 @@ class PageSession(
             val png = java.io.ByteArrayOutputStream().also { bg.compress(Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
             SvgCanvas.Background(png, pl.left, pl.top, pl.width, pl.height)
         } else null
-        val svg = File(dir, "$baseName.svg").also { it.writeText(PageExport.svg(renderer, svgBackground, template.takeIf { background == null })) }
+        val svg = File(dir, "$baseName.svg").also { it.writeText(PageExport.svg(renderer, svgBackground, template.takeIf { background == null && showBackground })) }
 
         val png = File(dir, "$baseName.png")
         val full = Bitmap.createBitmap(layout.width.toInt(), layout.height.toInt(), Bitmap.Config.ARGB_8888)
@@ -246,7 +291,7 @@ class PageSession(
             c.drawColor(Color.WHITE)
             c.translate(-layout.xMin, -layout.yMin)
             drawBackground(c)
-            if (background == null) template.draw(AndroidPageCanvas(c), layout)
+            if (background == null && showBackground) template.draw(AndroidPageCanvas(c), layout)
             renderer.render(AndroidPageCanvas(c))
         }
         png.outputStream().use { full.compress(Bitmap.CompressFormat.PNG, 100, it) }
@@ -261,7 +306,7 @@ class PageSession(
             page.canvas.scale(pt, pt)
             page.canvas.translate(-layout.xMin, -layout.yMin)
             drawBackground(page.canvas)
-            if (background == null) template.draw(AndroidPageCanvas(page.canvas), layout)
+            if (background == null && showBackground) template.draw(AndroidPageCanvas(page.canvas), layout)
             renderer.render(AndroidPageCanvas(page.canvas))
             doc.finishPage(page)
             pdf.outputStream().use { doc.writeTo(it) }
@@ -279,19 +324,31 @@ class PageSession(
     private fun redrawAll() = withPageCanvas(clear = true) { canvas ->
         val bg = backgroundBitmap
         val p = background?.placement
-        if (bg != null && p != null) {
+        val showBackground = editor.backgroundVisible
+        if (bg != null && p != null && showBackground) {
             canvas.drawBitmap(bg, null, RectF(p.left, p.top, p.left + p.width, p.top + p.height), Paint(Paint.FILTER_BITMAP_FLAG))
         }
-        if (background == null) template.draw(AndroidPageCanvas(canvas), editor.renderer.layout)
+        if (background == null && showBackground) template.draw(AndroidPageCanvas(canvas), editor.renderer.layout)
         editor.renderer.render(AndroidPageCanvas(canvas))
-        // The selection is shown as a dashed frame (no colour: it has to read on e-ink).
-        val b = if (selection.isEmpty()) null else editor.boundsOf(selection)
-        if (b != null) {
-            val s = transform?.scale ?: 1f
-            val frame = Paint().apply { style = Paint.Style.STROKE; color = Color.BLACK; strokeWidth = 3f / s; pathEffect = DashPathEffect(floatArrayOf(14f / s, 10f / s), 0f) }
-            val pad = 14f
-            canvas.drawRect(b.left - pad, b.top - pad, b.right + pad, b.bottom + pad, frame)
-        } else if (selection.isNotEmpty()) selection = emptySet()
+        if (selection.isNotEmpty() && editor.boundsOf(selection) == null) selection = emptySet()
+    }.also { drawSelectionFrame() }
+
+    /** The selection: a dashed frame with corner handles to resize and a round handle to rotate (no colour: it has to read on e-ink). */
+    private fun drawSelectionFrame() {
+        val bmp = bitmap ?: return
+        val f = selectionFrame() ?: return
+        val canvas = Canvas(bmp)
+        val line = Paint().apply { style = Paint.Style.STROKE; color = Color.BLACK; strokeWidth = 3f; pathEffect = DashPathEffect(floatArrayOf(14f, 10f), 0f) }
+        canvas.drawRect(f.left, f.top, f.right, f.bottom, line)
+        val solid = Paint().apply { style = Paint.Style.STROKE; color = Color.BLACK; strokeWidth = 3f }
+        val fill = Paint().apply { style = Paint.Style.FILL; color = Color.WHITE }
+        val half = 14f
+        for ((x, y) in f.corners()) {
+            canvas.drawRect(x - half, y - half, x + half, y + half, fill); canvas.drawRect(x - half, y - half, x + half, y + half, solid)
+        }
+        val (rx, ry) = f.rotateHandle(SelectionGesture.ROTATE_OFFSET)
+        canvas.drawLine(f.centerX, f.top, rx, ry, solid)
+        canvas.drawCircle(rx, ry, 18f, fill); canvas.drawCircle(rx, ry, 18f, solid)
     }
 
     private fun withPageCanvas(clear: Boolean = false, draw: (Canvas) -> Unit) {
@@ -304,4 +361,10 @@ class PageSession(
         canvas.translate(-t.layout.xMin, -t.layout.yMin)
         draw(canvas)
     }
+}
+
+/** The strokes last copied or cut, shared by every page so they can be pasted into another one. */
+object StrokeClipboard {
+    @Volatile var lines: List<app.inkbridge.rm.scene.Line> = emptyList()
+    val hasContent: Boolean get() = lines.isNotEmpty()
 }

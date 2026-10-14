@@ -6,6 +6,7 @@ import app.inkbridge.rm.scene.*
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 /**
  * Editable `.rm` page. Edits operate on the block list, the same representation that is written
@@ -150,6 +151,71 @@ class PageEditor private constructor(initial: List<Block>) {
         return added.map { it.itemId }.toSet()
     }
 
+    /** A 2D affine map in page units: x' = a x + c y + tx, y' = b x + d y + ty. */
+    data class Affine(val a: Float, val b: Float, val c: Float, val d: Float, val tx: Float, val ty: Float) {
+        /** How much it scales lengths (for stroke widths). */
+        val scale: Float get() = kotlin.math.sqrt(kotlin.math.abs(a * d - b * c))
+        companion object { val IDENTITY = Affine(1f, 0f, 0f, 1f, 0f, 0f) }
+    }
+
+    /**
+     * Apply [m] (in absolute page coordinates) to the given strokes: move, resize or rotate them (one undo step).
+     * Stroke widths follow the scale. Returns how many strokes changed.
+     */
+    fun transformStrokes(ids: Set<CrdtId>, m: Affine): Int {
+        if (m == Affine.IDENTITY) return 0
+        val offsets = renderer.placedLines().filter { it.itemId in ids }.associate { it.itemId to (it.ox to it.oy) }
+        if (offsets.isEmpty()) return 0
+        commit(blocks.map { b ->
+            if (b is SceneItemBlock && b.blockType == SceneItemBlock.LINE && b.value is Line) {
+                val o = offsets[b.itemId]
+                if (o != null) withValue(b, transformed(b.value as Line, o.first, o.second, m)) else b
+            } else b
+        })
+        return offsets.size
+    }
+
+    private fun transformed(l: Line, ox: Float, oy: Float, m: Affine): Line {
+        val k = m.scale
+        return Line(
+            l.tool, l.color,
+            l.points.map { p ->
+                val x = p.x + ox; val y = p.y + oy
+                p.copy(x = m.a * x + m.c * y + m.tx - ox, y = m.b * x + m.d * y + m.ty - oy, width = (p.width * k).roundToInt().coerceAtLeast(1))
+            },
+            l.thicknessScale, l.startingLength, l.moveId, l.colorRgba, l.timestamp,
+        )
+    }
+
+    /** The given strokes as free-standing lines in absolute page coordinates (for a clipboard). */
+    fun copyStrokes(ids: Set<CrdtId>): List<Line> =
+        renderer.placedLines().filter { it.itemId in ids }.map { shifted(it.line, it.ox, it.oy) }
+
+    /** Paste [lines] (absolute page coordinates), shifted by ([dx], [dy]), onto the current layer; returns the new ids (one undo step). */
+    fun pasteStrokes(lines: List<Line>, dx: Float, dy: Float): Set<CrdtId> {
+        if (lines.isEmpty()) return emptySet()
+        val layer = activeLayer() ?: return emptySet()
+        val (ox, oy) = renderer.offsetOf(layer)
+        val (blocksWith, ids) = appended(blocks, layer, lines.map { shifted(it, dx - ox, dy - oy) })
+        commit(blocksWith)
+        return ids
+    }
+
+    /** [list] plus [lines] chained after [layer]'s last item; returns the new blocks' ids too. */
+    private fun appended(list: List<Block>, layer: Group, lines: List<Line>): Pair<List<Block>, Set<CrdtId>> {
+        val author = primaryAuthor()
+        var counter = nextCounter()
+        var left = lastIdIn(layer)
+        val added = ArrayList<SceneItemBlock>()
+        for (l in lines) {
+            val id = CrdtId(author, counter++)
+            added += SceneItemBlock(SceneItemBlock.LINE, layer.nodeId, id, left, CrdtId.END_MARKER, 0, l, LINE_ITEM_TYPE)
+                .also { it.minVersion = 2; it.currentVersion = 2 }
+            left = id
+        }
+        return (list + added) to added.map { it.itemId }.toSet()
+    }
+
     private fun shifted(l: Line, dx: Float, dy: Float) = Line(
         l.tool, l.color, l.points.map { it.copy(x = it.x + dx, y = it.y + dy) }, l.thicknessScale, l.startingLength, l.moveId, l.colorRgba, l.timestamp,
     )
@@ -223,6 +289,59 @@ class PageEditor private constructor(initial: List<Block>) {
         }
         commit(next)
         return true
+    }
+
+    /** Move a layer one step up ([up] = true, towards the top) or down. Returns false at the end of the stack. */
+    fun moveLayer(id: CrdtId, up: Boolean): Boolean {
+        val order = layers().map { it.id }.toMutableList()
+        val i = order.indexOf(id)
+        val j = if (up) i + 1 else i - 1
+        if (i < 0 || j !in order.indices) return false
+        order[i] = order[j].also { order[j] = order[i] }
+        // Rewrite the neighbour links of the live layer items so the sequence reads exactly in the new order.
+        val itemFor = blocks.filterIsInstance<SceneItemBlock>().filter { it.blockType == SceneItemBlock.GROUP && it.deletedLength == 0 && it.value is CrdtId }.associateBy { it.value as CrdtId }
+        val newLeft = HashMap<CrdtId, CrdtId>()
+        var prev = CrdtId.END_MARKER
+        for (g in order) { val item = itemFor[g] ?: return false; newLeft[item.itemId] = prev; prev = item.itemId }
+        commit(blocks.map { b ->
+            val left = if (b is SceneItemBlock && b.blockType == SceneItemBlock.GROUP) newLeft[b.itemId] else null
+            if (b is SceneItemBlock && left != null) SceneItemBlock(b.blockType, b.parentId, b.itemId, left, CrdtId.END_MARKER, b.deletedLength, b.value, b.itemType, b.valueExtra, b.extra)
+                .also { it.minVersion = b.minVersion; it.currentVersion = b.currentVersion } else b
+        })
+        return true
+    }
+
+    /** Move a layer's strokes onto the layer below it and remove the (now empty) layer. Returns false for the bottom layer. */
+    fun mergeLayerDown(id: CrdtId): Boolean {
+        val all = layers()
+        val i = all.indexOfFirst { it.id == id }
+        if (i <= 0) return false
+        val from = tree[id]; val to = tree[all[i - 1].id]
+        val (fx, fy) = renderer.offsetOf(from); val (tx, ty) = renderer.offsetOf(to)
+        val originals = blocks.filterIsInstance<SceneItemBlock>().filter { it.blockType == SceneItemBlock.LINE && it.parentId == id && it.deletedLength == 0 && it.value is Line }
+        var next: List<Block> = blocks
+        if (originals.isNotEmpty()) {
+            next = appended(next, to, originals.map { shifted(it.value as Line, fx - tx, fy - ty) }).first
+            val gone = originals.mapTo(HashSet()) { it.itemId }
+            next = next.map { b -> if (b is SceneItemBlock && b.blockType == SceneItemBlock.LINE && b.itemId in gone && b.value is Line) tombstone(b) else b }
+        }
+        next = next.map { b -> if (b is SceneItemBlock && b.blockType == SceneItemBlock.GROUP && b.value == id) tombstone(b) else b }
+        if (activeLayer()?.nodeId == id) next = withCurrentLayer(next, all[i - 1].id, CrdtId(primaryAuthor(), nextCounter() + originals.size))
+        commit(next)
+        return true
+    }
+
+    /** Whether the page's template / PDF background is shown (it is unless the file says otherwise). */
+    val backgroundVisible: Boolean get() = tree.sceneInfo?.backgroundVisible?.value ?: true
+
+    fun setBackgroundVisible(visible: Boolean) {
+        if (visible == backgroundVisible) return
+        val old = tree.sceneInfo
+        val ts = CrdtId(primaryAuthor(), nextCounter())
+        val current = old?.currentLayer ?: Lww(ts, activeLayer()?.nodeId ?: return)
+        val info = SceneInfoBlock(current, Lww(CrdtId(primaryAuthor(), nextCounter() + 1), visible), old?.rootDocumentVisible, old?.paperSize, old?.extra ?: ByteArray(0))
+            .also { it.minVersion = old?.minVersion ?: 0; it.currentVersion = old?.currentVersion ?: 1 }
+        commit(if (old != null) blocks.map { if (it === old) info else it } else blocks + info)
     }
 
     private fun editGroup(id: CrdtId, edit: (Group, CrdtId) -> Unit) {

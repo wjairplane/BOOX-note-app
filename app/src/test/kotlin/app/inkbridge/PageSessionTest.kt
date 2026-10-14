@@ -50,7 +50,8 @@ class PageSessionTest {
         assertEquals(t.toViewX(-500f), r.left, 1f); assertEquals(t.toViewX(-420f), r.right, 1f)
 
         // A stroke that starts inside the selection drags it.
-        assertTrue(s.selectionStroke(path(s, -460f, 120f, -360f, 220f)))
+        val f = s.selectionFrame()!!
+        assertTrue(s.selectionStroke(listOf(PenSample(f.centerX, f.centerY, .5f, 0f, 0f, 0), PenSample(f.centerX + 100f * t.scale, f.centerY + 100f * t.scale, .5f, 0f, 0f, 5))))
         val moved = s.selectionRect()!!
         assertEquals(r.left + 100f * t.scale, moved.left, 1f); assertEquals(r.top + 100f * t.scale, moved.top, 1f)
         assertTrue(s.isDirty)
@@ -131,5 +132,60 @@ class PageSessionTest {
         assertTrue(s.deleteLayer(notes.id))
         assertEquals(1, s.layers().size)
         assertFalse(s.deleteLayer(first.id))
+    }
+
+    private fun select(s: PageSession) =
+        assertTrue(s.selectionStroke(path(s, -560f, 50f, -380f, 50f, -380f, 220f, -560f, 220f, -560f, 50f)))
+
+    @Test fun cornerHandleResizesAndRotateHandleRotates() {
+        val s = session()
+        select(s)
+        val before = s.selectionRect()!!
+        val frame = s.selectionFrame()!!
+        // Drag the bottom-right corner handle away from the top-left one: the selection grows about the top-left corner.
+        val (cx, cy) = frame.corners()[2]
+        assertTrue(s.selectionStroke(listOf(PenSample(cx, cy, .5f, 0f, 0f, 0), PenSample(cx + 100f, cy + 100f, .5f, 0f, 0f, 5))))
+        val after = s.selectionRect()!!
+        // The opposite (top-left) corner of the frame stays where it was.
+        // (The frame's padding doesn't scale, so it shifts by a few pixels.)
+        assertEquals(frame.left, s.selectionFrame()!!.left, 25f); assertEquals(frame.top, s.selectionFrame()!!.top, 25f)
+        assertTrue(after.width() > before.width() * 1.2f)
+
+        // Drag the rotate handle a quarter turn about the centre: a wide selection turns tall.
+        val f2 = s.selectionFrame()!!
+        val (rx, ry) = f2.rotateHandle(app.inkbridge.rm.edit.SelectionGesture.ROTATE_OFFSET)
+        val w = s.selectionRect()!!.width(); val h = s.selectionRect()!!.height()
+        assertTrue(s.selectionStroke(listOf(PenSample(rx, ry, .5f, 0f, 0f, 0), PenSample(f2.centerX + (f2.centerY - ry), f2.centerY, .5f, 0f, 0f, 5))))
+        val turned = s.selectionRect()!!
+        assertTrue("was ${w}x$h, now ${turned.width()}x${turned.height()}", kotlin.math.abs(turned.width() - h) < kotlin.math.abs(turned.width() - w))
+    }
+
+    @Test fun copyCutAndPasteWorkAcrossPages() {
+        StrokeClipboard.lines = emptyList()
+        val s = session()
+        assertFalse(s.pasteClipboard())
+        select(s)
+        assertTrue(s.copySelection()); assertTrue(StrokeClipboard.hasContent)
+        val original = s.selectionRect()!!
+        assertTrue(s.pasteClipboard())
+        val pasted = s.selectionRect()!!
+        assertTrue(pasted.left > original.left && pasted.top > original.top)
+        // Cut removes the selection; pasting into another page puts it there.
+        assertTrue(s.cutSelection()); assertFalse(s.hasSelection)
+        val other = PageSession(java.io.File(tmp.root, "other.rm")).also { it.resize(1000, 1200) }
+        assertTrue(other.pasteClipboard()); assertTrue(other.hasSelection)
+    }
+
+    @Test fun layerOptionsAndBackgroundChangeThePage() {
+        val s = session()
+        val first = s.layers().single().id
+        s.addLayer("Notes")
+        val notes = s.layers().last().id
+        assertTrue(s.moveLayer(notes, up = false))
+        assertEquals("Notes", s.layers().first().label)
+        s.renameLayer(first, "Ink")
+        assertEquals(listOf("Notes", "Ink"), s.layers().map { it.label })
+        assertTrue(s.mergeLayerDown(first)); assertEquals(listOf("Notes"), s.layers().map { it.label })
+        assertTrue(s.backgroundVisible()); s.setBackgroundVisible(false); assertFalse(s.backgroundVisible())
     }
 }

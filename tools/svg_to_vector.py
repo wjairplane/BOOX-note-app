@@ -19,7 +19,7 @@ USED = [
     "lens", "plus", "x_medium", "stroke_thin", "stroke_medium", "stroke_thick",
     "burger", "arrow_left", "cog", "star_fill", "folder_fill", "chevron_small_down",
     "my_files", "star", "star_inverted", "trashcan", "text_edit", "move", "arrow_counter_clockwise",
-    "tag", "duplicate", "notebook", "folder", "quick_sheet", "trashcan_delete", "question_circle", "chevron_left", "chevron_right", "chevron_up",
+    "tag", "duplicate", "copy", "cut", "paste", "notebook", "folder", "quick_sheet", "trashcan_delete", "question_circle", "chevron_left", "chevron_right", "chevron_up",
     "share", "x_circle", "rotate", "page_add", "template", "export", "import", "checkmark", "sliders_horizontal",
     "document", "erase_all", "selection_tool", "fit_to_width", "fit_to_height", "fit_custom", "restore", "compass", "filter", "eye", "eye_closed", "layers", "plus_circle", "text_edit",
 ]
