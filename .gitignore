@@ -1,0 +1,6 @@
+
+# reMarkable firmware / extracted assets (never commit)
+*.swu
+*.ext4
+*.ext4.gz
+remarkable-*/
