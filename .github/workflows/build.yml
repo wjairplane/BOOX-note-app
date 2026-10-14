@@ -14,6 +14,9 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: android-actions/setup-android@v3
+        with:
+          # The runner image already has the SDK; the action's default `sdkmanager tools` no longer finds that package and fails the job.
+          packages: ''
       - uses: gradle/actions/setup-gradle@v4
       - name: Parser/renderer tests
         run: ./gradlew :rmformat:test
