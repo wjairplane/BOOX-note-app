@@ -354,17 +354,12 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 ) { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) { InkIcons.PageAdd(); Text("New page", style = RmText.Label) } }
             }
 
-            // The notification bar: along the bottom edge, white with a 2 px top border, a message and a plain action.
+            // The notification bar: along the bottom edge, beside the toolbar when that is on the left, right or bottom.
             if (message.isNotEmpty()) {
-                Row(
-                    Modifier.align(Alignment.BottomCenter).padding(start = if (pos == ToolbarPosition.LEFT) TOOLBAR_THICKNESS else 0.dp, end = if (pos == ToolbarPosition.RIGHT) TOOLBAR_THICKNESS else 0.dp, bottom = if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp).fillMaxWidth().heightIn(min = 80.dp).background(Ink.White).drawBehind { drawLine(androidx.compose.ui.graphics.Color.Black, androidx.compose.ui.geometry.Offset(0f, 1f), androidx.compose.ui.geometry.Offset(size.width, 1f), strokeWidth = 2f * density) }
-                        .padding(horizontal = 32.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(message, style = RmText.BodySm, modifier = Modifier.weight(1f))
-                    Box(Modifier.width(2.dp).height(48.dp).background(Ink.Black)); Spacer(Modifier.width(24.dp))
-                    Text("OK", style = RmText.Label, modifier = Modifier.tap { message = "" }.padding(8.dp).semantics { contentDescription = "OK" })
-                }
+                NotificationBar(
+                    message, { message = "" },
+                    Modifier.align(Alignment.BottomCenter).padding(start = if (pos == ToolbarPosition.LEFT) TOOLBAR_THICKNESS else 0.dp, end = if (pos == ToolbarPosition.RIGHT) TOOLBAR_THICKNESS else 0.dp, bottom = if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp),
+                )
             }
         }
     }

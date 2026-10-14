@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -226,12 +227,45 @@ fun NameField(value: String, onChange: (String) -> Unit) {
     }
 }
 
+/**
+ * The firmware's confirm sheet (ConfirmChangeDialog): a full-width black sheet pinned to the top of the screen with a white serif title,
+ * body text and two 346 px buttons (Cancel on white, the confirming one black with a white border). Tapping below it cancels; no scrim.
+ */
 @Composable
 fun ConfirmDialog(title: String, message: String, confirm: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
-    EDialog(title, onDismiss, actions = {
-        EButton("Cancel", onDismiss)
-        EButton(confirm, onConfirm, selected = true)
-    }) { Text(message, style = RmText.Body) }
+    val density = LocalDensity.current
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        (androidx.compose.ui.platform.LocalView.current.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window?.let { w ->
+            SideEffect { w.setGravity(android.view.Gravity.TOP); w.setDimAmount(0f); w.setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT) }
+        }
+        CompositionLocalProvider(LocalDensity provides density) {
+            Column(Modifier.fillMaxWidth().background(Ink.Black).padding(horizontal = 176.dp, vertical = 120.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(title, style = RmText.TitleMdAlt, color = Ink.White, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                Spacer(Modifier.height(24.dp))
+                Text(message, style = RmText.Body, color = Ink.White, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                Spacer(Modifier.height(48.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                    Box(Modifier.width(346.dp).height(Rm.Control).background(Ink.White).border(Rm.Outline, Ink.White).tap(onClick = onDismiss).semantics { contentDescription = "Cancel" }, contentAlignment = Alignment.Center) { Text("Cancel", style = RmText.Label, color = Ink.Black) }
+                    Box(Modifier.width(346.dp).height(Rm.Control).background(Ink.Black).border(Rm.Outline, Ink.White).tap(onClick = onConfirm).semantics { contentDescription = confirm }, contentAlignment = Alignment.Center) { Text(confirm, style = RmText.Label, color = Ink.White) }
+                }
+            }
+        }
+    }
+}
+
+/** The firmware's NotificationBar: along the bottom edge, white with a 2 px top border, a message, a divider and a plain action label. */
+@Composable
+fun NotificationBar(message: String, onAction: () -> Unit, modifier: Modifier = Modifier, action: String = "OK") {
+    Row(
+        modifier.fillMaxWidth().heightIn(min = 80.dp).background(Ink.White)
+            .drawBehind { drawLine(Color.Black, androidx.compose.ui.geometry.Offset(0f, 1f), androidx.compose.ui.geometry.Offset(size.width, 1f), strokeWidth = 2f * density) }
+            .padding(horizontal = 32.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(message, style = RmText.BodySm, modifier = Modifier.weight(1f))
+        Box(Modifier.width(2.dp).height(48.dp).background(Ink.Black)); Spacer(Modifier.width(24.dp))
+        Text(action, style = RmText.Label, modifier = Modifier.tap(onClick = onAction).padding(8.dp).semantics { contentDescription = action })
+    }
 }
 
 /** One row in a list of choices (the firmware's Cell): 48 px marker, body text, 24 px padding; the current one is filled. */
