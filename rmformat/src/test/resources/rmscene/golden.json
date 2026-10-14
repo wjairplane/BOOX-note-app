@@ -1,0 +1,2306 @@
+{
+ "Bold_Heading_Bullet_Normal.rm": {
+  "blocks": [
+   "AuthorIdsBlock",
+   "MigrationInfoBlock",
+   "PageInfoBlock",
+   "SceneTreeBlock",
+   "RootTextBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "SceneGroupItemBlock"
+  ],
+  "items": [
+   {
+    "kind": "group",
+    "label": "Layer 1",
+    "depth": 0
+   }
+  ],
+  "text": [
+   {
+    "style": 3,
+    "text": "A"
+   },
+   {
+    "style": 2,
+    "text": "new line"
+   },
+   {
+    "style": 4,
+    "text": "B is a letter of the alphabet"
+   },
+   {
+    "style": 1,
+    "text": "C"
+   }
+  ]
+ },
+ "Color_and_tool_v3.14.4.rm": {
+  "blocks": [
+   "AuthorIdsBlock",
+   "MigrationInfoBlock",
+   "PageInfoBlock",
+   "SceneInfo",
+   "SceneTreeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "SceneGroupItemBlock",
+   "SceneGlyphItemBlock",
+   "SceneGlyphItemBlock",
+   "SceneGlyphItemBlock",
+   "SceneGlyphItemBlock",
+   "SceneGlyphItemBlock",
+   "SceneGlyphItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock"
+  ],
+  "items": [
+   {
+    "kind": "group",
+    "label": "Layer 1",
+    "depth": 0
+   },
+   {
+    "kind": "glyph",
+    "text": "This is a test sentence.",
+    "color": 9,
+    "rects": 1,
+    "rgba": [
+     255,
+     237,
+     117,
+     255
+    ]
+   },
+   {
+    "kind": "glyph",
+    "text": "This is a test sentence.",
+    "color": 9,
+    "rects": 1,
+    "rgba": [
+     190,
+     234,
+     254,
+     255
+    ]
+   },
+   {
+    "kind": "glyph",
+    "text": "This is a test sentence.",
+    "color": 9,
+    "rects": 1,
+    "rgba": [
+     242,
+     158,
+     255,
+     255
+    ]
+   },
+   {
+    "kind": "glyph",
+    "text": "This is a test sentence.",
+    "color": 9,
+    "rects": 1,
+    "rgba": [
+     255,
+     195,
+     140,
+     255
+    ]
+   },
+   {
+    "kind": "glyph",
+    "text": "This is a test sentence.",
+    "color": 9,
+    "rects": 1,
+    "rgba": [
+     172,
+     255,
+     133,
+     255
+    ]
+   },
+   {
+    "kind": "glyph",
+    "text": "This is a test sentence.",
+    "color": 9,
+    "rects": 1,
+    "rgba": [
+     199,
+     199,
+     198,
+     255
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 23,
+    "color": 9,
+    "n": 43,
+    "thickness": 1.191049337387085,
+    "rgba": [
+     33,
+     30,
+     28,
+     64
+    ],
+    "p0": [
+     67.38501739501953,
+     422.5765380859375,
+     0,
+     0,
+     19,
+     13
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 23,
+    "color": 9,
+    "n": 53,
+    "thickness": 1.191049337387085,
+    "rgba": [
+     33,
+     30,
+     28,
+     64
+    ],
+    "p0": [
+     110.35460662841797,
+     394.6636657714844,
+     0,
+     0,
+     19,
+     8
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 23,
+    "color": 9,
+    "n": 43,
+    "thickness": 1.191049337387085,
+    "rgba": [
+     33,
+     30,
+     28,
+     64
+    ],
+    "p0": [
+     203.7877960205078,
+     449.8839111328125,
+     0,
+     0,
+     21,
+     29
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 23,
+    "color": 9,
+    "n": 54,
+    "thickness": 1.191049337387085,
+    "rgba": [
+     33,
+     30,
+     28,
+     64
+    ],
+    "p0": [
+     268.6866149902344,
+     450.562744140625,
+     0,
+     0,
+     19,
+     16
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 23,
+    "color": 9,
+    "n": 40,
+    "thickness": 1.191049337387085,
+    "rgba": [
+     33,
+     30,
+     28,
+     64
+    ],
+    "p0": [
+     306.9112548828125,
+     478.7879943847656,
+     0,
+     0,
+     29,
+     40
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 23,
+    "color": 9,
+    "n": 31,
+    "thickness": 1.191049337387085,
+    "rgba": [
+     33,
+     30,
+     28,
+     64
+    ],
+    "p0": [
+     381.35797119140625,
+     449.74310302734375,
+     0,
+     0,
+     19,
+     15
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 10,
+    "n": 43,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     92.07137298583984,
+     724.094970703125,
+     0,
+     0,
+     14,
+     18
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 10,
+    "n": 37,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     147.2400665283203,
+     766.5125122070312,
+     0,
+     0,
+     14,
+     28
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 10,
+    "n": 47,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     209.45175170898438,
+     742.229248046875,
+     0,
+     0,
+     14,
+     23
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 10,
+    "n": 53,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     356.6361389160156,
+     741.2337646484375,
+     0,
+     0,
+     14,
+     11
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 10,
+    "n": 31,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     381.4886779785156,
+     732.6112670898438,
+     0,
+     0,
+     14,
+     15
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 10,
+    "n": 130,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     400.2002868652344,
+     760.4371337890625,
+     0,
+     0,
+     14,
+     22
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 11,
+    "n": 38,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     72.69625091552734,
+     861.7357788085938,
+     0,
+     0,
+     14,
+     27
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 11,
+    "n": 42,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     133.6508026123047,
+     892.3629760742188,
+     0,
+     0,
+     14,
+     17
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 11,
+    "n": 42,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     190.09762573242188,
+     875.0706787109375,
+     0,
+     0,
+     14,
+     9
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 11,
+    "n": 29,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     363.89654541015625,
+     859.9249267578125,
+     0,
+     0,
+     14,
+     19
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 11,
+    "n": 18,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     386.84954833984375,
+     866.8451538085938,
+     0,
+     0,
+     14,
+     22
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 11,
+    "n": 22,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     410.8281555175781,
+     873.554931640625,
+     0,
+     0,
+     14,
+     7
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 11,
+    "n": 47,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     454.794189453125,
+     877.0006713867188,
+     0,
+     0,
+     14,
+     39
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 11,
+    "n": 34,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     485.91790771484375,
+     879.759033203125,
+     0,
+     0,
+     14,
+     33
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 11,
+    "n": 102,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     80.32786560058594,
+     1044.7178955078125,
+     0,
+     0,
+     14,
+     19
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 11,
+    "n": 60,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     339.83319091796875,
+     1023.2694702148438,
+     0,
+     0,
+     14,
+     22
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 11,
+    "n": 143,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     431.722412109375,
+     1015.09912109375,
+     0,
+     0,
+     14,
+     22
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 11,
+    "n": 115,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     515.1131591796875,
+     1028.00732421875,
+     0,
+     0,
+     14,
+     3
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 11,
+    "n": 73,
+    "thickness": 2.38209867477417,
+    "rgba": null,
+    "p0": [
+     571.8488159179688,
+     994.4849243164062,
+     0,
+     0,
+     14,
+     21
+    ]
+   }
+  ],
+  "text": null
+ },
+ "Lines_v2.rm": {
+  "blocks": [
+   "AuthorIdsBlock",
+   "MigrationInfoBlock",
+   "PageInfoBlock",
+   "SceneTreeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "SceneGroupItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock"
+  ],
+  "items": [
+   {
+    "kind": "group",
+    "label": "Layer 1",
+    "depth": 0
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 2,
+    "thickness": 1.0,
+    "rgba": null,
+    "p0": [
+     -529.4979858398438,
+     91.42596435546875,
+     3,
+     0,
+     8,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 43,
+    "thickness": 1.0,
+    "rgba": null,
+    "p0": [
+     -530.0439453125,
+     90.886474609375,
+     1,
+     223,
+     8,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 46,
+    "thickness": 1.0,
+    "rgba": null,
+    "p0": [
+     -404.1723937988281,
+     86.60468292236328,
+     10,
+     0,
+     8,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 42,
+    "thickness": 1.0,
+    "rgba": null,
+    "p0": [
+     -273.38641357421875,
+     87.31892395019531,
+     6,
+     128,
+     8,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 52,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -529.4948120117188,
+     127.76419067382812,
+     6,
+     128,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 64,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -405.3248596191406,
+     128.2989959716797,
+     7,
+     223,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 61,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -275.86968994140625,
+     127.58561706542969,
+     8,
+     128,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 42,
+    "thickness": 3.0,
+    "rgba": null,
+    "p0": [
+     -532.2235107421875,
+     170.9772491455078,
+     3,
+     128,
+     18,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 54,
+    "thickness": 3.0,
+    "rgba": null,
+    "p0": [
+     -405.9254455566406,
+     169.1916046142578,
+     6,
+     0,
+     18,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 63,
+    "thickness": 3.0,
+    "rgba": null,
+    "p0": [
+     -271.8529052734375,
+     168.75326538085938,
+     5,
+     64,
+     18,
+     0
+    ]
+   }
+  ],
+  "text": null
+ },
+ "Lines_v2_updated.rm": {
+  "blocks": [
+   "AuthorIdsBlock",
+   "MigrationInfoBlock",
+   "PageInfoBlock",
+   "SceneTreeBlock",
+   "SceneTreeBlock",
+   "RootTextBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "SceneGroupItemBlock",
+   "SceneLineItemBlock",
+   "SceneGroupItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock"
+  ],
+  "items": [
+   {
+    "kind": "group",
+    "label": "Layer 1",
+    "depth": 0
+   },
+   {
+    "kind": "group",
+    "label": "",
+    "depth": 1
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 2,
+    "thickness": 1.0,
+    "rgba": null,
+    "p0": [
+     -65.49798583984375,
+     -176.16778564453125,
+     3,
+     0,
+     8,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 43,
+    "thickness": 1.0,
+    "rgba": null,
+    "p0": [
+     -66.0439453125,
+     -176.707275390625,
+     1,
+     223,
+     8,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 46,
+    "thickness": 1.0,
+    "rgba": null,
+    "p0": [
+     59.827606201171875,
+     -180.98907470703125,
+     10,
+     0,
+     8,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 42,
+    "thickness": 1.0,
+    "rgba": null,
+    "p0": [
+     190.61358642578125,
+     -180.2748260498047,
+     6,
+     128,
+     8,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 52,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -65.49481201171875,
+     -139.82955932617188,
+     6,
+     128,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 64,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     58.675140380859375,
+     -139.2947540283203,
+     7,
+     223,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 61,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     188.13031005859375,
+     -140.0081329345703,
+     8,
+     128,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 42,
+    "thickness": 3.0,
+    "rgba": null,
+    "p0": [
+     -68.2235107421875,
+     -96.61650085449219,
+     3,
+     128,
+     18,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 54,
+    "thickness": 3.0,
+    "rgba": null,
+    "p0": [
+     58.074554443359375,
+     -98.40214538574219,
+     6,
+     0,
+     18,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 63,
+    "thickness": 3.0,
+    "rgba": null,
+    "p0": [
+     192.1470947265625,
+     -98.84048461914062,
+     5,
+     64,
+     18,
+     0
+    ]
+   }
+  ],
+  "text": []
+ },
+ "More_color_highlight_shader_v3.15.4.2.rm": {
+  "blocks": [
+   "AuthorIdsBlock",
+   "MigrationInfoBlock",
+   "PageInfoBlock",
+   "SceneInfo",
+   "SceneTreeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "SceneGroupItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneTombstoneItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock"
+  ],
+  "items": [
+   {
+    "kind": "group",
+    "label": "Layer 1",
+    "depth": 0
+   },
+   {
+    "kind": "line",
+    "tool": 18,
+    "color": 9,
+    "n": 26,
+    "thickness": 1.0,
+    "rgba": [
+     255,
+     237,
+     117,
+     255
+    ],
+    "p0": [
+     -69.600830078125,
+     331.1993408203125,
+     0,
+     0,
+     120,
+     15
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 18,
+    "color": 9,
+    "n": 21,
+    "thickness": 1.0,
+    "rgba": [
+     190,
+     234,
+     254,
+     255
+    ],
+    "p0": [
+     -71.9111328125,
+     416.53057861328125,
+     0,
+     0,
+     120,
+     14
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 18,
+    "color": 9,
+    "n": 34,
+    "thickness": 1.0,
+    "rgba": [
+     242,
+     158,
+     255,
+     255
+    ],
+    "p0": [
+     -58.7288818359375,
+     488.27978515625,
+     0,
+     0,
+     120,
+     21
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 18,
+    "color": 9,
+    "n": 39,
+    "thickness": 1.0,
+    "rgba": [
+     255,
+     195,
+     140,
+     255
+    ],
+    "p0": [
+     -82.13739013671875,
+     577.5006103515625,
+     0,
+     0,
+     120,
+     22
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 18,
+    "color": 9,
+    "n": 33,
+    "thickness": 1.0,
+    "rgba": [
+     172,
+     255,
+     133,
+     255
+    ],
+    "p0": [
+     -63.99676513671875,
+     653.656982421875,
+     0,
+     0,
+     120,
+     21
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 18,
+    "color": 9,
+    "n": 31,
+    "thickness": 1.0,
+    "rgba": [
+     199,
+     199,
+     198,
+     255
+    ],
+    "p0": [
+     -52.97357177734375,
+     733.0604248046875,
+     0,
+     0,
+     120,
+     25
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 23,
+    "color": 9,
+    "n": 48,
+    "thickness": 2.0,
+    "rgba": [
+     33,
+     30,
+     28,
+     64
+    ],
+    "p0": [
+     -57.06121826171875,
+     878.2196044921875,
+     0,
+     0,
+     29,
+     19
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 23,
+    "color": 9,
+    "n": 45,
+    "thickness": 2.0,
+    "rgba": [
+     254,
+     178,
+     0,
+     115
+    ],
+    "p0": [
+     -72.0458984375,
+     947.3796997070312,
+     0,
+     0,
+     29,
+     24
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 23,
+    "color": 9,
+    "n": 34,
+    "thickness": 2.0,
+    "rgba": [
+     192,
+     127,
+     210,
+     128
+    ],
+    "p0": [
+     -82.28955078125,
+     1013.5037841796875,
+     0,
+     0,
+     29,
+     10
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 23,
+    "color": 9,
+    "n": 25,
+    "thickness": 2.0,
+    "rgba": [
+     48,
+     74,
+     224,
+     77
+    ],
+    "p0": [
+     -83.8905029296875,
+     1080.2696533203125,
+     0,
+     0,
+     29,
+     19
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 23,
+    "color": 9,
+    "n": 33,
+    "thickness": 2.0,
+    "rgba": [
+     194,
+     49,
+     50,
+     102
+    ],
+    "p0": [
+     -89.5390625,
+     1156.7252197265625,
+     0,
+     0,
+     29,
+     14
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 23,
+    "color": 9,
+    "n": 37,
+    "thickness": 2.0,
+    "rgba": [
+     145,
+     218,
+     113,
+     128
+    ],
+    "p0": [
+     -82.7005615234375,
+     1240.551513671875,
+     0,
+     0,
+     29,
+     19
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 23,
+    "color": 9,
+    "n": 35,
+    "thickness": 2.0,
+    "rgba": [
+     250,
+     231,
+     25,
+     115
+    ],
+    "p0": [
+     -89.66485595703125,
+     1321.272216796875,
+     0,
+     0,
+     29,
+     24
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 23,
+    "color": 9,
+    "n": 34,
+    "thickness": 2.0,
+    "rgba": [
+     116,
+     210,
+     232,
+     102
+    ],
+    "p0": [
+     -83.47650146484375,
+     1386.9019775390625,
+     0,
+     0,
+     29,
+     12
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 46,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -417.75445556640625,
+     1525.8355712890625,
+     0,
+     0,
+     12,
+     7
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 1,
+    "n": 31,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -423.0212097167969,
+     1575.190185546875,
+     0,
+     0,
+     12,
+     21
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 2,
+    "n": 28,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -409.6971130371094,
+     1636.342041015625,
+     0,
+     0,
+     12,
+     15
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 6,
+    "n": 31,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -416.7947082519531,
+     1699.552490234375,
+     0,
+     0,
+     12,
+     14
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 7,
+    "n": 28,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -422.86871337890625,
+     1769.23583984375,
+     0,
+     0,
+     12,
+     20
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 10,
+    "n": 26,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -415.2123718261719,
+     1831.90869140625,
+     0,
+     0,
+     12,
+     21
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 13,
+    "n": 32,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -423.0611877441406,
+     1897.418701171875,
+     0,
+     0,
+     12,
+     21
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 11,
+    "n": 25,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -416.01702880859375,
+     1943.53955078125,
+     0,
+     0,
+     12,
+     25
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 12,
+    "n": 31,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -421.043212890625,
+     2011.1895751953125,
+     0,
+     0,
+     12,
+     12
+    ]
+   }
+  ],
+  "text": null
+ },
+ "Normal_AB.rm": {
+  "blocks": [
+   "AuthorIdsBlock",
+   "MigrationInfoBlock",
+   "PageInfoBlock",
+   "SceneTreeBlock",
+   "RootTextBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "SceneGroupItemBlock"
+  ],
+  "items": [
+   {
+    "kind": "group",
+    "label": "Layer 1",
+    "depth": 0
+   }
+  ],
+  "text": [
+   {
+    "style": 1,
+    "text": "AB"
+   }
+  ]
+ },
+ "Normal_A_stroke_2_layers.rm": {
+  "blocks": [
+   "AuthorIdsBlock",
+   "MigrationInfoBlock",
+   "PageInfoBlock",
+   "SceneTreeBlock",
+   "SceneTreeBlock",
+   "SceneTreeBlock",
+   "SceneTreeBlock",
+   "RootTextBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "SceneGroupItemBlock",
+   "SceneGroupItemBlock",
+   "SceneGroupItemBlock",
+   "SceneGroupItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock"
+  ],
+  "items": [
+   {
+    "kind": "group",
+    "label": "Layer 1",
+    "depth": 0
+   },
+   {
+    "kind": "group",
+    "label": "",
+    "depth": 1
+   },
+   {
+    "kind": "line",
+    "tool": 17,
+    "color": 0,
+    "n": 7,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -16.33978271484375,
+     -30.417510986328125,
+     0.37803956866264343,
+     0.0,
+     16,
+     11.320879776030779
+    ]
+   },
+   {
+    "kind": "group",
+    "label": "Layer 2",
+    "depth": 0
+   },
+   {
+    "kind": "group",
+    "label": "",
+    "depth": 1
+   },
+   {
+    "kind": "line",
+    "tool": 17,
+    "color": 0,
+    "n": 7,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     36.182708740234375,
+     14.3133544921875,
+     0.03889160230755806,
+     0.0,
+     16,
+     15.374726448208094
+    ]
+   }
+  ],
+  "text": [
+   {
+    "style": 1,
+    "text": "A"
+   }
+  ]
+ },
+ "Normal_A_stroke_2_layers_v3.2.2.rm": {
+  "blocks": [
+   "AuthorIdsBlock",
+   "MigrationInfoBlock",
+   "PageInfoBlock",
+   "SceneTreeBlock",
+   "SceneTreeBlock",
+   "SceneTreeBlock",
+   "SceneTreeBlock",
+   "SceneTreeBlock",
+   "RootTextBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "SceneGroupItemBlock",
+   "SceneGroupItemBlock",
+   "SceneGroupItemBlock",
+   "SceneGroupItemBlock",
+   "SceneGroupItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock"
+  ],
+  "items": [
+   {
+    "kind": "group",
+    "label": "Layer 1",
+    "depth": 0
+   },
+   {
+    "kind": "group",
+    "label": "",
+    "depth": 1
+   },
+   {
+    "kind": "line",
+    "tool": 17,
+    "color": 0,
+    "n": 7,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -16.33978271484375,
+     -30.417510986328125,
+     0,
+     0,
+     16,
+     11
+    ]
+   },
+   {
+    "kind": "group",
+    "label": "",
+    "depth": 1
+   },
+   {
+    "kind": "line",
+    "tool": 17,
+    "color": 0,
+    "n": 41,
+    "thickness": 1.0,
+    "rgba": null,
+    "p0": [
+     44.4940185546875,
+     -10.4813232421875,
+     3,
+     99,
+     8,
+     2
+    ]
+   },
+   {
+    "kind": "group",
+    "label": "Layer 2",
+    "depth": 0
+   },
+   {
+    "kind": "group",
+    "label": "",
+    "depth": 1
+   },
+   {
+    "kind": "line",
+    "tool": 17,
+    "color": 0,
+    "n": 7,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     36.182708740234375,
+     14.3133544921875,
+     0,
+     0,
+     16,
+     15
+    ]
+   }
+  ],
+  "text": [
+   {
+    "style": 1,
+    "text": "A"
+   },
+   {
+    "style": 1,
+    "text": "v3.2.2"
+   }
+  ]
+ },
+ "Normal_A_stroke_2_layers_v3.3.2.rm": {
+  "blocks": [
+   "AuthorIdsBlock",
+   "MigrationInfoBlock",
+   "PageInfoBlock",
+   "SceneTreeBlock",
+   "SceneTreeBlock",
+   "SceneTreeBlock",
+   "SceneTreeBlock",
+   "SceneTreeBlock",
+   "SceneTreeBlock",
+   "RootTextBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "SceneGroupItemBlock",
+   "SceneGroupItemBlock",
+   "SceneGroupItemBlock",
+   "SceneGroupItemBlock",
+   "SceneGroupItemBlock",
+   "SceneGroupItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock"
+  ],
+  "items": [
+   {
+    "kind": "group",
+    "label": "Layer 1",
+    "depth": 0
+   },
+   {
+    "kind": "group",
+    "label": "",
+    "depth": 1
+   },
+   {
+    "kind": "line",
+    "tool": 17,
+    "color": 0,
+    "n": 7,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -16.33978271484375,
+     -30.417510986328125,
+     0,
+     0,
+     16,
+     11
+    ]
+   },
+   {
+    "kind": "group",
+    "label": "",
+    "depth": 1
+   },
+   {
+    "kind": "line",
+    "tool": 17,
+    "color": 0,
+    "n": 41,
+    "thickness": 1.0,
+    "rgba": null,
+    "p0": [
+     44.4940185546875,
+     -10.4813232421875,
+     3,
+     99,
+     8,
+     2
+    ]
+   },
+   {
+    "kind": "group",
+    "label": "",
+    "depth": 1
+   },
+   {
+    "kind": "line",
+    "tool": 17,
+    "color": 0,
+    "n": 25,
+    "thickness": 1.0,
+    "rgba": null,
+    "p0": [
+     59.19268798828125,
+     -13.59759521484375,
+     2,
+     35,
+     8,
+     5
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 17,
+    "color": 0,
+    "n": 48,
+    "thickness": 1.0,
+    "rgba": null,
+    "p0": [
+     90.2120361328125,
+     -26.356475830078125,
+     1,
+     34,
+     8,
+     5
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 17,
+    "color": 0,
+    "n": 11,
+    "thickness": 1.0,
+    "rgba": null,
+    "p0": [
+     127.6207275390625,
+     -0.587615966796875,
+     1,
+     64,
+     8,
+     32
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 17,
+    "color": 0,
+    "n": 40,
+    "thickness": 1.0,
+    "rgba": null,
+    "p0": [
+     138.45660400390625,
+     -25.316070556640625,
+     1,
+     31,
+     8,
+     12
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 17,
+    "color": 0,
+    "n": 7,
+    "thickness": 1.0,
+    "rgba": null,
+    "p0": [
+     168.34893798828125,
+     -0.48187255859375,
+     1,
+     32,
+     8,
+     27
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 17,
+    "color": 0,
+    "n": 37,
+    "thickness": 1.0,
+    "rgba": null,
+    "p0": [
+     183.0966796875,
+     -22.26385498046875,
+     2,
+     31,
+     8,
+     1
+    ]
+   },
+   {
+    "kind": "group",
+    "label": "Layer 2",
+    "depth": 0
+   },
+   {
+    "kind": "group",
+    "label": "",
+    "depth": 1
+   },
+   {
+    "kind": "line",
+    "tool": 17,
+    "color": 0,
+    "n": 7,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     36.182708740234375,
+     14.3133544921875,
+     0,
+     0,
+     16,
+     15
+    ]
+   }
+  ],
+  "text": [
+   {
+    "style": 1,
+    "text": "A"
+   },
+   {
+    "style": 1,
+    "text": "v3.2.2"
+   },
+   {
+    "style": 1,
+    "text": "Normal bold italic"
+   },
+   {
+    "style": 1,
+    "text": "Bold italic normal"
+   },
+   {
+    "style": 3,
+    "text": "Bold line"
+   },
+   {
+    "style": 1,
+    "text": "Normal line"
+   },
+   {
+    "style": 2,
+    "text": "Heading line"
+   }
+  ]
+ },
+ "Wikipedia_highlighted_p1.rm": {
+  "blocks": [
+   "AuthorIdsBlock",
+   "MigrationInfoBlock",
+   "PageInfoBlock",
+   "SceneTreeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "SceneGroupItemBlock",
+   "SceneGlyphItemBlock",
+   "SceneGlyphItemBlock",
+   "SceneGlyphItemBlock",
+   "SceneGlyphItemBlock"
+  ],
+  "items": [
+   {
+    "kind": "group",
+    "label": "Layer 1",
+    "depth": 0
+   },
+   {
+    "kind": "glyph",
+    "text": "The reMarkable uses electronic paper",
+    "color": 3,
+    "rects": 1,
+    "rgba": null
+   },
+   {
+    "kind": "glyph",
+    "text": "ReMarkable uses its own operating system, named Codex.",
+    "color": 3,
+    "rects": 1,
+    "rgba": null
+   },
+   {
+    "kind": "glyph",
+    "text": "Codex is based on Linux and optimized for electronic paper",
+    "color": 3,
+    "rects": 1,
+    "rgba": null
+   },
+   {
+    "kind": "glyph",
+    "text": "display technology.[13]",
+    "color": 3,
+    "rects": 2,
+    "rgba": null
+   }
+  ],
+  "text": null
+ },
+ "Wikipedia_highlighted_p2.rm": {
+  "blocks": [
+   "AuthorIdsBlock",
+   "MigrationInfoBlock",
+   "PageInfoBlock",
+   "SceneTreeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "SceneGroupItemBlock",
+   "SceneLineItemBlock",
+   "SceneGlyphItemBlock",
+   "SceneGlyphItemBlock"
+  ],
+  "items": [
+   {
+    "kind": "group",
+    "label": "Layer 1",
+    "depth": 0
+   },
+   {
+    "kind": "glyph",
+    "text": "177 mm \u00d7\u00a0256 mm\u00d7\u00a06.7 mm",
+    "color": 4,
+    "rects": 2,
+    "rgba": null
+   },
+   {
+    "kind": "glyph",
+    "text": "also",
+    "color": 5,
+    "rects": 1,
+    "rgba": null
+   }
+  ],
+  "text": null
+ },
+ "With_SceneInfo_Block.rm": {
+  "blocks": [
+   "AuthorIdsBlock",
+   "MigrationInfoBlock",
+   "PageInfoBlock",
+   "SceneInfo",
+   "SceneTreeBlock",
+   "SceneTreeBlock",
+   "RootTextBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "SceneGroupItemBlock",
+   "SceneLineItemBlock",
+   "SceneGroupItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock",
+   "SceneLineItemBlock"
+  ],
+  "items": [
+   {
+    "kind": "group",
+    "label": "Layer 1",
+    "depth": 0
+   },
+   {
+    "kind": "group",
+    "label": "",
+    "depth": 1
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 44,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -14.927154541015625,
+     -192.92037963867188,
+     0,
+     0,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 31,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -44.86785888671875,
+     -182.83651733398438,
+     0,
+     0,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 45,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     -2.226654052734375,
+     -160.7042236328125,
+     0,
+     0,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 40,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     33.869873046875,
+     -162.45628356933594,
+     0,
+     0,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 26,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     54.678863525390625,
+     -187.94337463378906,
+     0,
+     0,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 25,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     44.39996337890625,
+     -166.44972229003906,
+     0,
+     0,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 26,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     113.76943969726562,
+     -202.02725219726562,
+     0,
+     0,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 39,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     120.01577758789062,
+     -166.4925994873047,
+     0,
+     0,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 28,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     145.7764892578125,
+     -171.22457885742188,
+     0,
+     0,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 24,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     169.20196533203125,
+     -171.494384765625,
+     0,
+     0,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 27,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     190.38192749023438,
+     -200.2792510986328,
+     0,
+     0,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 23,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     175.91860961914062,
+     -179.61602783203125,
+     0,
+     0,
+     12,
+     0
+    ]
+   },
+   {
+    "kind": "line",
+    "tool": 15,
+    "color": 0,
+    "n": 22,
+    "thickness": 2.0,
+    "rgba": null,
+    "p0": [
+     106.60159301757812,
+     -185.6626434326172,
+     0,
+     0,
+     12,
+     0
+    ]
+   }
+  ],
+  "text": [
+   {
+    "style": 1,
+    "text": "TEST TEXT"
+   },
+   {
+    "style": 1,
+    "text": "Test text from keyboard"
+   }
+  ]
+ },
+ "test-crdt-ordering.rm": {
+  "blocks": [
+   "AuthorIdsBlock",
+   "MigrationInfoBlock",
+   "PageInfoBlock",
+   "SceneInfo",
+   "SceneTreeBlock",
+   "RootTextBlock",
+   "TreeNodeBlock",
+   "TreeNodeBlock",
+   "SceneGroupItemBlock"
+  ],
+  "items": [
+   {
+    "kind": "group",
+    "label": "Layer 1",
+    "depth": 0
+   }
+  ],
+  "text": [
+   {
+    "style": 2,
+    "text": "A12_Z"
+   }
+  ]
+ }
+}

@@ -1,0 +1,542 @@
+00cb3d99.qml     9 Shortcut  | xofm.libs.keyboard ark.tokens
+00cb404c.qml    54 BaseView bootprogress-screen-mode | xofm.libs.qtgui xofm.libs.epaper
+00cb44b0.qml   182 BaseView  | QtQuick.Layouts QtQml.Models com.remarkable common
+00cb4a1b.qml    41 Column  | device.ui.text com.remarkable
+00cb4c58.qml   193 BaseView  | QtQuick.Layouts QtQml.Models com.remarkable common
+00cbc0fc.qml    18 Shortcut  | xofm.libs.keyboard xofm.libs.pincode xofm.libs.qtgui
+00cbc1f4.qml    12 Shortcut  | xofm.libs.keyboard xofm.libs.pincode
+00cbc2ba.qml   203 Column  | QtQuick.Controls xofm.libs.qtgui xofm.libs.settings device.ui.controls
+00cbcb2c.qml    82 BaseView document-drawer-window | xofm.libs.qtgui xofm.libs.controls xofm.libs.epaper xofm.libs.onboarding
+00cbedef.qml    63 BaseView global-swipe-from-top,open-drawer,open-quick-settings | xofm.libs.qtgui xofm.libs.gestures xofm.libs.devicescreen ark.controls
+00cc12fe.qml    25 BaseView  | QtQuick.Controls xofm.libs.qtgui xofm.libs.controls
+00cc13f8.qml    33 BaseView  | QtQuick.Controls xofm.libs.qtgui common com.remarkable
+00cc1548.qml    98 FocusScope PasswordInput | device.ui.controls device.ui.text device.ui.headers com.remarkable
+00cc18a8.qml    37 BaseView  | device.view.documentview xofm.libs.devicescreen xofm.libs.qtgui xofm.libs.orientation
+00cc1a53.qml    28 BaseView  | QtQuick.Controls xofm.libs.qtgui xofm.libs.controls
+00cc1b64.qml    66 Background  | QtQuick.Layouts com.remarkable common device.ui.text
+00cc1de5.qml    83 Rectangle  | com.remarkable common device.ui.text device.ui.controls
+00cc256d.qml    15 KYBD.Shortcut  | xofm.libs.keyboard xofm.libs.localization
+00cc2852.qml    62 BaseView  | xofm.libs.qtgui xofm.libs.batterymanager xofm.libs.dialogs
+00cc2ac3.qml    12 MinimalBatteryIndicator  | xofm.libs.batterymanager xofm.libs.system
+00cc5e0b.qml     8 ApplicationWindow  | QtQuick.Controls
+00cc5e7a.qml     7 Window  | QtQuick.Window
+00cc627e.qml    17 BaseView  | xofm.libs.qtgui
+00cece9c.qml    38 BaseView  | com.remarkable xofm.libs.qtgui xofm.libs.onboarding ark.controls
+00ced0d0.qml    78 BaseView  | QtQuick.Controls device.view.main com.remarkable xofm.libs.qtgui
+00d82ba4.qml   217 Item  | com.remarkable common device.global ark.tokens
+00d8363c.qml     7 Text  | common
+00d836a1.qml    84 Item  | common device.ui.text ark.controls
+00d839d6.qml     8 Text  | common com.remarkable
+00d83a48.qml     7 Text  | common
+00d83aa4.qml     8 Text  | common
+00d83b9d.qml     6 Text  | common
+00d83bf0.qml     7 Text  | common
+00d83c4c.qml     7 Text  | common
+00d83cae.qml    55 FocusScope  | 
+00d83f8c.qml    48 Item  | common device.global
+00d841aa.qml   207 ScrollArea emptyViewLayout,emptyViewIcon,emptyViewText,emptyViewSubText,emptyViewQrCode,qrImage | QtQuick.Layouts common com.remarkable xofm.libs.explorer
+00d84aab.qml   327 FocusScope scroll-container | QtQuick.Controls com.remarkable common ark.controls
+00d85433.qml    84 ButtonBase dropdownButtonRow,dropdownButtonIcon,labelContainer,betaLabel,buttonText | QtQuick.Layouts common device.global device.ui.text
+00d85792.qml    74 Item Panel | common device.ui.text
+00d85a67.qml    42 Item  | common com.remarkable
+00d85bff.qml    81 ScrollContainer scrollIndicator | QtQuick.Controls com.remarkable common device.view.experimental
+00d85f30.qml    18 Rectangle  | common
+00d85fe4.qml   285 MouseArea page-slider | device.ui.text com.remarkable common device.view.experimental
+00d86920.qml    97 FocusScope  | xofm.libs.peninput
+00d86d16.qml    32 Item  | com.remarkable
+00d86e2f.qml   144 KeyboardNavigationHandler  | com.remarkable device.ui.text device.ui.controls xofm.libs.qtgui
+00d873e3.qml    62 Rectangle  | common device.ui.text ark.controls
+00d87649.qml    52 Rectangle  | common com.remarkable device.ui.text ark.controls
+00d87811.qml    15 ArkControls.Toggle  | ark.controls
+00d878bd.qml    27 Rectangle  | common ark.controls
+00d87a40.qml    58 Item  | com.remarkable common
+00d87b78.qml    47 ButtonBase  | com.remarkable common device.ui.controls device.ui.text
+00d87da6.qml    33 KeyboardNavigationHandler  | common com.remarkable
+00d88165.qml    31 Rectangle  | common
+00d88276.qml   182 DeviceKeyboardNavigationHandler  | com.remarkable common device.ui.text ark.controls
+00d88833.qml    82 Rectangle  | device.ui.text common ark.controls
+00d88b91.qml    91 Item  | common com.remarkable ark.controls
+00d88e2a.qml    76 Item  | common device.ui.text
+00d89132.qml    88 Item  | common com.remarkable device.ui.text
+00d89448.qml    10 IconButton  | common
+00d894d7.qml    62 Item inputComponentMouseArea | com.remarkable common device.ui.text ark.controls
+00d89728.qml    79 Item  | common com.remarkable device.ui.text device.ui.controls
+00d899ff.qml    80 FocusScope  | com.remarkable common device.ui.text xofm.libs.controls
+00d89ceb.qml    90 DeviceKeyboardNavigationHandler ActionBar | QtQuick.Layouts com.remarkable common device.ui.text
+00d8a01c.qml   106 HeaderContainer  | common com.remarkable device.ui.text device.ui.controls
+00d8a3cb.qml   113 DeviceKeyboardNavigationHandler HeaderContainer | com.remarkable common device.ui.controls
+00d8a72b.qml    98 HeaderContainer HeaderActions | com.remarkable common device.ui.text
+00d8aaf4.qml    55 HeaderContainer Header | com.remarkable common device.ui.text
+00d8ad17.qml    71 ButtonBase  | com.remarkable common device.ui.text device.ui.controls
+00d8b006.qml   633 Background DocumentView,global | QtQuick.Window ark.tokens ark.controls com.remarkable
+00d8c561.qml   127 Background  | com.remarkable common device.ui.text device.ui.controls
+00d8c9ce.qml    77 Rectangle  | com.remarkable common device.ui.text device.ui.controls
+00d8ccea.qml    93 Rectangle  | com.remarkable common device.ui.text device.ui.controls
+00d8cfb1.qml    50 Background  | com.remarkable common device.ui.text xofm.libs.onboarding
+00d8d23a.qml    14 QtObject  | com.remarkable
+00d8d2ec.qml    16 QtObject  | com.remarkable
+00d8d40a.qml    15 QtObject  | com.remarkable
+00d8d4bf.qml    93 QtObject  | com.remarkable
+00d8d745.qml   248 ContentItemBase  | QtQuick.Layouts com.remarkable common device.ui.controls
+00d8df28.qml   128 Item  | com.remarkable common device.global device.ui.controls
+00d8e3ce.qml    61 ArkControls.Icon  | com.remarkable common xofm.libs.explorer ark.controls
+00d8e613.qml   266 GridView ContentGridView,explorer-grid-swipe-right | com.remarkable common xofm.libs.explorer xofm.libs.navigation
+00d8f022.qml   142 Item  | com.remarkable common device.ui.text ark.controls
+00d8f561.qml   327 ContentItemBase thumbnailIcon,thumbnailCover,hwsRow,hwsHitsText,sizeText | QtQuick.Layouts com.remarkable common device.ui.controls
+00d8fe5c.qml   131 ContentItemBase  | QtQuick.Layouts com.remarkable common device.ui.controls
+00d9025f.qml   155 MouseArea  | com.remarkable common device.ui.controls xofm.libs.navigation
+00d906ff.qml   196 DeviceKeyboardNavigationHandler  | com.remarkable common device.ui.controls device.ui.text
+00d90e6e.qml   165 Item  | com.remarkable common device.global device.ui.controls
+00d913d3.qml   182 ListView ContentListView,explorer-list-swipe-right | com.remarkable common xofm.libs.explorer xofm.libs.gestures
+00d91a0f.qml   183 DeviceKeyboardNavigationHandler  | com.remarkable common device.global device.ui.controls
+00d92093.qml   573 FocusScope nav-search-close,SearchView,searchMatches | com.remarkable common device.global device.ui.text
+00d9351f.qml   408 DeviceKeyboardNavigationHandler ExplorerView | com.remarkable common device.global device.ui.controls
+00d94342.qml   110 ContentItemBase ContentItemBase | QtQuick.Layouts com.remarkable common device.ui.controls
+00d94661.qml   103 Background  | QtQuick.Layouts QtQuick.Controls com.remarkable common
+00d94a01.qml   188 DeviceKeyboardNavigationHandler Accessibility,StandardTextSizeSelector,LargeTextSizeSelector | QtQuick.Layouts com.remarkable common xofm.libs.qtgui
+00d9509c.qml   218 DeviceKeyboardNavigationHandler LanguageAndKeyboard,SystemLanguage,SystemLanguageDialog | QtQuick.Layouts com.remarkable com.remarkable.devicetelemetry common
+00d9569b.qml   124 DeviceKeyboardNavigationHandler Security | QtQuick.Layouts com.remarkable common device.ui.text
+00d95ac8.qml   218 DeviceKeyboardNavigationHandler Cloud | QtQuick.Layouts common com.remarkable com.remarkable.devicetelemetry
+00d96365.qml   260 DeviceKeyboardNavigationHandler General | QtQuick.Layouts QtQuick.Controls com.remarkable common
+00d96a54.qml   326 DeviceKeyboardNavigationHandler Settings | QtQuick.Layouts com.remarkable common device.global
+00d97445.qml    64 RowLayout LeftRadioButton,RightRadioButton | QtQuick.Layouts com.remarkable common device.ui.controls
+00d9765e.qml    83 Item  | com.remarkable common device.ui.text
+00d978e3.qml   172 DeviceKeyboardNavigationHandler Storage | QtQuick.Layouts common com.remarkable xofm.libs.batterymanager
+00d97fd4.qml   227 Background  | QtQuick.Layouts com.remarkable common device.ui.controls
+00d98841.qml   132 Background  | com.remarkable common device.ui.controls device.ui.text
+00d98d51.qml   170 DeviceKeyboardNavigationHandler Battery | QtQuick.Layouts com.remarkable common device.ui.text
+00d99369.qml   111 DeviceKeyboardNavigationHandler Display | QtQuick.Layouts com.remarkable common device.ui.text
+00d99708.qml    18 IconButton  | com.remarkable common device.ui.controls
+00d9983d.qml   370 Item  | com.remarkable common device.global
+00d9a387.qml    52 Item  | com.remarkable common
+00d9a5f6.qml    42 Rectangle  | com.remarkable common ark.controls
+00d9a7dd.qml    55 GridView  | QtQuick.Layouts common
+00d9aa25.qml   154 Background  | QtQuick.Layouts com.remarkable common device.ui.controls
+00d9af9d.qml   109 Item docview-close | com.remarkable device.global device.ui.controls
+00d9b294.qml   644 Background tableOfContentsButton,pageActions | QtQuick.Controls QtQuick.Layouts com.remarkable common
+00d9c3b9.qml   101 Popup  | device.global device.ui.controls device.ui.headers com.remarkable
+00d9c76c.qml    75 Item align-left,align-justify | com.remarkable common device.ui.text xofm.libs.epub
+00d9ca54.qml    82 Loader  | com.remarkable common device.ui.headers
+00d9cc7b.qml    72 GlyphSelection  | com.remarkable common xofm.libs.sceneview ark.tokens
+00d9cef6.qml    72 PagesItem  | com.remarkable common device.view.navigator device.ui.controls
+00d9d1b8.qml   491 Item actionBarLoader,foldoutLoader | com.remarkable com.remarkable.hwctelemetry common device.view.navigator
+00d9e147.qml   531 Background templateTabs,categoryFilter | QtQuick.Layouts com.remarkable common device.ui.controls
+00d9f14b.qml    97 Item  | com.remarkable com.remarkable.hwctelemetry common device.ui.text
+00d9f50b.qml    62 FocusFrame  | com.remarkable com.remarkable.devicetelemetry common device.ui.controls
+00d9f812.qml   205 Background  | common device.ui.controls ark.tokens ark.controls
+00d9fd92.qml   123 PageSlider  | common com.remarkable device.ui.controls xofm.libs.toolbar
+00da01c3.qml   134 Item  | com.remarkable common xofm.libs.devicesceneview.impl xofm.libs.sceneview
+00da06f0.qml    88 Rectangle  | ark.tokens xofm.libs.system xofm.libs.controls xofm.libs.gestures
+00da0a73.qml   133 Popup  | device.global device.ui.controls device.ui.headers com.remarkable
+00da0e96.qml   131 Rectangle  | common com.remarkable device.ui.text ark.controls
+00da1310.qml    27 MouseArea  | xofm.libs.peninput
+00da141b.qml    56 Item  | com.remarkable common xofm.libs.sceneview xofm.libs.devicesceneview.impl
+00da16b3.qml    69 Item font-scale- | com.remarkable common device.ui.text xofm.libs.epub
+00da194f.qml    82 Item margin-minimum,margin-medium,margin-maximum | com.remarkable common device.ui.text xofm.libs.epub
+00da1c2e.qml    83 Item  | com.remarkable common device.ui.text xofm.libs.epub
+00da1f6c.qml  1950 FocusScope SceneViewsRoot,scene-view | com.remarkable common device.global device.view.experimental
+00da5947.qml   345 Popup  | com.remarkable common device.ui.controls com.remarkable.devicetelemetry
+00da6487.qml   517 TouchArea cursor-drag,ghost-buster,click-1,recent,docview-scroll,next-page | com.remarkable common device.global device.view.experimental
+00da7523.qml   112 Item  | com.remarkable common
+00da792b.qml   160 Item startSelectionHandle,endSelectionHandle | com.remarkable common xofm.libs.peninput device.global
+00da7e9b.qml    27 TouchAreaSwipeFilter fast-scroll | com.remarkable common xofm.libs.gestures xofm.libs.devicescreen
+00da8054.qml    47 Item  | common
+00da817a.qml    32 ArkControls.NotificationBar  | QtQuick.Layouts ark.controls ark.tokens
+00da8507.qml    82 PagesItem  | com.remarkable common device.view.navigator device.ui.controls
+00da87d5.qml    83 ShapesOverlay  | com.remarkable common xofm.libs.devicesceneview.impl
+00da8aeb.qml   200 Rectangle undoButton,redoButton,vkb-format-menu | com.remarkable common ark.controls QtQuick.Layouts
+00da9382.qml    35 ButtonBase  | common com.remarkable device.ui.controls ark.controls
+00da94dc.qml    51 ActionBar  | com.remarkable device.ui.headers xofm.libs.dialogs
+00da96df.qml  2674 FocusScope DocumentView.ToolSettings,screenShareIndicators | QtQuick.Controls com.remarkable common device.ui.controls
+00dae11b.qml   172 Loader  | com.remarkable common device.ui.controls ark.controls
+00dae71c.qml   190 Background  | QtQuick.Layouts device.ui.headers device.ui.controls com.remarkable
+00daebb5.qml   167 MouseArea  | com.remarkable common ark.controls xofm.libs.models
+00daf19e.qml    93 Item  | com.remarkable com.remarkable.hwctelemetry common device.ui.text
+00daf5b7.qml    81 Item  | com.remarkable xofm.libs.peninput
+00daf9df.qml     7 Action  | QtQuick.Controls
+00dafa31.qml    99 Rectangle icon | com.remarkable common device.ui.text
+00dafe90.qml    82 Item line-height-minimum,line-height-medium,line-height-maximum | com.remarkable common device.ui.text xofm.libs.epub
+00db017b.qml   310 HeaderActions search-results-close | com.remarkable common device.ui.controls device.ui.text
+00db0b2f.qml    97 FoldoutOverlay favoriteFoldoutItem,tagFoldoutItem,emailFoldoutItem,archiveFoldoutItem,retrieveFoldoutItem | QtQuick.Layouts com.remarkable ark.controls
+00db0e2a.qml    16 SidebarItem  | com.remarkable common
+00db0ef0.qml    43 FoldoutOverlay  | QtQuick.Layouts com.remarkable common device.ui.controls
+00db1073.qml    80 SidebarFoldoutContentItem  | common device.view.experimental ark.controls
+00db1399.qml   136 DeviceKeyboardNavigationHandler ContentHeader | QtQuick.Layouts com.remarkable common device.global
+00db1818.qml    51 ColumnLayout TooManyIntegrations,FoldoutItem%1 | QtQuick.Controls QtQuick.Layouts ark.controls
+00db1a7f.qml   559 DeviceKeyboardNavigationHandler Sidebar,filterMyFiles,filters,filterPinned,filterTags,integrations | QtQuick.Layouts com.remarkable common device.global
+00db282e.qml    34 ArkControls.Foldout notebookFoldoutItem,searchFoldoutItem | QtQuick.Layouts ark.controls
+00db2957.qml   327 DeviceKeyboardNavigationHandler  | common com.remarkable device.global device.ui.text
+00db32b5.qml    21 ArkControls.Foldout  | ark.controls
+00db3383.qml    35 SidebarItem  | common device.ui.text
+00db34ea.qml   457 DeviceKeyboardNavigationHandler icon,dropdownContent,sortListView,gridSizeHeader,gridSizeHeaderLabel,buttonHandler | com.remarkable common device.ui.text device.ui.controls
+00db40c6.qml    24 ArkControls.Foldout moveOutFoldoutItem | QtQuick.Layouts ark.controls
+00db41d5.qml  1116 HeaderContainer ActionHeader,defaultActionBar,foldoutLoader,foldoutLoader,moveFoldoutLoader,importFoldoutLoader | QtQuick.Layouts com.remarkable common com.remarkable.devicetelemetry
+00db5d94.qml   298 Item global-search-shortcut,new-document-shortcut,new-folder-shortcut,new-quicksheet-shortcut | QtQuick.Layouts common com.remarkable device.global
+00db6543.qml   246 Item dropdownButton,viewColumn,shiftedViewColumn | com.remarkable common device.ui.text device.ui.controls
+00db6c4a.qml    88 FoldoutOverlay  | QtQuick.Layouts com.remarkable common device.ui.controls
+00db6f84.qml    19 IconButton  | com.remarkable common device.ui.controls
+00db706f.qml   204 Loader moreFoldoutLoader | com.remarkable common device.ui.headers xofm.libs.explorer
+00db7910.qml    71 FoldoutOverlay tagFoldoutItem,addBeforeItem,addAfterItem,convertFoldoutItem,emailFoldoutItem | QtQuick.Layouts ark.controls
+00db7b16.qml   923 FocusScope nav-close,moreFoldoutLoader,page-selection-info-close | QtQuick.Layouts com.remarkable common device.global
+00db949c.qml    72 Item  | com.remarkable common device.ui.text device.ui.controls
+00db97e0.qml    30 ArkControls.ActionBar  | QtQuick.Layouts ark.controls
+00db9910.qml   278 Item  | com.remarkable common device.ui.text device.ui.controls
+00dba000.qml   250 MouseArea ContentEntriesGridItem | QtQuick.Layouts com.remarkable common device.view.navigator
+00dba796.qml    37 FoldoutOverlay newFolderFoldoutItem,searchFoldoutItem | QtQuick.Layouts ark.controls
+00dba8db.qml     8 QtObject  | 
+00dba9aa.qml    41 Item  | com.remarkable
+00dbab3e.qml    22 Rectangle  | common ark.controls
+00dbda24.qml    30 QtObject  | 
+00dbdbec.qml   436 FocusScope  | common
+00dbe7d5.qml   151 Image  | com.remarkable common ark.controls
+00dbec67.qml    46 Rectangle  | com.remarkable common ark.controls
+00dbee87.qml   136 MouseArea  | 
+00dbf4cf.qml    96 Item  | com.remarkable common ark.controls
+00dbf869.qml    19 Rectangle  | com.remarkable ark.controls
+00dbf955.qml   111 Item  | com.remarkable common
+00dbfccf.qml    25 QtObject  | com.remarkable common
+00dbfde0.qml    15 Item  | 
+00dbff61.qml    33 QtObject  | 
+00dc00f6.qml    42 QtObject  | 
+00dc02dd.qml   195 Item  | QtQuick.Layouts com.remarkable common ark.controls
+00dc0798.qml    49 Item  | com.remarkable common ark.controls
+00dc09ce.qml    77 Item  | com.remarkable
+00dc0d0a.qml    10 QtObject  | 
+00dc0d86.qml    28 Item  | com.remarkable common
+00dc107b.qml   164 QtObject  | 
+00dc1709.qml    29 Row  | ark.controls
+00dc183a.qml    43 Rectangle  | com.remarkable common ark.controls ark.tokens
+00dc1a2f.qml    63 Item  | 
+00dc1c8e.qml    43 FocusScope  | common
+00dc1e42.qml    30 QtObject  | 
+00dc1fbf.qml   487 Item bottomRightHandle,selectionHandlerMenu | com.remarkable common ark.controls ark.tokens
+00dc2df0.qml   144 ArkControls.ContextualMenu  | ark.controls
+00decf1f.qml    54 BaseView  | com.remarkable device.view.navigator device.view.syncserviceexplorer device.ui.controls
+00ded851.qml    10 Shortcut  | xofm.libs.keyboard xofm.libs.manualrotation
+00df0a49.qml    35 BaseView  | xofm.libs.qtgui com.remarkable
+00df0bca.qml    94 BaseView  | QtQuick.Layouts xofm.libs.qtgui xofm.libs.analytics.ui xofm.libs.devicescreen
+00df0fd0.qml   219 InputBlocker  | QtQuick.Layouts xofm.libs.tags xofm.libs.analytics.ui xofm.libs.controls
+00df16fd.qml    41 BaseView  | QtQuick.Layouts xofm.libs.qtgui com.remarkable
+00df18b5.qml    62 BaseView  | QtQuick.Layouts xofm.libs.qtgui xofm.libs.analytics.ui com.remarkable
+00df1b4d.qml    48 BaseView  | xofm.libs.qtgui xofm.libs.dialogs
+00df1d27.qml   195 InputBlocker  | QtQuick.Layouts xofm.libs.tags xofm.libs.controls ark.controls
+00df22c9.qml   119 InputBlocker  | QtQuick.Layouts com.remarkable common device.ui.controls
+00df26bd.qml   176 Action library-action,new-quicksheet-shortcut,new-folder-shortcut,new-document-shortcut,create-menu-popup | QtQuick.Layouts xofm.libs.homescreen xofm.libs.qtgui xofm.libs.explorer
+00df2d1b.qml   132 InputBlocker  | QtQuick.Layouts ark.controls ark.tokens xofm.libs.controls
+00df3185.qml    23 Action trash-action | xofm.libs.qtgui xofm.libs.notificationbar xofm.libs.homescreen
+00df3308.qml    34 MouseArea  | QtQuick.Layouts ark.controls
+00df472c.qml    21 BaseView  | xofm.libs.qtgui xofm.libs.onboarding
+00df480a.qml   109 BaseView  | xofm.libs.onboarding xofm.libs.qtgui
+00df4d1d.qml    36 BaseView  | xofm.libs.qtgui xofm.libs.onboarding xofm.libs.analytics.ui com.remarkable
+00df4f1a.qml    80 BaseView  | xofm.libs.qtgui xofm.libs.onboarding com.remarkable device.ui.controls
+00df78eb.qml   172 Background  | common com.remarkable device.ui.headers device.ui.controls
+00df7e9b.qml   614 InputBlocker share-email-close | com.remarkable common device.ui.text device.ui.controls
+00df8e06.qml    50 BaseView  | xofm.libs.qtgui xofm.modules.sendmail xofm.libs.orientation xofm.libs.ghostbuster
+00e2e6e7.qml    18 CellItemWrapper  | xofm.libs.qtgui xofm.libs.settings
+00e2e7cc.qml   126 BaseView  | com.remarkable QtQuick.Layouts common device.ui.controls
+00e2ec01.qml    18 ArkControls.InfoMessage  | QtQuick.Layouts ark.tokens ark.controls xofm.libs.batterymanager
+00e2ed85.qml    48 BaseView  | xofm.libs.qtgui xofm.libs.onboarding QtQml.Models xofm.modules.softwareupdate
+00e2f02b.qml    31 ArkControls.Panel  | QtQuick.Layouts device.ui.controls ark.controls com.remarkable
+00e2f248.qml    98 ArkControls.InfoMessage  | com.remarkable common device.ui.controls device.ui.text
+00e2f527.qml   238 SetupBasePage updateTimeout,page,progressBar | com.remarkable common ark.controls ark.tokens
+00e2fd4c.qml    64 ArkControls.Panel  | QtQuick.Layouts com.remarkable common device.ui.controls
+00e2ffe6.qml    32 ArkControls.Panel  | QtQuick.Layouts device.ui.controls ark.controls xofm.modules.softwareupdate
+00e3199e.qml    11 BaseView  | xofm.libs.qtgui device.view.settings
+00e31a3e.qml    15 CellItemWrapper  | com.remarkable xofm.libs.settings
+00e31b12.qml   164 BaseView  | QtQuick.Layouts common com.remarkable xofm.libs.qtgui
+00e31ff2.qml    19 CellItemWrapper  | com.remarkable xofm.libs.settings
+00e32120.qml    16 BaseView  | xofm.libs.qtgui device.view.settings xofm.modules.settings
+00e321fc.qml    39 SetupBasePage  | device.view.settings xofm.libs.setup ark.controls
+00e323da.qml    10 Shortcut  | xofm.libs.keyboard
+00e3246a.qml    18 BaseView  | xofm.libs.qtgui device.view.settings
+00e3254c.qml    51 BaseView  | xofm.libs.qtgui xofm.libs.controls xofm.libs.ghostbuster device.view.settings
+00e327a5.qml    30 ArkControls.Cell  | xofm.libs.qtgui ark.controls
+00e328c1.qml    12 BaseView  | xofm.libs.qtgui xofm.libs.factoryreset
+00e32954.qml    27 ArkControls.Panel  | com.remarkable xofm.modules.settings device.ui.controls ark.controls
+00e32ae8.qml    17 Shortcut  | xofm.libs.keyboard xofm.libs.pincode xofm.libs.qtgui xofm.libs.settings
+00e32be3.qml     9 Shortcut  | xofm.libs.keyboard xofm.libs.qtgui
+00e32c86.qml    12 CellItemWrapper  | xofm.libs.settings
+00e32d35.qml    16 ColumnLayout  | QtQuick.Layouts xofm.libs.qtgui ark.controls
+00e32dfc.qml    20 GridLayout  | QtQuick.Layouts xofm.libs.qtgui ark.controls
+00e32eea.qml    19 QuickSettingsToggle  | com.remarkable xofm.libs.settings
+00e47e74.qml    82 InputBlocker  | xofm.libs.controls ark.tokens ark.controls
+00e48194.qml    57 MouseArea  | ark.controls
+00e483c5.qml    18 BaseView  | xofm.libs.qtgui xofm.libs.orientation
+00e484bb.qml   308 Item keyboard | xofm.modules.virtualkeyboard xofm.libs.epaper
+00e48e6e.qml   131 Rectangle  | 
+00e588ed.qml   298 Background  | common device.ui.controls xofm.libs.controls xofm.libs.settings
+00e5918c.qml   106 Item  | QtQuick.Layouts QtQuick.Controls common ark.tokens
+00e59533.qml    85 SetupBasePage  | QtQuick.Layouts QtQuick.Controls com.remarkable common
+00e598e2.qml    46 BaseView  | xofm.libs.qtgui xofm.libs.setup xofm.libs.wifi xofm.modules.wifi
+00e59ada.qml    62 Item  | QtQuick.Layouts common device.global xofm.libs.wifi
+00e59d9a.qml    29 BaseView  | xofm.libs.qtgui xofm.libs.wifi xofm.modules.wifi
+00e59e99.qml    97 Column  | QtQuick.Controls QtQuick.Layouts ark.tokens ark.controls
+00e5a1a4.qml   236 ColumnLayout  | QtQuick.Layouts QtQuick.Controls common device.ui.controls
+00ea5340.qml    50 ToolbarTool filterMenu | QtQuick.Layouts xofm.libs.onboarding xofm.libs.toolbar ark.controls
+00ea5574.qml    23 ToolbarTool addPageButton | QtQuick.Layouts xofm.libs.onboarding ark.controls ark.tokens
+00ea5685.qml    42 ToolbarTool exportIntegrationOptionsButton,exportIntegrationOptionsContent | QtQuick.Layouts xofm.libs.explorer xofm.libs.onboarding xofm.libs.toolbar
+00ea5853.qml    60 ToolbarTool undoButton | QtQuick.Layouts xofm.libs.onboarding xofm.libs.toolbar ark.controls
+00ea5b1d.qml    57 PenTool selectionButton | QtQuick.Layouts xofm.libs.onboarding xofm.libs.toolbar ark.controls
+00ea5deb.qml     9 WritingTool secondaryPenMenu | 
+00ea5e6e.qml   146 PenTool eraserMenu,eraserFoldout,thicknessFoldout,eraseAllFoldout | QtQuick.Layouts com.remarkable xofm.libs.onboarding xofm.libs.toolbar
+00ea63db.qml   165 Loader  | xofm.libs.toolbar xofm.libs.onboarding ark.controls
+00ea6a93.qml    19 ToolbarTool sendByEmailButton | QtQuick.Layouts xofm.libs.onboarding ark.controls ark.tokens
+00ea6b75.qml    19 ToolbarTool screenShareButton | QtQuick.Layouts xofm.libs.onboarding ark.controls ark.tokens
+00ea6ca2.qml    19 ToolbarTool orientationButton | QtQuick.Layouts xofm.libs.onboarding ark.controls ark.tokens
+00ea6de9.qml    99 ToolbarTool shareMenu,shareMenuContent,exportIntegrationsLoader,exportIntegrationOptionsButton,exportIntegrationsExpandedDelegate,exportIntegrations | QtQuick.Layouts xofm.libs.explorer xofm.libs.onboarding ark.controls
+00ea70e6.qml   254 ToolbarTool settingsMenu,extraEditingToolLoader_,toggleToolLoader_,utilityToolLoader_,adjustmentToolLoader_,managementToolLoader_ | QtQuick.Layouts QtQuick.Controls xofm.libs.onboarding xofm.libs.toolbar
+00ea77e1.qml     9 WritingTool primaryPenMenu | 
+00ea7863.qml    11 ToolModel  | com.remarkable xofm.libs.toolbar
+00ea78d5.qml    25 ToolbarTool documentSettingsButton | QtQuick.Layouts xofm.libs.onboarding ark.controls ark.tokens
+00ea79f5.qml    29 ToolbarTool enableShapesButton | QtQuick.Layouts xofm.libs.onboarding ark.controls ark.tokens
+00ea7ba1.qml    19 ToolbarTool messagingIntegrationButton | QtQuick.Layouts xofm.libs.onboarding ark.controls ark.tokens
+00ea7ca9.qml    20 ToolbarTool convertToTextButton | QtQuick.Layouts xofm.libs.onboarding ark.controls ark.tokens
+00ea7da3.qml    60 ToolbarTool redoButton | QtQuick.Layouts xofm.libs.onboarding xofm.libs.toolbar ark.controls
+00ea8069.qml    40 ToolbarTool pageOverviewButton | QtQuick.Layouts xofm.libs.onboarding ark.controls ark.tokens
+00ea8265.qml    19 ToolbarTool searchButton | QtQuick.Layouts xofm.libs.onboarding ark.controls ark.tokens
+00ea8347.qml    74 ToolbarTool adjustViewMenu | QtQuick.Layouts xofm.libs.onboarding ark.controls ark.tokens
+00ea8590.qml    21 ToolbarTool shareByUrlButton | QtQuick.Layouts xofm.libs.onboarding ark.controls ark.tokens
+00ea86ad.qml    43 ToolbarTool tagsMenu | QtQuick.Layouts QtQuick.Controls xofm.libs.onboarding ark.controls
+00ea8903.qml   320 Item  | xofm.libs.toolbar
+00ea8fa8.qml    20 ToolbarTool textSettingsButton | QtQuick.Layouts xofm.libs.onboarding ark.controls ark.tokens
+00ea90a7.qml   154 ToolbarTool typingMenu | QtQuick.Layouts xofm.libs.onboarding xofm.libs.toolbar ark.controls
+00ea9671.qml    24 ToolbarTool  | 
+00ea97ed.qml   673 FocusScope dragTarget,toolbarLayout,hide-show-toolbar-button,hideShowButtonDragPoint,editingTools,editingToolLoader_ | QtQuick.Layouts xofm.libs.onboarding xofm.libs.toolbar xofm.libs.peninput
+00eaab6e.qml    80 Control  | QtQuick.Controls ark.controls
+00eaaeba.qml   308 ToolbarTool layersMenu | QtQuick.Layouts QtQuick.Controls xofm.libs.onboarding xofm.libs.toolbar
+00eab96d.qml    23 ToolbarTool exportIntegrationButton_%1 | QtQuick.Layouts xofm.libs.onboarding ark.controls ark.tokens
+00eaba89.qml   480 PenTool penMenu,pen-color,pen-mono-dither | QtQuick.Layouts QtQuick.Controls com.remarkable xofm.libs.onboarding
+00eac8f4.qml    80 ToolbarTool additionalEditingToolsMenu | QtQuick.Layouts xofm.libs.onboarding xofm.libs.toolbar ark.controls
+00eacbf8.qml    64 ToolbarTool adjustmentToolsMenu | QtQuick.Layouts xofm.libs.toolbar xofm.libs.onboarding ark.controls
+00ead72f.qml    82 FocusScope  | QtQuick.Layouts xofm.libs.toolbar xofm.libs.orientation xofm.libs.controls
+00eada56.qml    57 ArkControls.Panel  | QtQuick.Layouts xofm.libs.toolbar xofm.libs.orientation xofm.libs.analytics.ui
+00eaf65e.qml    10 Item  | 
+00eb1bde.qml    23 BaseView  | xofm.libs.qtgui xofm.libs.onboarding
+00eb1d0a.qml    23 BaseView  | xofm.libs.qtgui xofm.libs.pincode
+00eb1e49.qml    26 BaseView  | com.remarkable xofm.libs.qtgui xofm.libs.pincode
+00eb1fcf.qml    54 BaseView  | xofm.libs.qtgui xofm.libs.retail xofm.libs.gestures
+00eb21b4.qml     9 TextParagraph  | device.ui.text
+00eb22b2.qml    93 BaseView retail-carousel | common xofm.libs.qtgui xofm.libs.epaper xofm.libs.retail
+00eb25f2.qml    18 CellItemWrapper  | xofm.libs.settings
+00eb26ce.qml   130 Background storeIdTitle,resellerDropdown | QtQuick.Layouts common com.remarkable device.ui.controls
+00eb2bb2.qml    24 BaseView  | com.remarkable xofm.libs.qtgui xofm.libs.batterymanager xofm.libs.retail
+00eb2cd8.qml   188 FocusScope retailDemoDialog,retailInfoDialog,enterRetailButton | com.remarkable xofm.libs.qtgui xofm.libs.pincode xofm.libs.dialogs
+00eb32e3.qml    25 BaseView  | com.remarkable xofm.libs.qtgui xofm.libs.retail xofm.libs.pincode
+00eb3401.qml    14 CellItemWrapper  | xofm.libs.settings
+00eb34c4.qml    16 BaseView  | xofm.libs.qtgui xofm.libs.localization
+00eb3591.qml    36 Background languageSelector | common xofm.libs.localization ark.controls ark.tokens
+00eb69a3.qml    26 BaseView  | xofm.libs.qtgui
+00eb6ab5.qml    11 Shortcut  | xofm.libs.keyboard xofm.libs.pincode
+00eb6b5b.qml    75 Item  | QtQuick.Layouts device.ui.controls common ark.controls
+00eb6e53.qml    80 BaseView  | xofm.libs.qtgui xofm.libs.pincode
+00eb7205.qml    42 BaseView  | com.remarkable device.ui.headers ark.tokens ark.controls
+00eb73dd.qml    33 BaseView  | xofm.libs.qtgui xofm.libs.pincode
+00eb7583.qml   125 InputBlocker  | QtQuick.Layouts ark.controls ark.tokens xofm.libs.controls
+00eb7947.qml   110 Item  | QtQuick.Layouts device.ui.controls common ark.controls
+00eb7d2b.qml    78 SetupBasePage  | QtQuick.Layouts QtQuick.Controls com.remarkable common
+00eb80fa.qml    95 BaseView nameTextTitleInput,contactInfoTextTitleInput | QtQuick.Layouts common device.ui.controls xofm.libs.qtgui
+00eb847c.qml    18 BaseView  | xofm.libs.qtgui xofm.libs.pincode
+00eb8555.qml    51 OnboardingPage  | QtQuick.Layouts xofm.libs.mdm xofm.libs.qtgui xofm.libs.pincode
+00eb8899.qml   207 Background  | QtQuick.Layouts com.remarkable common xofm.modules.releasechannel
+00eb8ef3.qml    19 BaseView  | xofm.libs.qtgui xofm.libs.user xofm.modules.releasechannel
+00eb8fcf.qml    12 CellItemWrapper  | xofm.libs.settings
+00eb9086.qml    92 Rectangle  | QtQuick.Layouts com.remarkable common device.ui.controls
+00eb9467.qml    13 BaseView  | xofm.libs.qtgui xofm.modules.releasechannel
+00eb9508.qml    21 BaseView  | xofm.libs.qtgui xofm.modules.releasechannel
+00eb95f9.qml   155 Background  | QtQuick.Layouts com.remarkable common xofm.modules.releasechannel
+00eb9bf4.qml    18 BaseView  | xofm.libs.qtgui xofm.libs.user xofm.modules.releasechannel
+00eb9ed4.qml    50 BaseView  | QtQuick.Controls xofm.libs.qtgui xofm.libs.onboarding com.remarkable
+00ebfbfc.qml   238 SetupBasePage  | common com.remarkable device.ui.controls device.view.dialogs
+00ec0518.qml    42 BaseView  | device.view.experimental xofm.libs.qtgui xofm.libs.setup xofm.libs.user
+00ec06fc.qml    35 CellItemWrapper  | com.remarkable xofm.libs.qtgui xofm.libs.settings xofm.libs.user
+00ec08cd.qml    34 ArkControls.InfoMessage  | QtQuick.Layouts ark.tokens ark.controls xofm.libs.user
+00ec0acd.qml    36 BaseView  | com.remarkable xofm.libs.qtgui xofm.libs.onboarding xofm.libs.user
+00ec0d07.qml   236 Item  | xofm.libs.qtgui xofm.libs.user xofm.libs.dialogs com.remarkable
+00ec123b.qml    82 SetupBasePage  | com.remarkable ark.controls xofm.libs.setup xofm.libs.user
+00ec1545.qml    37 DialogScreen  | xofm.libs.dialogs
+00ec1701.qml    35 BaseView  | xofm.libs.qtgui device.view.settings ark.controls ark.tokens
+00ec1871.qml    30 BaseView  | xofm.libs.qtgui xofm.libs.user xofm.modules.userfrontend com.remarkable
+00ec19ff.qml    47 BaseView  | xofm.libs.qtgui xofm.libs.onboarding xofm.libs.user xofm.modules.userfrontend
+00ec1cb0.qml    97 BaseView  | xofm.libs.qtgui xofm.libs.onboarding xofm.libs.user device.view.experimental
+00ec213c.qml    10 OAuthSetupPage  | xofm.modules.userfrontend
+00ec21dd.qml    16 BaseView  | xofm.libs.qtgui device.view.settings ark.controls ark.tokens
+00ec22a9.qml    28 Item  | common xofm.libs.setup xofm.libs.user ark.controls
+00ec2457.qml    43 BaseView  | xofm.libs.qtgui xofm.libs.setup xofm.libs.user xofm.modules.userfrontend
+00ec2615.qml    10 OneTimeCodeSetupPage  | xofm.modules.userfrontend xofm.libs.user
+00ec2de0.qml    30 ListView  | ark.controls ark.tokens
+00ec31d7.qml    30 SetupBasePage  | com.remarkable common ark.controls ark.tokens
+00ec33c3.qml    29 SetupBasePage  | com.remarkable common xofm.libs.setup ark.controls
+00ec3596.qml    50 SetupBasePage  | com.remarkable common xofm.libs.setup xofm.libs.epaper
+00ec37d8.qml     9 GettingStartedPageBase GettingStartedPage | xofm.modules.setup
+00ec38d7.qml    74 BaseView setupscreenmode | common com.remarkable device.global xofm.libs.setup
+00ec3c3b.qml    57 SetupBasePage  | QtQuick.Controls common ark.controls ark.tokens
+00f78bbb.qml    32 BaseView  | device.view.dialogs xofm.libs.qtgui xofm.libs.orientation
+00f78d17.qml    65 BaseView  | QtQuick.Controls com.remarkable com.remarkable.devicetelemetry xofm.libs.qtgui
+00f79025.qml   113 Rectangle buttonFlow | QtQuick.Controls QtQuick.Controls.Basic ark.controls ark.tokens
+00f79745.qml    18 QuickSettingsToggle  | xofm.libs.settings
+00f79844.qml    55 BaseView  | xofm.libs.qtgui xofm.libs.onboarding com.remarkable common
+0101f15d.qml   169 InputBlocker progressBar,actionButton | QtQuick.Layouts ark.controls ark.tokens xofm.libs.controls
+0101f5fc.qml    56 ArkControls.NotificationBar message,divider,actionButton | QtQuick.Controls QtQuick.Layouts ark.controls ark.tokens
+0101f818.qml   143 InputBlocker message,progressBar,syncMessageDelayTimer,syncCompleteMessageTimer | QtQuick.Layouts xofm.libs.controls ark.controls ark.tokens
+0101fcc8.qml    45 Control  | QtQuick.Controls ark.controls
+01022486.qml   149 BaseView  | QtQuick.Layouts device.view.syncserviceexplorer com.remarkable common
+01022944.qml    42 ArkControls.Panel  | com.remarkable ark.controls ark.tokens xofm.libs.search.ui
+01022b5c.qml    23 Action search-action,global-search-shortcut | xofm.libs.qtgui xofm.libs.homescreen
+01022cc0.qml    53 BaseView  | QtQuick.Layouts com.remarkable xofm.libs.qtgui xofm.libs.onboarding
+01022f26.qml   557 InputBlocker nav-search-close,SearchView,searchMatches | com.remarkable common device.ui.controls device.ui.headers
+01024339.qml   141 Item dateSpinner,monthSpinner,yearSpinner | QtQuick.Layouts common ark.tokens ark.controls
+010249b2.qml    63 Item hoursSpinner,minutesSpinner | QtQuick.Layouts ark.tokens ark.controls
+01024c39.qml    57 Rectangle body | QtQuick.Layouts ark.tokens ark.controls
+01024e67.qml   158 ColumnLayout upArrow,pathContainer,downArrow | QtQuick.Layouts QtQuick.Controls common ark.tokens
+0102538a.qml    86 Rectangle spinnersLoader | common ark.tokens ark.controls
+01025709.qml    20 ArkControls.Cell  | ark.controls ark.tokens xofm.libs.qtgui
+010257d5.qml    21 CellItemWrapper  | com.remarkable xofm.libs.qtgui xofm.libs.settings xofm.modules.systemclock
+0102590c.qml   296 BaseView dateContainer,timeContainer | QtQuick.Layouts common device.ui.controls device.global
+0102618e.qml   111 BaseView  | QtQuick.Layouts com.remarkable common device.ui.controls
+01028b33.qml    57 BaseView  | xofm.libs.qtgui xofm.libs.onboarding xofm.modules.sharebyurl ark.controls
+01028e0e.qml    51 BaseView share-by-url-qr-code-image | xofm.libs.qtgui xofm.libs.onboarding com.remarkable
+0102ae7c.qml    31 Repeater  | 
+0102aff7.qml    43 ArkControls.OnboardingDialog.Content  | QtQuick.Layouts common ark.controls
+0102b18d.qml   227 InputBlocker backButton | QtQuick.Controls QtQuick.Layouts com.remarkable common
+0102b97f.qml   106 Rectangle  | QtQuick.Controls com.remarkable common device.ui.text
+0102bcac.qml    45 Rectangle  | QtQuick.Layouts QtQuick.Controls.impl common device.ui.text
+0102be8c.qml   237 DeviceKeyboardNavigationHandler helpRoot,backButton,helpBrowserGrid | QtQuick.Controls QtQuick.Layouts com.remarkable common
+0102c749.qml    10 QtObject  | com.remarkable common
+0102c7ea.qml    63 ToolTip  | xofm.libs.onboarding ark.tokens ark.controls xofm.libs.onboarding.ToolTip
+0102caac.qml    76 Control  | QtQuick.Controls com.remarkable ark.controls
+0102cde3.qml   129 InputBlocker  | xofm.libs.onboarding xofm.libs.controls ark.controls ark.tokens
+0102d245.qml    46 RowLayout  | QtQuick.Layouts common device.ui.text ark.controls
+0102d397.qml   185 Background  | QtQuick.Layouts com.remarkable common device.ui.controls
+0102dd80.qml    17 ArkControls.OnboardingDialog.Content  | ark.tokens ark.controls
+0102e04e.qml    27 BaseView  | xofm.libs.qtgui common ark.tokens ark.controls
+0102e202.qml    12 TextParagraph  | device.ui.text
+0102e314.qml    73 BaseView  | QtQuick.Controls xofm.libs.qtgui xofm.libs.controls ark.tokens
+01030ec7.qml    40 BaseView  | xofm.libs.qtgui xofm.libs.onboarding
+01031110.qml    42 BaseView convert-to-notebook-qr-code-image | com.remarkable xofm.libs.qtgui xofm.libs.onboarding
+010313b6.qml    30 BaseView  | QtQuick.Layouts xofm.libs.qtgui xofm.libs.controls ark.controls
+010314e6.qml    52 BaseView  | xofm.libs.qtgui xofm.libs.controls device.ui.controls common
+01034e2f.qml    30 PincodeDialogPage  | xofm.libs.pincode
+01034f63.qml    28 PincodeDialogPage  | xofm.libs.pincode
+010352a5.qml    62 Item  | QtQuick.Layouts common com.remarkable device.global
+01035577.qml   101 Item  | QtQuick.Layouts ark.controls device.ui.controls common
+01035b8f.qml    49 FocusScope  | QtQuick.Layouts com.remarkable common xofm.libs.controls
+01035d9c.qml   218 Item  | com.remarkable common device.ui.controls xofm.libs.setup
+01036593.qml   126 FocusScope  | QtQuick.Layouts com.remarkable common ark.controls
+01039e78.qml   129 Action calendar-actions | QtQuick.Layouts com.remarkable device.view.experimental xofm.libs.analytics.ui
+0103a39b.qml    79 BaseView  | xofm.libs.qtgui xofm.libs.linkprovider xofm.libs.onboarding xofm.modules.integrations.calendar
+0103a706.qml    45 BaseView  | xofm.libs.qtgui xofm.libs.onboarding
+0103a90f.qml    73 BaseView  | com.remarkable xofm.libs.qtgui xofm.libs.onboarding xofm.modules.integrations.calendar
+0103ad3e.qml    95 InputBlocker  | common xofm.libs.controls xofm.modules.integrations.calendar ark.controls
+0103b0b0.qml    96 Item  | QtQuick.Layouts ark.controls xofm.libs.controls xofm.modules.integrations.calendar
+010434ec.qml   269 InputBlocker sortProperties,scrollingArea,myTagsContent,delegatePill,indicators,indicatorsRepeater | QtQuick.Layouts common xofm.libs.explorer device.ui.controls
+01043ddf.qml   152 FocusScope tagFlow,createTagButton | QtQuick.Layouts device.ui.controls device.ui.headers common
+01044516.qml    59 BaseView  | device.ui.controls xofm.libs.qtgui xofm.libs.orientation xofm.libs.tags
+01044757.qml    56 BaseView  | xofm.libs.qtgui xofm.libs.dialogs
+01049798.qml    21 BaseView banner-no-actions | QtQuick.Layouts xofm.libs.qtgui xofm.libs.controls ark.controls
+010498b2.qml    98 BaseView sleep-window | QtQuick.Layouts ark.controls ark.tokens xofm.libs.qtgui
+01049fbf.qml    82 Loader notificationBar,notification,divider,actionButton | QtQuick.Layouts xofm.libs.controls xofm.libs.notificationbar ark.controls
+0104b474.qml   213 FocusScope subpageLoader,connectToWifiPage | com.remarkable common device.ui.controls device.ui.text
+0104bad4.qml    21 BaseView  | xofm.libs.qtgui xofm.modules.pincode.qsettings
+01051814.qml    50 Control confirm-change-close | QtQuick.Controls device.ui.controls ark.controls
+010519d0.qml   135 InputBlocker backButton | QtQuick.Layouts xofm.libs.controls ark.tokens ark.controls
+01051e19.qml   115 InputBlocker  | QtQuick.Layouts xofm.libs.controls ark.tokens ark.controls
+010521cf.qml    74 Control  | QtQuick.Controls QtQuick.Layouts xofm.libs.controls ark.tokens
+010525d4.qml   267 FocusScope  | common com.remarkable xofm.libs.dialogs xofm.libs.pincode
+01054994.qml    34 DialogScreen  | xofm.libs.dialogs
+01054b99.qml    55 DialogScreen  | QtQuick.Layouts xofm.libs.dialogs ark.controls
+01054dc6.qml   130 Item SecuredPasswordInput | QtQuick.Layouts xofm.libs.controls xofm.libs.setup xofm.modules.password
+01055266.qml   130 PasswordInputField  | xofm.libs.controls
+0105586b.qml    58 FocusScope  | xofm.libs.dialogs xofm.libs.controls
+01055adb.qml    34 DialogScreen  | xofm.libs.dialogs
+01055c6d.qml    62 Item  | QtQuick.Layouts xofm.libs.controls xofm.modules.password xofm.libs.dialogs
+01055e9b.qml    33 InformationDialog  | xofm.libs.dialogs
+010560f4.qml    99 FocusScope  | xofm.libs.controls xofm.modules.password ark.tokens ark.controls
+01056481.qml    94 Rectangle  | ark.controls
+01056718.qml   133 FocusScope  | xofm.libs.controls xofm.libs.qtgui xofm.libs.batterymanager xofm.modules.password
+01056b77.qml    73 Item  | QtQuick.Layouts device.ui.controls common com.remarkable
+01056e36.qml    31 SetupBasePage  | QtQuick.Layouts xofm.libs.setup xofm.libs.controls xofm.modules.password
+01056f6e.qml    28 BaseView  | xofm.libs.qtgui xofm.libs.batterymanager xofm.modules.password
+01057090.qml    43 BaseView  | QtQuick.Layouts xofm.libs.qtgui xofm.libs.dialogs xofm.libs.batterymanager
+010572a2.qml    54 BaseView  | com.remarkable ark.tokens ark.controls xofm.libs.qtgui
+010574c5.qml    68 BaseView  | common device.view.dialogs xofm.libs.qtgui xofm.libs.factoryreset
+0105776e.qml   174 BaseView  | common xofm.libs.qtgui xofm.libs.controls xofm.modules.password
+01061c3b.qml   113 Column pairButton | com.remarkable common device.ui.controls device.ui.text
+0106213e.qml    12 ArkControls.CellItem  | ark.tokens ark.controls xofm.libs.qtgui
+010621f0.qml    13 ArkControls.StateSwitch  | ark.controls xofm.libs.qtgui
+01062295.qml    78 Item BackButton,SelectionGrid | QtQuick.Layouts xofm.libs.controls ark.tokens ark.controls
+0106262a.qml    47 QtObject  | QtQuick.Layouts com.remarkable xofm.libs.settings ark.tokens
+0106309c.qml    49 StackView  | QtQuick.Controls com.remarkable
+01063267.qml   343 Background pageStack,backButton,confirmNotificationButton,skipButton | QtQuick.Controls com.remarkable common device.ui.text
+01063cda.qml    75 FocusScope  | QtQuick.Controls com.remarkable common device.ui.controls
+01065461.qml   152 SetupBasePage  | com.remarkable QtQuick.Controls xofm.libs.setup ark.controls
+01065986.qml   132 Item  | com.remarkable common device.ui.text ark.controls
+01065d7b.qml   132 BaseView pcSettingsSelector,macSettingsSelector | QtQuick.Layouts com.remarkable device.ui.controls xofm.libs.settings
+01066263.qml    73 BaseView  | common com.remarkable xofm.libs.qtgui xofm.libs.setup
+0106654d.qml    40 Item  | com.remarkable device.ui.controls ark.tokens xofm.libs.setup
+01066724.qml    35 Item  | com.remarkable xofm.libs.controls
+01066866.qml   107 FocusScope  | 
+01066c38.qml    57 TextInput general-touch-input | xofm.libs.epaper xofm.libs.ui
+01066eab.qml    34 FocusScope  | 
+01067038.qml   124 DeviceKeyboardNavigationHandler  | common device.ui.controls ark.controls
+010673c5.qml   133 FocusScope ShowPasswordIcon,password-input-field | xofm.libs.epaper xofm.libs.ui xofm.libs.controls ark.controls
+01067a0b.qml   122 Rectangle accidental-touch-slider | ark.controls xofm.libs.epaper
+01067f7f.qml   102 FocusScope key_backspace | QtQuick.Layouts ark.controls ark.tokens
+0106829e.qml   120 InputBlocker backButton | QtQuick.Layouts xofm.libs.controls xofm.libs.qtgui ark.controls
+01068715.qml    94 FocusScope  | ark.tokens ark.controls xofm.libs.pincode
+01068a3c.qml   207 FocusScope pin-length-menu | QtQuick.Layouts ark.controls ark.tokens
+01069123.qml    58 FocusScope unlockDialog | ark.tokens ark.controls xofm.libs.qtgui xofm.libs.pincode
+01124d0c.qml   385 QtObject  | 
+01124f61.qml    75 QtObject  | 
+0112512b.qml    48 QtObject  | 
+011252c1.qml   385 QtObject  | 
+01125517.qml    73 QtObject  | 
+01125722.qml    51 QtObject  | 
+01125876.qml   134 QtObject  | 
+01125ae3.qml    74 QtObject  | 
+01125ca2.qml    35 QtObject  | 
+01125e0b.qml    55 QtObject  | 
+01125f7a.qml    31 QtObject  | 
+011260b3.qml   191 QtObject  | 
+011263c5.qml    87 QtObject  | 
+011265e2.qml   385 QtObject  | 
+0112683c.qml    69 QtObject  | 
+011269f8.qml    78 QtObject  | 
+01126bb7.qml   128 QtObject  | 
+01127211.qml   497 QtObject  | 
+011274b1.qml    52 QtObject  | 
+01127666.qml    91 QtObject  | 
+0112783a.qml    96 QtObject  | 
+01127a30.qml    37 QtObject  | 
+01127b33.qml   107 QtObject  | 
+01127d19.qml    90 QtObject  | 
+01127f03.qml    43 QtObject  | 
+011280a3.qml    40 QtObject  | 
+0112824b.qml   496 QtObject  | 
+011284ea.qml   339 QtObject  | 
+011288b3.qml    93 QtObject  | 
+01128aa2.qml    25 QtObject  | 
+01128ba4.qml    27 QtObject  | 
+01128e50.qml    79 QtObject  | 
+0112903e.qml    95 QtObject  | 
+01129205.qml   497 QtObject  | 
+011294a5.qml    38 QtObject  | 
+011295ae.qml   872 QtObject  | 
+01129de0.qml    65 QtObject  | 
+01129f73.qml    50 QtObject  | 
+01196d65.qml   162 T.Container  | QtQuick.Layouts QtQuick.Templates ark.tokens
+011973e6.qml   134 Button  | QtQuick.Layouts QtQuick.Controls ark.tokens
+011978cb.qml   229 ArkControls.Slider  | QtQuick.Layouts ark.tokens
+0119b6b2.qml   192 Item  | QtQuick.Layouts QtQuick.Templates ark.tokens
+0119c735.qml   117 Container  | QtQuick.Layouts QtQuick.Templates ark.tokens
+0119cc10.qml   200 ButtonBase  | QtQuick.Layouts ark.tokens ark.controls
+0119fe69.qml   135 QtQuickControls.MenuItem  | QtQuick.Controls ark.tokens
+011a591f.qml   173 ArkControls.InfoMessage  | QtQuick.Layouts ark.tokens
+011a5f32.qml   177 QtObject  | ark.tokens
+011a6464.qml   132 ArkControls.BatteryIcon  | QtQuick.Layouts ark.tokens
+011a929e.qml   101 QtObject  | 
+011a9615.qml   136 T.Pane  | QtQuick.Layouts QtQuick.Templates ark.tokens
+011acb10.qml   137 QtQuickControls.MenuItem  | QtQuick.Controls ark.tokens
+011ade50.qml   222 ArkControls.Slider  | QtQuick.Layouts ark.tokens
+011af314.qml   202 Item  | QtQuick.Layouts QtQuick.Templates ark.tokens
+011b00a9.qml   248 T.Button  | QtQuick.Templates ark.tokens
+011b0c69.qml    17 QtObject  | ark.tokens

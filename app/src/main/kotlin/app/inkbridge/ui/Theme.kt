@@ -1,0 +1,425 @@
+package app.inkbridge.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import app.inkbridge.R
+
+/*
+ * The layout follows xochitl 3.27.1.0 (reference/remarkable-3.27.1.0/ui). xochitl lays everything out in pixels on a
+ * 1404 x 1872 screen. [RmDensity] makes one dp equal one of those pixels on whatever screen this runs on, so the
+ * numbers below (and in the screens) are the firmware's own token values.
+ */
+
+/** Runs [content] with 1 dp == 1 reMarkable pixel: the screen's short side is 1404 of them. */
+@Composable
+fun RmDensity(content: @Composable () -> Unit) {
+    val metrics = LocalContext.current.resources.displayMetrics
+    val short = minOf(metrics.widthPixels, metrics.heightPixels).toFloat()
+    val base = LocalDensity.current
+    CompositionLocalProvider(LocalDensity provides Density(density = short / RM_WIDTH, fontScale = 1f), content = content)
+}
+
+private const val RM_WIDTH = 1404f
+
+/** Dimension tokens from ArkTokens / Values, in reMarkable pixels (== dp under [RmDensity]). */
+object Rm {
+    val Icon = 48.dp                    // content.icon.*.sizing
+    val IconSmall = 32.dp               // Values.iconSize.small
+    val NavigationHeader = 120.dp       // navigationEntriesHeaderHeight
+    val SidebarItem = 120.dp            // navigatorSidebarItemHeight
+    val ToolButton = 112.dp             // controlsHeight.large: toolbar buttons and foldout rows
+    val Control = 80.dp                 // controlsHeight.small: buttons, list rows
+    val Outline = 2.dp                  // outlineSize: borders and dividers
+    val FoldoutPad = 32.dp              // foldout horizontal padding
+    val ViewMargin = 18.dp              // viewHorizontalMargin
+    val NavigatorMargin = 40.dp
+    val SidebarWidth = 414.dp
+    val CreateMenuHeight = 112.dp
+    val CreateMenuBottomMargin = 100.dp
+    val WritingFoldoutWidth = 480.dp
+    val EraserFoldoutWidth = 376.dp
+    val FoldoutMinWidth = 400.dp          // ToolbarTool.minimumFoldoutWidth: menus without their own width
+    val EraserFoldoutMinWidth = 400.dp    // the eraser's 3-column grid: 3 x 112 + 2 x 32 px
+    val ToolboxFoldoutWidth = 339.dp      // toolboxFoldoutMenuWidth: the notebook's document menu
+    val DropdownWidth = 360.dp            // the navigator's filter dropdown
+}
+
+val RmSans = FontFamily(
+    Font(R.font.rm_sans_light, FontWeight.Light),
+    Font(R.font.rm_sans_regular, FontWeight.Normal),
+    Font(R.font.rm_sans_medium, FontWeight.Medium),
+    Font(R.font.rm_sans_bold, FontWeight.Bold),
+)
+val RmSerif = FontFamily(
+    Font(R.font.rm_serif_regular, FontWeight.Normal),
+    Font(R.font.rm_serif_bold, FontWeight.Bold),
+)
+
+/** The firmware's Style typography (rM-paper-tablet tokens): size in px, line height as a multiple of it. */
+object RmText {
+    private fun sans(size: Int, weight: FontWeight, line: Float) = TextStyle(fontFamily = RmSans, fontSize = size.sp, fontWeight = weight, lineHeight = (size * line).sp)
+    private fun serif(size: Int, line: Float) = TextStyle(fontFamily = RmSerif, fontSize = size.sp, fontWeight = FontWeight.Normal, lineHeight = (size * line).sp)
+
+    val BodyLg = sans(36, FontWeight.Normal, 1.5f)
+    val Body = sans(28, FontWeight.Normal, 1.5f)
+    val BodySm = sans(25, FontWeight.Normal, 1.5f)
+    val Caption = sans(22, FontWeight.Normal, 1.45f)
+    val Label = sans(25, FontWeight.Medium, 1.58f)
+    val LabelLg = sans(28, FontWeight.Medium, 1.56f)
+    val LabelLgStrong = sans(28, FontWeight.Bold, 1.56f)
+    val LabelSm = sans(22, FontWeight.Medium, 1.44f)
+    val TitleMd = sans(28, FontWeight.Bold, 1.5f)
+    val TitleMdAlt = serif(42, 1.5f)
+    /** The header wordmark, set 32 px tall like the firmware's logo. */
+    val Wordmark = serif(36, 1.2f)
+    val LabelSmLow = sans(22, FontWeight.Medium, 1.18f)
+    val TitleLg = serif(48, 1.25f)
+}
+
+/** E-ink palette: pure black on white, one mid grey for secondary text. Selected fills are plain black, as on the tablet. */
+object Ink {
+    val Black = Color.Black
+    val Dark = Color.Black
+    val White = Color.White
+    // The firmware is only black and white (secondary text is black too); the one other value is the disabled text/icon grey.
+    val Grey = Color(0xFF000000)
+    val Rule = Color(0xFF959595)
+    val Panel = Color(0xFFFFFFFF)
+}
+
+val EInkColors = lightColorScheme(
+    primary = Ink.Black, onPrimary = Ink.White,
+    background = Ink.White, onBackground = Ink.Black,
+    surface = Ink.White, onSurface = Ink.Black,
+    outline = Ink.Black,
+)
+
+/** Material text styles, all set in reMarkable Sans so unstyled [Text] matches the tablet. */
+val RmTypography = Typography().let {
+    fun TextStyle.rm() = copy(fontFamily = RmSans)
+    it.copy(
+        displayLarge = it.displayLarge.rm(), displayMedium = it.displayMedium.rm(), displaySmall = it.displaySmall.rm(),
+        headlineLarge = it.headlineLarge.rm(), headlineMedium = it.headlineMedium.rm(), headlineSmall = it.headlineSmall.rm(),
+        titleLarge = it.titleLarge.rm(), titleMedium = it.titleMedium.rm(), titleSmall = it.titleSmall.rm(),
+        bodyLarge = RmText.Body, bodyMedium = RmText.Body, bodySmall = RmText.BodySm,
+        labelLarge = RmText.Label, labelMedium = RmText.Label, labelSmall = RmText.LabelSm,
+    )
+}
+
+/** Click without a ripple (ripples are animated, which smears on e-ink). */
+fun Modifier.tap(enabled: Boolean = true, onClick: () -> Unit): Modifier = composed {
+    clickable(enabled = enabled, indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = onClick)
+}
+
+/** A divider: 2 px black, as the firmware's Style.divider. */
+@Composable
+fun Rule(modifier: Modifier = Modifier) = Box(modifier.fillMaxWidth().height(Rm.Outline).background(Ink.Black))
+
+/** Text button: 80 px high, sharp corners, 2 px border; inverted when [selected]. */
+@Composable
+fun EButton(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    selected: Boolean = false,
+    size: Dp = Rm.Control,
+) {
+    val fg = if (selected) Ink.White else if (enabled) Ink.Black else Ink.Rule
+    Box(
+        modifier
+            .defaultMinSize(minWidth = size, minHeight = size)
+            .background(if (selected) Ink.Dark else Ink.White)
+            .border(Rm.Outline, if (enabled) Ink.Black else Ink.Rule)
+            .tap(enabled, onClick)
+            .padding(horizontal = 32.dp),
+        contentAlignment = Alignment.Center,
+    ) { Text(label, color = fg, style = RmText.LabelLg, maxLines = 1) }
+}
+
+/** Icon-only square button for header bars: an 80 px tile with a 48 px glyph. */
+@Composable
+fun IconBtn(description: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, selected: Boolean = false, size: Dp = Rm.Control, icon: @Composable (Color) -> Unit) {
+    val fg = if (selected) Ink.White else if (enabled) Ink.Black else Ink.Rule
+    Box(
+        modifier.size(size).background(if (selected) Ink.Dark else Ink.White).tap(enabled, onClick).semantics { contentDescription = description },
+        contentAlignment = Alignment.Center,
+    ) { icon(fg) }
+}
+
+/** A modal box (the firmware's Card): 2 px border, 64 px padding, serif title. */
+@Composable
+fun EDialog(title: String, onDismiss: () -> Unit, actions: @Composable RowScope.() -> Unit, content: @Composable ColumnScope.() -> Unit) {
+    val density = LocalDensity.current // a dialog is its own window and would otherwise fall back to the screen's density
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        CompositionLocalProvider(LocalDensity provides density) {
+            Column(Modifier.padding(horizontal = 80.dp).fillMaxWidth().background(Ink.White).border(Rm.Outline, Ink.Black).padding(64.dp)) {
+                Text(title, style = RmText.TitleMdAlt)
+                Spacer(Modifier.height(24.dp))
+                content()
+                Spacer(Modifier.height(32.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End)) { actions() }
+            }
+        }
+    }
+}
+
+@Composable
+fun NameDialog(title: String, initial: String, confirm: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
+    var text by remember { mutableStateOf(initial) }
+    EDialog(title, onDismiss, actions = {
+        EButton("Cancel", onDismiss)
+        EButton(confirm, { onConfirm(text.trim()) }, enabled = text.isNotBlank(), selected = text.isNotBlank())
+    }) { NameField(text) { text = it } }
+}
+
+/** The firmware's input field: a 96 px line of body text over a 2 px underline. */
+@Composable
+fun NameField(value: String, onChange: (String) -> Unit) {
+    Column(Modifier.fillMaxWidth()) {
+        BasicTextField(
+            value = value,
+            onValueChange = onChange,
+            singleLine = true,
+            textStyle = RmText.BodyLg.copy(color = Ink.Black),
+            cursorBrush = SolidColor(Ink.Black),
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+            modifier = Modifier.fillMaxWidth().height(96.dp).wrapContentHeight(Alignment.CenterVertically).padding(horizontal = 4.dp),
+        )
+        Box(Modifier.fillMaxWidth().height(Rm.Outline).background(Ink.Black))
+    }
+}
+
+/**
+ * The firmware's confirm sheet (ConfirmChangeDialog): a full-width black sheet pinned to the top of the screen with a white serif title,
+ * body text and two 346 px buttons (Cancel on white, the confirming one black with a white border). Tapping below it cancels; no scrim.
+ */
+@Composable
+fun ConfirmDialog(title: String, message: String, confirm: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    val density = LocalDensity.current
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        (androidx.compose.ui.platform.LocalView.current.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window?.let { w ->
+            SideEffect { w.setGravity(android.view.Gravity.TOP); w.setDimAmount(0f); w.setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT) }
+        }
+        CompositionLocalProvider(LocalDensity provides density) {
+            Column(Modifier.fillMaxWidth().background(Ink.Black).padding(horizontal = 176.dp, vertical = 120.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(title, style = RmText.TitleMdAlt, color = Ink.White, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                Spacer(Modifier.height(24.dp))
+                Text(message, style = RmText.Body, color = Ink.White, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                Spacer(Modifier.height(48.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                    Box(Modifier.width(346.dp).height(Rm.Control).background(Ink.White).border(Rm.Outline, Ink.White).tap(onClick = onDismiss).semantics { contentDescription = "Cancel" }, contentAlignment = Alignment.Center) { Text("Cancel", style = RmText.Label, color = Ink.Black) }
+                    Box(Modifier.width(346.dp).height(Rm.Control).background(Ink.Black).border(Rm.Outline, Ink.White).tap(onClick = onConfirm).semantics { contentDescription = confirm }, contentAlignment = Alignment.Center) { Text(confirm, style = RmText.Label, color = Ink.White) }
+                }
+            }
+        }
+    }
+}
+
+/** The firmware's NotificationBar: along the bottom edge, white with a 2 px top border, a message, a divider and a plain action label. */
+@Composable
+fun NotificationBar(message: String, onAction: () -> Unit, modifier: Modifier = Modifier, action: String = "OK") {
+    Row(
+        modifier.fillMaxWidth().heightIn(min = 80.dp).background(Ink.White)
+            .drawBehind { drawLine(Color.Black, androidx.compose.ui.geometry.Offset(0f, 1f), androidx.compose.ui.geometry.Offset(size.width, 1f), strokeWidth = 2f * density) }
+            .padding(horizontal = 32.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(message, style = RmText.BodySm, modifier = Modifier.weight(1f))
+        Box(Modifier.width(2.dp).height(48.dp).background(Ink.Black)); Spacer(Modifier.width(24.dp))
+        Text(action, style = RmText.Label, modifier = Modifier.tap(onClick = onAction).padding(8.dp).semantics { contentDescription = action })
+    }
+}
+
+/** A choice with a radio marker (the firmware's radioButton: 80 px row, 48 px `radio_on` / `radio_off` icon, 16 px gap, 28 Medium label). */
+@Composable
+fun ChoiceRow(label: String, selected: Boolean, onClick: () -> Unit, sub: String? = null) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 80.dp).tap(onClick = onClick).padding(vertical = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        // radio_off: a ring 39 px across with a 3 px stroke; radio_on adds a 21 px dot.
+        Box(Modifier.size(Rm.Icon), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(39.dp).border(3.dp, Ink.Black, CircleShape), contentAlignment = Alignment.Center) { if (selected) Box(Modifier.size(21.dp).background(Ink.Black, CircleShape)) }
+        }
+        Column {
+            Text(label, style = RmText.LabelLg)
+            if (sub != null) Text(sub, style = RmText.BodySm)
+        }
+    }
+}
+
+/**
+ * The firmware's Panel with a Toggle: the label (28 Medium) and a black description (28), and an 80 x 48 pill with a 32 px handle on the right
+ * (off: white with a 2 px border and the handle on the left; on: black with a white handle on the right).
+ */
+@Composable
+fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit, sub: String? = null) {
+    Row(Modifier.fillMaxWidth().tap { onChange(!checked) }.padding(vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(label, style = RmText.LabelLg)
+            if (sub != null) Text(sub, style = RmText.Body)
+        }
+        Spacer(Modifier.width(24.dp))
+        Box(
+            Modifier.size(width = 80.dp, height = 48.dp).background(if (checked) Ink.Black else Ink.White, CircleShape).border(Rm.Outline, Ink.Black, CircleShape).padding(horizontal = 6.dp),
+            contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart,
+        ) { Box(Modifier.size(32.dp).background(if (checked) Ink.White else Ink.Black, CircleShape)) }
+    }
+}
+
+/**
+ * The firmware's Cell: a list box with a 2 px border, rows of label and status text (and a chevron on rows that open a page),
+ * separated by 2 px dividers.
+ */
+@Composable
+fun CellList(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    Column(modifier.fillMaxWidth().border(Rm.Outline, Ink.Black), content = content)
+}
+
+@Composable
+fun CellRow(label: String, status: String? = null, onClick: (() -> Unit)? = null, divider: Boolean = true) {
+    Row(
+        Modifier.fillMaxWidth().then(if (onClick != null) Modifier.tap(onClick = onClick) else Modifier).padding(horizontal = 24.dp, vertical = 24.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = RmText.Body, modifier = Modifier.weight(1f))
+        if (status != null) Text(status, style = RmText.BodySm)
+        if (onClick != null) { Spacer(Modifier.width(16.dp)); InkIcons.ChevronRight() }
+    }
+    if (divider) Rule()
+}
+
+/** A row of equally wide buttons where the chosen one is filled (the firmware's ContextualMenu used as a choice, e.g. Battery > Standby). */
+@Composable
+fun SegmentedRow(options: List<String>, selectedIndex: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+    Row(modifier.fillMaxWidth().border(Rm.Outline, Ink.Black)) {
+        options.forEachIndexed { i, label ->
+            val sel = i == selectedIndex
+            if (i > 0) Box(Modifier.width(Rm.Outline).height(Rm.Control).background(Ink.Black))
+            Box(Modifier.weight(1f).height(Rm.Control).background(if (sel) Ink.Black else Ink.White).tap { onSelect(i) }.semantics { contentDescription = label }, contentAlignment = Alignment.Center) {
+                Text(label, style = RmText.Label, color = if (sel) Ink.White else Ink.Black, maxLines = 1)
+            }
+        }
+    }
+}
+
+// ---- Menus -------------------------------------------------------------------------------------------------------
+// The firmware's menus are flat: white, a 2 px black border, no shadow, no animation. Rows are black with white text when
+// selected (the Dropdown button's `inverted` state / FoldoutItem `selected`).
+
+/** Where a [RmMenu] opens relative to the box it is called from. */
+enum class MenuSide {
+    BELOW, ABOVE, RIGHT, LEFT,
+    /** Hanging from the anchor's bottom edge with right edges aligned, sharing its border (the action bar's More and Tag menus). */
+    BELOW_END,
+    /** Centred above the anchor with a gap (the create menu). */
+    ABOVE_CENTER,
+    /** Exactly over the anchor, growing downward (a dropdown that opens in place). */
+    OVER,
+}
+
+private class MenuPosition(private val side: MenuSide, private val gapPx: Int, private val overlapPx: Int, private val flip: Boolean) : PopupPositionProvider {
+    override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset {
+        // A toolbar foldout lines up with its button's far edge when the button is in the lower (or right) half of the screen.
+        val lower = flip && anchorBounds.center.y > windowSize.height / 2
+        val rightHalf = flip && anchorBounds.center.x > windowSize.width / 2
+        val (x, y) = when (side) {
+            MenuSide.BELOW -> (if (rightHalf) anchorBounds.right - popupContentSize.width else anchorBounds.left) to anchorBounds.bottom
+            MenuSide.ABOVE -> (if (rightHalf) anchorBounds.right - popupContentSize.width else anchorBounds.left) to anchorBounds.top - popupContentSize.height
+            MenuSide.RIGHT -> anchorBounds.right to (if (lower) anchorBounds.bottom - popupContentSize.height else anchorBounds.top)
+            MenuSide.LEFT -> anchorBounds.left - popupContentSize.width to (if (lower) anchorBounds.bottom - popupContentSize.height else anchorBounds.top)
+            MenuSide.BELOW_END -> anchorBounds.right - popupContentSize.width to anchorBounds.bottom - overlapPx
+            MenuSide.ABOVE_CENTER -> anchorBounds.center.x - popupContentSize.width / 2 to anchorBounds.top - popupContentSize.height - gapPx
+            MenuSide.OVER -> anchorBounds.left to anchorBounds.top
+        }
+        return IntOffset(
+            x.coerceIn(0, (windowSize.width - popupContentSize.width).coerceAtLeast(0)),
+            y.coerceIn(0, (windowSize.height - popupContentSize.height).coerceAtLeast(0)),
+        )
+    }
+}
+
+/** A menu anchored to the box it is called from. Content is a column of [RmMenuItem]s; a null [width] wraps the content. */
+@Composable
+fun RmMenu(show: Boolean, onDismiss: () -> Unit, side: MenuSide = MenuSide.BELOW, width: Dp? = Rm.DropdownWidth, gap: Dp = 0.dp, toolbarFoldout: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
+    if (!show) return
+    val density = LocalDensity.current // a popup is its own window and would otherwise fall back to the screen's density
+    val position = remember(side, density, gap, toolbarFoldout) { MenuPosition(side, with(density) { gap.roundToPx() }, with(density) { Rm.Outline.roundToPx() }, toolbarFoldout) }
+    Popup(popupPositionProvider = position, onDismissRequest = onDismiss, properties = PopupProperties(focusable = true)) {
+        CompositionLocalProvider(LocalDensity provides density) {
+            Column(Modifier.then(if (width != null) Modifier.width(width) else Modifier).heightIn(max = 1700.dp).background(Ink.White).border(Rm.Outline, Ink.Black).verticalScroll(rememberScrollState())) { content() }
+        }
+    }
+}
+
+/** One menu row: [height] px high, label text, inverted when [selected]. */
+@Composable
+fun RmMenuItem(label: String, onClick: () -> Unit, enabled: Boolean = true, selected: Boolean = false, height: Dp = Rm.Control) {
+    val fg = if (selected) Ink.White else if (enabled) Ink.Black else Ink.Rule
+    Box(
+        Modifier.fillMaxWidth().heightIn(min = height).background(if (selected) Ink.Black else Ink.White).tap(enabled, onClick).padding(horizontal = 32.dp, vertical = 8.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) { Text(label, style = RmText.Label, color = fg, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
+}
+
+/** A foldout row (FoldoutItem): 112 px high, 48 px icon, label; a 2 px divider above when [topDivider]. */
+@Composable
+fun RmFoldoutItem(label: String, onClick: () -> Unit, enabled: Boolean = true, selected: Boolean = false, topDivider: Boolean = false, chevron: Boolean = false, icon: (@Composable (Color) -> Unit)? = null) {
+    val fg = if (selected) Ink.White else if (enabled) Ink.Black else Ink.Rule
+    if (topDivider) Rule()
+    Row(
+        Modifier.fillMaxWidth().height(Rm.ToolButton).background(if (selected) Ink.Black else Ink.White).tap(enabled, onClick).padding(horizontal = Rm.FoldoutPad),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (icon != null) { icon(fg); Spacer(Modifier.width(16.dp)) }
+        Text(label, style = RmText.Label, color = fg, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        if (chevron) InkIcons.ChevronRight(tint = fg)
+    }
+}
+
+/** A tag chip (SelectableChip): 56 px high pill, 2 px border, inverted when [selected]; [partial] thickens the border. */
+@Composable
+fun TagPill(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, partial: Boolean = false, small: Boolean = false) {
+    val fg = if (selected) Ink.White else Ink.Black
+    Box(
+        modifier.height(if (small) 40.dp else 56.dp).background(if (selected) Ink.Black else Ink.White, CircleShape)
+            .border(if (partial) 5.dp else Rm.Outline, Ink.Black, CircleShape).tap(onClick = onClick).padding(horizontal = if (small) 16.dp else 24.dp),
+        contentAlignment = Alignment.Center,
+    ) { Text(text, style = if (small) RmText.Caption else RmText.LabelSm, color = fg, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
+}
