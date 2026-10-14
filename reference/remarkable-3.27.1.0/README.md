@@ -26,3 +26,9 @@ reMarkable Serif Small. The app sets `1 dp = 1 reMarkable px` (`RmDensity` in `T
 
 `tools/firmware/` has the scripts used: `newc.py` (unpack the .swu cpio), `carve.py` (carve SVG/PNG), `rcc3.py`/`rcc4.py` (match Qt
 resource names to data), `flat.py` (flatten token QML).
+
+## All of xochitl's QML (`ui/qml_all/`)
+
+`tools/firmware/qmlall.py` carves every zstd/zlib-compressed QML source out of `xochitl` (542 files, named by their offset in the binary,
+because the resource names are not recoverable for most of them). `INDEX.txt` lists each file's size, root type, objectNames and imports,
+so `grep` there to find a screen (e.g. `layersMenu` is `00eaaeba.qml`, the selection menu is `00dc1fbf.qml`, the toolbar `00ea97ed.qml`).
