@@ -19,7 +19,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.Canvas
 import androidx.compose.material.icons.Icons
@@ -56,8 +56,8 @@ import java.util.Date
 
 private sealed interface Dialogs {
     data class Rename(val e: LibraryEntry) : Dialogs
-    data class Delete(val e: LibraryEntry) : Dialogs
-    data class Move(val e: LibraryEntry) : Dialogs
+    data class Delete(val es: List<LibraryEntry>) : Dialogs
+    data class Move(val es: List<LibraryEntry>) : Dialogs
     data object NewNotebook : Dialogs
     data object NewFolder : Dialogs
     data object EmptyTrash : Dialogs
@@ -70,6 +70,8 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
     val prefs = app.prefs
     var menuOpen by remember { mutableStateOf(false) }
     var dialog by remember { mutableStateOf<Dialogs?>(null) }
+    // Press and hold selects; the header then becomes the black action bar.
+    var picked by remember(s) { mutableStateOf(setOf<String>()) }
 
     val pdfPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) app.importPdf(uri, s.folderId)
@@ -84,20 +86,25 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
-            // --- top bar: menu on the left, brand in the middle, sort/view on the right ---
-            Box(Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 16.dp)) {
+            val selection = entries.filter { it.id in picked }
+            if (selection.isNotEmpty()) {
+                ActionBar(app, s, selection, onCancel = { picked = emptySet() }, onDialog = { dialog = it }, onDone = { picked = emptySet() })
+            } else {
+            // --- header (120 px): menu button, wordmark, and the trash button ---
+            Box(Modifier.fillMaxWidth().height(Rm.NavigationHeader).padding(horizontal = 8.dp)) {
                 Row(Modifier.align(Alignment.CenterStart), verticalAlignment = Alignment.CenterVertically) {
-                    IconBtn("Menu", { menuOpen = true }) { InkIcons.Menu(tint = it) }
+                    IconBtn("Menu", { menuOpen = true }, size = Rm.ToolButton) { InkIcons.Menu(tint = it) }
                     if (s.folderId.isNotEmpty() && s.section == Section.MY_FILES) {
-                        IconBtn("Up", { app.screen = Screen.Files(s.section, lib[s.folderId]?.parentId ?: "") }) { InkIcons.Back(tint = it) }
+                        IconBtn("Up", { app.screen = Screen.Files(s.section, lib[s.folderId]?.parentId ?: "") }, size = Rm.ToolButton) { InkIcons.Back(tint = it) }
                     }
                 }
-                Text("InkBridge", style = RmText.TitleMdAlt, modifier = Modifier.align(Alignment.Center))
-                Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
+                Text("InkBridge", style = RmText.Wordmark, modifier = Modifier.align(Alignment.Center))
+                Row(Modifier.align(Alignment.CenterEnd).padding(end = 24.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (s.section == Section.TRASH) {
                         EButton("Empty trash", { dialog = Dialogs.EmptyTrash }, enabled = entries.isNotEmpty())
                     }
                 }
+            }
             }
             // --- title row with the sort/view dropdown on the right ---
             Row(Modifier.fillMaxWidth().padding(horizontal = Rm.NavigatorMargin, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -111,15 +118,16 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
                     var sortMenu by remember { mutableStateOf(false) }
                     Box {
                         Row(Modifier.heightIn(min = Rm.Control).tap { sortMenu = true }.padding(start = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(prefs.sortBy.label + (if (prefs.sortReversed) " ↑" else ""), style = RmText.Label)
+                            Text(when { prefs.sortBy == SortBy.MODIFIED -> "Last modified"; prefs.sortReversed -> "Alphabetical (Z-A)"; else -> "Alphabetical (A-Z)" }, style = RmText.Label)
                             InkIcons.ChevronDown()
                         }
                         // The navigator's filter dropdown: 360 px wide, 80 px rows, the current choice inverted.
                         RmMenu(sortMenu, { sortMenu = false }, MenuSide.BELOW, Rm.DropdownWidth) {
                             @Composable fun item(label: String, checked: Boolean = false, action: () -> Unit) =
                                 RmMenuItem(label, { sortMenu = false; action() }, selected = checked)
-                            SortBy.entries.forEach { o -> item(o.label, prefs.sortBy == o) { prefs.sortBy = o } }
-                            item("Reverse order", prefs.sortReversed) { prefs.sortReversed = !prefs.sortReversed }
+                            item("Last modified", prefs.sortBy == SortBy.MODIFIED && !prefs.sortReversed) { prefs.sortBy = SortBy.MODIFIED; prefs.sortReversed = false }
+                            item("Alphabetical (A-Z)", prefs.sortBy == SortBy.NAME && !prefs.sortReversed) { prefs.sortBy = SortBy.NAME; prefs.sortReversed = false }
+                            item("Alphabetical (Z-A)", prefs.sortBy == SortBy.NAME && prefs.sortReversed) { prefs.sortBy = SortBy.NAME; prefs.sortReversed = true }
                             item("Grid view", prefs.gridView) { prefs.gridView = true }
                             item("List view", !prefs.gridView) { prefs.gridView = false }
                         }
@@ -140,25 +148,26 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
                 Text(
                     when (s.section) {
                         Section.MY_FILES -> "Nothing here yet.\nTap + to make a notebook or a folder, or to import a PDF to annotate."
-                        Section.FAVORITES -> "No favorites yet.\nPress and hold a notebook or folder in My files, then choose Favorite."
+                        Section.FAVORITES -> "No favorites yet.\nPress and hold a notebook or folder in My files, then tap Favorite."
                         Section.TRASH -> "The trash is empty."
                     },
                     style = RmText.Body, color = Ink.Grey, modifier = Modifier.padding(Rm.NavigatorMargin),
                 )
             } else if (prefs.gridView) {
-                // Folders are compact chips above the notebooks, lined up with the same columns.
+                val toggle: (LibraryEntry) -> Unit = { e -> picked = if (e.id in picked) picked - e.id else picked + e.id }
+                val select: (LibraryEntry) -> Unit = { e -> if (picked.isNotEmpty()) toggle(e) else open(app, e, s) }
+                // Four columns across the 1404 px screen with 18 px margins: 342 px cells.
                 LazyVerticalGrid(
-                    GridCells.Fixed(4), contentPadding = PaddingValues(start = Rm.NavigatorMargin, end = Rm.NavigatorMargin, top = 16.dp, bottom = Rm.CreateMenuBottomMargin + Rm.CreateMenuHeight + 40.dp),
-                    horizontalArrangement = Arrangement.spacedBy(30.dp), verticalArrangement = Arrangement.spacedBy(16.dp),
+                    GridCells.Fixed(4), contentPadding = PaddingValues(start = Rm.ViewMargin, end = Rm.ViewMargin, bottom = Rm.CreateMenuBottomMargin + Rm.CreateMenuHeight + 40.dp),
                 ) {
-                    items(folders, key = { it.id }) { e -> FolderChip(app, e, s, lib, onOpen = { open(app, e, s) }, onDialog = { dialog = it }) }
-                    if (folders.isNotEmpty() && notebooks.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(24.dp)) }
-                    items(notebooks, key = { it.id }) { e -> Card(app, e, s, lib, onOpen = { open(app, e, s) }, onDialog = { dialog = it }, grid = true) }
+                    items(folders, key = { it.id }) { e -> FolderCell(lib, e, e.id in picked, onClick = { select(e) }, onLongClick = { toggle(e) }) }
+                    items(notebooks, key = { it.id }) { e -> NotebookCell(app, e, e.id in picked, onClick = { select(e) }, onLongClick = { toggle(e) }) }
                 }
             } else {
                 LazyColumn(contentPadding = PaddingValues(bottom = Rm.CreateMenuBottomMargin + Rm.CreateMenuHeight + 40.dp)) {
                     items(entries, key = { it.id }) { e ->
-                        Card(app, e, s, lib, onOpen = { open(app, e, s) }, onDialog = { dialog = it }, grid = false)
+                        val toggle = { picked = if (e.id in picked) picked - e.id else picked + e.id }
+                        ListRow(app, e, e.id in picked, onClick = { if (picked.isNotEmpty()) toggle() else open(app, e, s) }, onLongClick = toggle)
                         Rule()
                     }
                 }
@@ -205,12 +214,16 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
         Dialogs.NewNotebook -> NewNotebookDialog(app, s.folderId, onDismiss = { dialog = null })
         Dialogs.NewFolder -> NameDialog("New folder", app.suggestName(s.folderId, "Folder"), "Create", { dialog = null }) { app.newFolder(it, s.folderId); dialog = null }
         is Dialogs.Rename -> NameDialog("Rename", d.e.name, "Rename", { dialog = null }) { app.rename(d.e, it); dialog = null }
-        is Dialogs.Delete -> ConfirmDialog(
-            if (d.e.parentId == Library.TRASH) "Delete forever?" else "Move to trash?",
-            if (d.e.parentId == Library.TRASH) "“${d.e.name}” will be deleted permanently." else "“${d.e.name}” will be moved to the trash.",
-            if (d.e.parentId == Library.TRASH) "Delete" else "Move to trash", { dialog = null },
-        ) { if (d.e.parentId == Library.TRASH) app.deleteForever(d.e) else app.trash(d.e); dialog = null }
-        is Dialogs.Move -> MoveDialog(lib, d.e, { dialog = null }) { app.move(d.e, it); dialog = null }
+        is Dialogs.Delete -> {
+            val inTrash = d.es.all { it.parentId == Library.TRASH }
+            val what = if (d.es.size == 1) "“${d.es[0].name}”" else "${d.es.size} items"
+            ConfirmDialog(
+                if (inTrash) "Delete forever?" else "Move to trash?",
+                if (inTrash) "$what will be deleted permanently." else "$what will be moved to the trash.",
+                if (inTrash) "Delete" else "Move to trash", { dialog = null },
+            ) { d.es.forEach { if (inTrash) app.deleteForever(it) else app.trash(it) }; picked = emptySet(); dialog = null }
+        }
+        is Dialogs.Move -> MoveDialog(lib, d.es, { dialog = null }) { target -> d.es.forEach { app.move(it, target) }; picked = emptySet(); dialog = null }
         Dialogs.EmptyTrash -> ConfirmDialog("Empty the trash?", "Everything in the trash will be deleted permanently.", "Empty trash", { dialog = null }) { app.emptyTrash(); dialog = null }
     }
 }
@@ -237,82 +250,97 @@ private fun visibleEntries(lib: Library, s: Screen.Files, sort: SortBy, reversed
     return base.sortedWith(compareBy<LibraryEntry> { !it.isFolder }.then(if (reversed) order.reversed() else order))
 }
 
+/** The firmware's selected look: the whole cell turns black with white text. */
+private fun Modifier.cellBackground(selected: Boolean) = background(if (selected) Ink.Black else Ink.White)
+
+/** A notebook in the grid: 342 px cell, a 16 px inset around the thumbnail, then the name and a caption. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun Card(app: AppController, e: LibraryEntry, s: Screen.Files, lib: Library, onOpen: () -> Unit, onDialog: (Dialogs) -> Unit, grid: Boolean) {
-    var menu by remember { mutableStateOf(false) }
-    val date = remember(e.lastModified) { if (e.lastModified > 0) DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(e.lastModified)) else "" }
+private fun NotebookCell(app: AppController, e: LibraryEntry, selected: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
+    val fg = if (selected) Ink.White else Ink.Black
     val pages = "${e.pageIds.size} page${if (e.pageIds.size == 1) "" else "s"}"
-
-    Box {
-        if (grid) {
-            Column(Modifier.combinedClickable(onClick = onOpen, onLongClick = { menu = true })) {
-                Thumb(app, e, Modifier.fillMaxWidth().aspectRatio(0.75f))
-                Spacer(Modifier.height(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(middleEllipsis(e.name), style = RmText.Label, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                    if (e.pinned) InkIcons.Star(size = 32.dp, modifier = Modifier.padding(start = 8.dp))
-                }
-                Text(pages, style = RmText.Caption, color = Ink.Grey, maxLines = 1)
-            }
-        } else {
-            Row(Modifier.fillMaxWidth().combinedClickable(onClick = onOpen, onLongClick = { menu = true }).padding(horizontal = Rm.NavigatorMargin, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Thumb(app, e, Modifier.width(96.dp).height(128.dp))
-                Spacer(Modifier.width(32.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(e.name, style = RmText.LabelLg, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text("$pages  ·  $date", style = RmText.Caption, color = Ink.Grey)
-                }
-                if (e.pinned) InkIcons.Star(size = 32.dp, modifier = Modifier.padding(end = 16.dp))
-                EButton("⋯", { menu = true })
-            }
+    Column(Modifier.fillMaxWidth().cellBackground(selected).combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp)) {
+        Thumb(app, e, Modifier.fillMaxWidth().aspectRatio(THUMB_ASPECT))
+        Spacer(Modifier.height(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(middleEllipsis(e.name), style = RmText.Label, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            if (e.pinned) InkIcons.StarInverted(tint = fg, size = Rm.IconSmall, modifier = Modifier.padding(start = 8.dp))
         }
-        EntryMenu(menu, { menu = false }, app, e, s, onOpen, onDialog)
+        Text(pages, style = RmText.Caption, color = fg, maxLines = 1)
     }
 }
 
-/** A folder as a small chip: folder glyph and name, as in the tablet's file browser. */
+/** A folder: 75 px high, folder icon, name and an item count. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun FolderChip(app: AppController, e: LibraryEntry, s: Screen.Files, lib: Library, onOpen: () -> Unit, onDialog: (Dialogs) -> Unit) {
-    var menu by remember { mutableStateOf(false) }
-    Box {
-        Row(Modifier.fillMaxWidth().combinedClickable(onClick = onOpen, onLongClick = { menu = true }).heightIn(min = 75.dp), verticalAlignment = Alignment.CenterVertically) {
-            InkIcons.Folder()
-            Spacer(Modifier.width(16.dp))
-            Text(e.name, style = RmText.Label, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-            if (e.pinned) InkIcons.Star(size = 32.dp)
+private fun FolderCell(lib: Library, e: LibraryEntry, selected: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
+    val fg = if (selected) Ink.White else Ink.Black
+    val count = remember(lib, e.id) { lib.children(e.id).size }
+    Row(
+        Modifier.fillMaxWidth().height(75.dp).cellBackground(selected).combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        InkIcons.Folder(tint = fg)
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            Text(e.name, style = RmText.Label, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(if (count == 1) "1 item" else "$count items", style = RmText.Caption, color = fg, maxLines = 1)
         }
-        EntryMenu(menu, { menu = false }, app, e, s, onOpen, onDialog)
+        if (e.pinned) InkIcons.StarInverted(tint = fg, size = Rm.IconSmall)
     }
 }
 
+/** A row in the list view. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun FolderGlyph(modifier: Modifier) {
-    Canvas(modifier) {
-        val w = size.width; val h = size.height
-        // tab, then body
-        drawRoundRect(androidx.compose.ui.graphics.Color.Black, topLeft = androidx.compose.ui.geometry.Offset(0f, 0f), size = androidx.compose.ui.geometry.Size(w * 0.42f, h * 0.35f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f))
-        drawRoundRect(androidx.compose.ui.graphics.Color.Black, topLeft = androidx.compose.ui.geometry.Offset(0f, h * 0.18f), size = androidx.compose.ui.geometry.Size(w, h * 0.82f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f))
+private fun ListRow(app: AppController, e: LibraryEntry, selected: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
+    val fg = if (selected) Ink.White else Ink.Black
+    val date = remember(e.lastModified) { if (e.lastModified > 0) DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(e.lastModified)) else "" }
+    val sub = if (e.isFolder) "Folder" else "${e.pageIds.size} page${if (e.pageIds.size == 1) "" else "s"}  ·  $date"
+    Row(
+        Modifier.fillMaxWidth().cellBackground(selected).combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(horizontal = Rm.NavigatorMargin, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Thumb(app, e, Modifier.width(96.dp).height(136.dp))
+        Spacer(Modifier.width(32.dp))
+        Column(Modifier.weight(1f)) {
+            Text(e.name, style = RmText.LabelLg, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(sub, style = RmText.Caption, color = fg)
+        }
+        if (e.pinned) InkIcons.StarInverted(tint = fg, size = Rm.IconSmall)
     }
 }
 
+/**
+ * The firmware's action bar, shown while items are selected: black, a Cancel button, then an icon over a label per action
+ * (Rename only for a single item).
+ */
 @Composable
-private fun EntryMenu(show: Boolean, dismiss: () -> Unit, app: AppController, e: LibraryEntry, s: Screen.Files, onOpen: () -> Unit, onDialog: (Dialogs) -> Unit) {
-    RmMenu(show, dismiss, MenuSide.BELOW, Rm.DropdownWidth) {
-        @Composable fun item(label: String, action: () -> Unit) = RmMenuItem(label, { dismiss(); action() })
+private fun ActionBar(app: AppController, s: Screen.Files, selection: List<LibraryEntry>, onCancel: () -> Unit, onDialog: (Dialogs) -> Unit, onDone: () -> Unit) {
+    @Composable fun action(label: String, onClick: () -> Unit, icon: @Composable () -> Unit) =
+        Column(Modifier.heightIn(min = Rm.NavigationHeader).tap(onClick = onClick).padding(horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            icon(); Text(label, style = RmText.LabelSmLow, color = Ink.White, maxLines = 1)
+        }
+    Row(Modifier.fillMaxWidth().height(Rm.NavigationHeader).background(Ink.Black).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text("Cancel", style = RmText.LabelLgStrong, color = Ink.White, modifier = Modifier.heightIn(min = Rm.Control).tap(onClick = onCancel).padding(horizontal = 16.dp).wrapContentHeight(Alignment.CenterVertically))
+        Spacer(Modifier.weight(1f))
         if (s.section == Section.TRASH) {
-            item("Restore") { app.restore(e) }
-            item("Delete forever") { onDialog(Dialogs.Delete(e)) }
+            action("Restore", { selection.forEach { app.restore(it) }; onDone() }) { InkIcons.Restore(tint = Ink.White) }
+            action("Delete", { onDialog(Dialogs.Delete(selection)) }) { InkIcons.Trash(tint = Ink.White) }
         } else {
-            item("Open") { onOpen() }
-            item("Rename") { onDialog(Dialogs.Rename(e)) }
-            item(if (e.pinned) "Remove from favorites" else "Favorite") { app.togglePinned(e) }
-            item("Move") { onDialog(Dialogs.Move(e)) }
-            item("Delete") { onDialog(Dialogs.Delete(e)) }
+            if (selection.size == 1) action("Rename", { onDialog(Dialogs.Rename(selection[0])) }) { InkIcons.Rename(tint = Ink.White) }
+            val allPinned = selection.all { it.pinned }
+            action("Favorite", { selection.filter { it.pinned == allPinned }.forEach { app.togglePinned(it) }; onDone() }) {
+                if (allPinned) InkIcons.StarInverted(tint = Ink.White) else InkIcons.StarOutline(tint = Ink.White)
+            }
+            action("Move", { onDialog(Dialogs.Move(selection)) }) { InkIcons.Move(tint = Ink.White) }
+            action("Delete", { onDialog(Dialogs.Delete(selection)) }) { InkIcons.Trash(tint = Ink.White) }
         }
     }
 }
+
+/** Notebook thumbnails are taller than the page: 310 x 440 px inside a 342 px cell. */
+private const val THUMB_ASPECT = 310f / 440f
 
 /**
  * A notebook's first page. Notebooks get a dark spine on the left, PDFs a folded top-right corner
@@ -359,19 +387,20 @@ private fun NewNotebookDialog(app: AppController, parentId: String, onDismiss: (
 }
 
 @Composable
-private fun MoveDialog(lib: Library, e: LibraryEntry, onDismiss: () -> Unit, onPick: (String) -> Unit) {
+private fun MoveDialog(lib: Library, es: List<LibraryEntry>, onDismiss: () -> Unit, onPick: (String) -> Unit) {
     // A folder can't be moved into itself or one of its own descendants.
     fun isInside(id: String): Boolean {
         var cur: String? = id
         val seen = HashSet<String>()
-        while (!cur.isNullOrEmpty() && seen.add(cur)) { if (cur == e.id) return true; cur = lib[cur]?.parentId }
+        while (!cur.isNullOrEmpty() && seen.add(cur)) { if (es.any { it.id == cur }) return true; cur = lib[cur]?.parentId }
         return false
     }
     val targets = lib.entries.filter { it.isFolder && it.parentId != Library.TRASH && !isInside(it.id) }.sortedBy { (lib.path(it.id) + it.name).joinToString(" / ").lowercase() }
-    EDialog("Move “${e.name}” to", onDismiss, actions = { EButton("Cancel", onDismiss) }) {
+    val parent = es.map { it.parentId }.distinct().singleOrNull()
+    EDialog(if (es.size == 1) "Move “${es[0].name}” to" else "Move ${es.size} items to", onDismiss, actions = { EButton("Cancel", onDismiss) }) {
         Column(Modifier.heightIn(max = 840.dp).verticalScroll(rememberScrollState())) {
-            ChoiceRow("My files", e.parentId.isEmpty(), { onPick("") })
-            targets.forEach { f -> ChoiceRow((lib.path(f.id) + f.name).joinToString(" / "), e.parentId == f.id, { onPick(f.id) }) }
+            ChoiceRow("My files", parent == "", { onPick("") })
+            targets.forEach { f -> ChoiceRow((lib.path(f.id) + f.name).joinToString(" / "), parent == f.id, { onPick(f.id) }) }
         }
     }
 }
@@ -379,28 +408,20 @@ private fun MoveDialog(lib: Library, e: LibraryEntry, onDismiss: () -> Unit, onP
 @Composable
 private fun Sidebar(app: AppController, s: Screen.Files, onClose: () -> Unit) {
     Row(Modifier.fillMaxSize()) {
-        // navigatorSidebarWidth 414, 120 px items, 2 px right border.
-        Column(Modifier.width(Rm.SidebarWidth).fillMaxHeight().background(Ink.White).drawBehind { drawLine(Color.Black, Offset(size.width - 1f, 0f), Offset(size.width - 1f, size.height), strokeWidth = 2f) }) {
-            Text("InkBridge", style = RmText.TitleMdAlt, modifier = Modifier.padding(horizontal = 32.dp, vertical = 32.dp))
-            Rule()
-            Section.entries.forEach { sec ->
-                val selected = s.section == sec
-                Text(
-                    sec.title, style = RmText.LabelLg, color = if (selected) Ink.White else Ink.Black,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp).background(if (selected) Ink.Black else Ink.White)
-                        .tap { app.screen = Screen.Files(sec); onClose() }.padding(horizontal = 32.dp).wrapContentHeight(Alignment.CenterVertically),
-                )
+        // navigatorSidebarWidth 414, 120 px items (icon, label), 2 px right border; it starts below the header so the menu button stays visible.
+        Column(Modifier.padding(top = Rm.NavigationHeader).width(Rm.SidebarWidth).fillMaxHeight().background(Ink.White).drawWithContent { drawContent(); drawLine(Color.Black, Offset(size.width - 1f, 0f), Offset(size.width - 1f, size.height), strokeWidth = 2f) }) {
+            @Composable fun item(label: String, selected: Boolean, onClick: () -> Unit, icon: @Composable (Color) -> Unit) {
+                val fg = if (selected) Ink.White else Ink.Black
+                Row(Modifier.fillMaxWidth().height(Rm.SidebarItem).background(if (selected) Ink.Black else Ink.White).tap(onClick = onClick).padding(horizontal = 32.dp), verticalAlignment = Alignment.CenterVertically) {
+                    icon(fg); Spacer(Modifier.width(24.dp)); Text(label, style = RmText.LabelLg, color = fg)
+                }
             }
+            item("My files", s.section == Section.MY_FILES, { app.screen = Screen.Files(Section.MY_FILES); onClose() }) { InkIcons.MyFiles(tint = it) }
+            item("Favorites", s.section == Section.FAVORITES, { app.screen = Screen.Files(Section.FAVORITES); onClose() }) { InkIcons.StarOutline(tint = it) }
             Spacer(Modifier.weight(1f))
+            item("Trash", s.section == Section.TRASH, { app.screen = Screen.Files(Section.TRASH); onClose() }) { InkIcons.Trash(tint = it) }
             Rule()
-            Row(
-                Modifier.fillMaxWidth().heightIn(min = 120.dp).tap { app.screen = Screen.Settings; onClose() }.padding(horizontal = 32.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                InkIcons.Settings()
-                Spacer(Modifier.width(16.dp))
-                Text("Settings", style = RmText.LabelLg)
-            }
+            item("Settings", false, { app.screen = Screen.Settings; onClose() }) { InkIcons.Settings(tint = it) }
         }
         // Tap outside to close. (No scrim animation: it would smear on e-ink.)
         Box(Modifier.weight(1f).fillMaxHeight().background(Ink.White.copy(alpha = 0.55f)).tap(onClick = onClose))

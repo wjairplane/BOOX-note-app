@@ -61,6 +61,14 @@ object InkIcons {
     @Composable fun Folder(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_folder_fill, modifier, tint, size)
     @Composable fun ChevronDown(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_chevron_small_down, modifier, tint, size)
 
+    @Composable fun MyFiles(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_my_files, modifier, tint, size)
+    @Composable fun StarOutline(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_star, modifier, tint, size)
+    @Composable fun StarInverted(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_star_inverted, modifier, tint, size)
+    @Composable fun Trash(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_trashcan, modifier, tint, size)
+    @Composable fun Rename(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_text_edit, modifier, tint, size)
+    @Composable fun Move(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_move, modifier, tint, size)
+    @Composable fun Restore(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_arrow_counter_clockwise, modifier, tint, size)
+
     @DrawableRes
     private fun penRes(tool: PenTool): Int = when (tool) {
         PenTool.BALLPOINT -> R.drawable.rm_ballpoint

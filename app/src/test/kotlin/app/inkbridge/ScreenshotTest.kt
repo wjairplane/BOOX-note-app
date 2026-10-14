@@ -114,10 +114,9 @@ class ScreenshotTest {
         rule.onNodeWithContentDescription("Create").performClick(); settle()
         rule.onNodeWithContentDescription("Close").performClick(); settle()
 
-        // The menu on a notebook (press and hold)
-        rule.onNodeWithText("Journal").performTouchInput { longClick() }; settle(); snapshot("menu_entry")
-        rule.onNodeWithText("Open").performClick(); settle()
-        rule.runOnUiThread { app.screen = Screen.Files() }; settle()
+        // Press and hold selects: the black action bar replaces the header
+        rule.onNodeWithText("Journal").performTouchInput { longClick() }; settle(); snapshot("selection")
+        rule.onNodeWithText("Cancel").performClick(); settle()
 
         // Search
         rule.onNodeWithContentDescription("Search").performClick(); settle()

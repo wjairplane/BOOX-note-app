@@ -18,6 +18,7 @@ USED = [
     "highlighter", "shader", "eraser", "undo", "redo", "page_overview", "toolbar_hide", "dots_three_vertical",
     "lens", "plus", "x_medium", "stroke_thin", "stroke_medium", "stroke_thick",
     "burger", "arrow_left", "cog", "star_fill", "folder_fill", "chevron_small_down",
+    "my_files", "star", "star_inverted", "trashcan", "text_edit", "move", "arrow_counter_clockwise",
 ]
 
 def convert(name):

@@ -61,6 +61,9 @@ private const val RM_WIDTH = 1404f
 /** Dimension tokens from ArkTokens / Values, in reMarkable pixels (== dp under [RmDensity]). */
 object Rm {
     val Icon = 48.dp                    // content.icon.*.sizing
+    val IconSmall = 32.dp               // Values.iconSize.small
+    val NavigationHeader = 120.dp       // navigationEntriesHeaderHeight
+    val SidebarItem = 120.dp            // navigatorSidebarItemHeight
     val ToolButton = 112.dp             // controlsHeight.large: toolbar buttons and foldout rows
     val Control = 80.dp                 // controlsHeight.small: buttons, list rows
     val Outline = 2.dp                  // outlineSize: borders and dividers
@@ -102,6 +105,9 @@ object RmText {
     val LabelSm = sans(22, FontWeight.Medium, 1.44f)
     val TitleMd = sans(28, FontWeight.Bold, 1.5f)
     val TitleMdAlt = serif(42, 1.5f)
+    /** The header wordmark, set 32 px tall like the firmware's logo. */
+    val Wordmark = serif(36, 1.2f)
+    val LabelSmLow = sans(22, FontWeight.Medium, 1.18f)
     val TitleLg = serif(48, 1.25f)
 }
 
@@ -167,10 +173,10 @@ fun EButton(
 
 /** Icon-only square button for header bars: an 80 px tile with a 48 px glyph. */
 @Composable
-fun IconBtn(description: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, selected: Boolean = false, icon: @Composable (Color) -> Unit) {
+fun IconBtn(description: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, selected: Boolean = false, size: Dp = Rm.Control, icon: @Composable (Color) -> Unit) {
     val fg = if (selected) Ink.White else if (enabled) Ink.Black else Ink.Rule
     Box(
-        modifier.size(Rm.Control).background(if (selected) Ink.Dark else Ink.White).tap(enabled, onClick).semantics { contentDescription = description },
+        modifier.size(size).background(if (selected) Ink.Dark else Ink.White).tap(enabled, onClick).semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) { icon(fg) }
 }
