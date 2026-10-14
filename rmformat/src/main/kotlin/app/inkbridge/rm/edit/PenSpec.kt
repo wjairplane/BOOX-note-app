@@ -9,7 +9,7 @@ import app.inkbridge.rm.scene.PenId
  * see [StrokeBuilder.widthRaw].)
  */
 enum class PenTool(val label: String, val toolId: Int) {
-    BALLPOINT("Ballpoint", PenId.BALLPOINT_2),
+    BALLPOINT("Ballpoint pen", PenId.BALLPOINT_2),
     FINELINER("Fineliner", PenId.FINELINER_2),
     MARKER("Marker", PenId.MARKER_2),
     PENCIL("Pencil", PenId.PENCIL_2),

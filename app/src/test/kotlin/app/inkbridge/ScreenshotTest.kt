@@ -5,9 +5,12 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.longClick
 import app.inkbridge.rm.edit.InputPoint
 import app.inkbridge.rm.edit.PageEditor
 import app.inkbridge.rm.edit.PenSpec
@@ -34,11 +37,32 @@ import java.io.File
 class ScreenshotTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
 
-    /** Draw the whole window into a PNG. (Compose's captureToImage waits for a draw callback Robolectric never sends.) */
+    /**
+     * Draw the whole window into a PNG, plus any popup windows (menus) on top of it at their own positions.
+     * (Compose's captureToImage waits for a draw callback Robolectric never sends.)
+     */
     private fun snapshot(name: String) {
         val decor = rule.activity.window.decorView
         val bmp = android.graphics.Bitmap.createBitmap(decor.width.coerceAtLeast(1), decor.height.coerceAtLeast(1), android.graphics.Bitmap.Config.ARGB_8888)
-        decor.draw(android.graphics.Canvas(bmp))
+        val canvas = android.graphics.Canvas(bmp)
+        decor.draw(canvas)
+        runCatching {
+            val wmg = Class.forName("android.view.WindowManagerGlobal")
+            val global = wmg.getMethod("getInstance").invoke(null)
+            val names = wmg.getMethod("getViewRootNames").invoke(global) as Array<*>
+            for (n in names) {
+                val root = wmg.getMethod("getRootView", String::class.java).invoke(global, n) as? android.view.View ?: continue
+                if (root === decor || root.width == 0 || root.height == 0) continue
+                val lp = root.layoutParams as? android.view.WindowManager.LayoutParams
+                canvas.save()
+                // Dialogs are centred in the window; popups carry their own position.
+                val centred = lp != null && (lp.gravity and android.view.Gravity.CENTER_VERTICAL) != 0
+                if (centred) canvas.translate((bmp.width - root.width) / 2f, (bmp.height - root.height) / 2f)
+                else canvas.translate((lp?.x ?: 0).toFloat(), (lp?.y ?: 0).toFloat())
+                root.draw(canvas)
+                canvas.restore()
+            }
+        }
         val out = File("build/ui-snapshots").apply { mkdirs() }
         File(out, "$name.png").outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
     }
@@ -78,9 +102,22 @@ class ScreenshotTest {
         rule.setContent { InkBridgeApp(store, Prefs(ctx), app) }
         settle(); snapshot("files")
 
+        // The sort dropdown (a popup window)
+        rule.onNodeWithText("Last modified").performClick(); settle(); snapshot("menu_sort")
+        rule.onAllNodesWithText("Last modified")[1].performClick(); settle() // choosing the current order closes the menu
+        rule.runOnUiThread { app.screen = Screen.Files() }; settle()
+
         // Create menu (the pill gains a round close button while open)
         rule.onNodeWithContentDescription("Create").performClick(); settle(); snapshot("create_menu")
+        rule.onNodeWithText("Folder").performClick(); settle(); snapshot("dialog_new_folder")
+        rule.onNodeWithText("Cancel").performClick(); settle()
+        rule.onNodeWithContentDescription("Create").performClick(); settle()
         rule.onNodeWithContentDescription("Close").performClick(); settle()
+
+        // The menu on a notebook (press and hold)
+        rule.onNodeWithText("Journal").performTouchInput { longClick() }; settle(); snapshot("menu_entry")
+        rule.onNodeWithText("Open").performClick(); settle()
+        rule.runOnUiThread { app.screen = Screen.Files() }; settle()
 
         // Search
         rule.onNodeWithContentDescription("Search").performClick(); settle()
@@ -114,5 +151,6 @@ class ScreenshotTest {
         rule.runOnUiThread { app.prefs.toolbarPosition = ToolbarPosition.LEFT }; settle()
         rule.onNodeWithContentDescription("Writing tool 1: Fineliner").performClick(); settle(); snapshot("notebook_left_menu")
         rule.runOnUiThread { app.prefs.toolbarPosition = ToolbarPosition.BOTTOM }; settle(); snapshot("notebook_bottom")
+        rule.onNodeWithContentDescription("More").performClick(); settle(); snapshot("menu_more")
     }
 }

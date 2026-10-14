@@ -38,7 +38,7 @@ class PenSamplerTest {
 
     @Test fun theNinePensAndNineColoursMatchThePenMenu() {
         assertEquals(9, PenTool.PENS.size)
-        assertEquals(listOf("Ballpoint", "Fineliner", "Marker", "Pencil", "Mechanical pencil", "Paintbrush", "Calligraphy pen", "Highlighter", "Shader"), PenTool.PENS.map { it.label })
+        assertEquals(listOf("Ballpoint pen", "Fineliner", "Marker", "Pencil", "Mechanical pencil", "Paintbrush", "Calligraphy pen", "Highlighter", "Shader"), PenTool.PENS.map { it.label })
         assertEquals(listOf("Black", "Gray", "White", "Blue", "Red", "Green", "Yellow", "Cyan", "Magenta"), PenSpec.INK_COLORS.map { PenSpec.colorName(it) })
     }
 

@@ -25,10 +25,20 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import app.inkbridge.R
 
 /*
@@ -62,6 +72,8 @@ object Rm {
     val CreateMenuBottomMargin = 100.dp
     val WritingFoldoutWidth = 480.dp
     val EraserFoldoutWidth = 376.dp
+    val ToolboxFoldoutWidth = 339.dp      // toolboxFoldoutMenuWidth: the notebook's document menu
+    val DropdownWidth = 360.dp            // the navigator's filter dropdown
 }
 
 val RmSans = FontFamily(
@@ -150,7 +162,7 @@ fun EButton(
             .tap(enabled, onClick)
             .padding(horizontal = 32.dp),
         contentAlignment = Alignment.Center,
-    ) { Text(label, color = fg, style = RmText.Label, maxLines = 1) }
+    ) { Text(label, color = fg, style = RmText.LabelLg, maxLines = 1) }
 }
 
 /** Icon-only square button for header bars: an 80 px tile with a 48 px glyph. */
@@ -166,13 +178,16 @@ fun IconBtn(description: String, onClick: () -> Unit, modifier: Modifier = Modif
 /** A modal box (the firmware's Card): 2 px border, 64 px padding, serif title. */
 @Composable
 fun EDialog(title: String, onDismiss: () -> Unit, actions: @Composable RowScope.() -> Unit, content: @Composable ColumnScope.() -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
-        Column(Modifier.fillMaxWidth().background(Ink.White).border(Rm.Outline, Ink.Black).padding(64.dp)) {
-            Text(title, style = RmText.TitleMdAlt)
-            Spacer(Modifier.height(24.dp))
-            content()
-            Spacer(Modifier.height(32.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End)) { actions() }
+    val density = LocalDensity.current // a dialog is its own window and would otherwise fall back to the screen's density
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        CompositionLocalProvider(LocalDensity provides density) {
+            Column(Modifier.padding(horizontal = 80.dp).fillMaxWidth().background(Ink.White).border(Rm.Outline, Ink.Black).padding(64.dp)) {
+                Text(title, style = RmText.TitleMdAlt)
+                Spacer(Modifier.height(24.dp))
+                content()
+                Spacer(Modifier.height(32.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End)) { actions() }
+            }
         }
     }
 }
@@ -240,4 +255,48 @@ fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit, sub:
             contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart,
         ) { Box(Modifier.size(32.dp).background(if (checked) Ink.White else Ink.Black, CircleShape)) }
     }
+}
+
+// ---- Menus -------------------------------------------------------------------------------------------------------
+// The firmware's menus are flat: white, a 2 px black border, no shadow, no animation. Rows are black with white text when
+// selected (the Dropdown button's `inverted` state / FoldoutItem `selected`).
+
+/** Which side of its anchor a [RmMenu] opens on. */
+enum class MenuSide { BELOW, ABOVE, RIGHT, LEFT }
+
+private class MenuPosition(private val side: MenuSide) : PopupPositionProvider {
+    override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset {
+        val (x, y) = when (side) {
+            MenuSide.BELOW -> anchorBounds.left to anchorBounds.bottom
+            MenuSide.ABOVE -> anchorBounds.left to anchorBounds.top - popupContentSize.height
+            MenuSide.RIGHT -> anchorBounds.right to anchorBounds.top
+            MenuSide.LEFT -> anchorBounds.left - popupContentSize.width to anchorBounds.top
+        }
+        return IntOffset(
+            x.coerceIn(0, (windowSize.width - popupContentSize.width).coerceAtLeast(0)),
+            y.coerceIn(0, (windowSize.height - popupContentSize.height).coerceAtLeast(0)),
+        )
+    }
+}
+
+/** A menu anchored to the box it is called from. Content is a column of [RmMenuItem]s. */
+@Composable
+fun RmMenu(show: Boolean, onDismiss: () -> Unit, side: MenuSide = MenuSide.BELOW, width: Dp = Rm.DropdownWidth, content: @Composable ColumnScope.() -> Unit) {
+    if (!show) return
+    val density = LocalDensity.current // a popup is its own window and would otherwise fall back to the screen's density
+    Popup(popupPositionProvider = MenuPosition(side), onDismissRequest = onDismiss, properties = PopupProperties(focusable = true)) {
+        CompositionLocalProvider(LocalDensity provides density) {
+            Column(Modifier.width(width).heightIn(max = 1700.dp).background(Ink.White).border(Rm.Outline, Ink.Black).verticalScroll(rememberScrollState())) { content() }
+        }
+    }
+}
+
+/** One menu row: [height] px high, label text, inverted when [selected]. */
+@Composable
+fun RmMenuItem(label: String, onClick: () -> Unit, enabled: Boolean = true, selected: Boolean = false, height: Dp = Rm.Control) {
+    val fg = if (selected) Ink.White else if (enabled) Ink.Black else Ink.Rule
+    Box(
+        Modifier.fillMaxWidth().heightIn(min = height).background(if (selected) Ink.Black else Ink.White).tap(enabled, onClick).padding(horizontal = 32.dp, vertical = 8.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) { Text(label, style = RmText.Label, color = fg, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
 }

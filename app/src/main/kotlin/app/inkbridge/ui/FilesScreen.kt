@@ -26,8 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -116,9 +114,10 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
                             Text(prefs.sortBy.label + (if (prefs.sortReversed) " ↑" else ""), style = RmText.Label)
                             InkIcons.ChevronDown()
                         }
-                        DropdownMenu(sortMenu, { sortMenu = false }) {
+                        // The navigator's filter dropdown: 360 px wide, 80 px rows, the current choice inverted.
+                        RmMenu(sortMenu, { sortMenu = false }, MenuSide.BELOW, Rm.DropdownWidth) {
                             @Composable fun item(label: String, checked: Boolean = false, action: () -> Unit) =
-                                DropdownMenuItem(text = { Text(label + if (checked) "  ✓" else "", style = RmText.Label) }, modifier = Modifier.heightIn(min = Rm.Control), onClick = { sortMenu = false; action() })
+                                RmMenuItem(label, { sortMenu = false; action() }, selected = checked)
                             SortBy.entries.forEach { o -> item(o.label, prefs.sortBy == o) { prefs.sortBy = o } }
                             item("Reverse order", prefs.sortReversed) { prefs.sortReversed = !prefs.sortReversed }
                             item("Grid view", prefs.gridView) { prefs.gridView = true }
@@ -300,8 +299,8 @@ private fun FolderGlyph(modifier: Modifier) {
 
 @Composable
 private fun EntryMenu(show: Boolean, dismiss: () -> Unit, app: AppController, e: LibraryEntry, s: Screen.Files, onOpen: () -> Unit, onDialog: (Dialogs) -> Unit) {
-    DropdownMenu(show, dismiss) {
-        @Composable fun item(label: String, action: () -> Unit) = DropdownMenuItem(text = { Text(label, style = RmText.Label) }, modifier = Modifier.heightIn(min = Rm.Control), onClick = { dismiss(); action() })
+    RmMenu(show, dismiss, MenuSide.BELOW, Rm.DropdownWidth) {
+        @Composable fun item(label: String, action: () -> Unit) = RmMenuItem(label, { dismiss(); action() })
         if (s.section == Section.TRASH) {
             item("Restore") { app.restore(e) }
             item("Delete forever") { onDialog(Dialogs.Delete(e)) }

@@ -19,8 +19,6 @@ import androidx.compose.ui.unit.Dp
 import app.inkbridge.ToolSlot
 import app.inkbridge.ToolbarPosition
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -166,14 +164,16 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 IconTile("Page overview", { save(session); overview = true }) { InkIcons.Overview(tint = it) }
                 Box {
                     IconTile("More", { menu = true }) { InkIcons.More(tint = it) }
-                    DropdownMenu(menu, { menu = false }) {
-                        @Composable fun item(label: String, enabled: Boolean = true, action: () -> Unit) =
-                            DropdownMenuItem(text = { Text(label, style = RmText.Label) }, enabled = enabled, modifier = Modifier.heightIn(min = Rm.Control), onClick = { menu = false; action() })
+                    // The document menu is a foldout: 339 px wide, 112 px rows, opening toward the page.
+                    val side = when (pos) { ToolbarPosition.LEFT -> MenuSide.RIGHT; ToolbarPosition.RIGHT -> MenuSide.LEFT; ToolbarPosition.TOP -> MenuSide.BELOW; ToolbarPosition.BOTTOM -> MenuSide.ABOVE }
+                    RmMenu(menu, { menu = false }, side, Rm.ToolboxFoldoutWidth) {
+                        @Composable fun item(label: String, enabled: Boolean = true, selected: Boolean = false, action: () -> Unit) =
+                            RmMenuItem(label, { menu = false; action() }, enabled, selected, Rm.ToolButton)
                         item("My files") { save(session); app.screen = Screen.Files(folderId = doc.parentId.takeIf { it != "trash" } ?: "") }
                         item("Page ${pageIndex + 1} of ${doc.pageIds.size}", enabled = false) {}
                         item("Add page after this one", canDraw) { newPageAfterCurrent() }
                         item("Delete this page", doc.pageIds.size > 1) { confirmDelete = true }
-                        if (!isPdf) PageTemplate.entries.forEach { t -> item("Template: ${t.label}${if (doc.template == t) "  ✓" else ""}") { save(session); app.setTemplate(doc, t) } }
+                        if (!isPdf) PageTemplate.entries.forEach { t -> item("Template: ${t.label}", selected = doc.template == t) { save(session); app.setTemplate(doc, t) } }
                         item("Refresh the screen") { surface?.fullRefresh() }
                         item("Export this page (SVG, PNG, PDF)", session != null) {
                             val s = session ?: return@item
@@ -409,16 +409,15 @@ private fun MenuTile(selected: Boolean, description: String, onClick: () -> Unit
 private fun FoldoutHeader(title: String) =
     Text(title, style = RmText.Label, color = Ink.Black, modifier = Modifier.fillMaxWidth().padding(start = Rm.FoldoutPad, end = Rm.FoldoutPad, top = 24.dp, bottom = 16.dp))
 
-/** A grid of [columns] cells inside a foldout: 32 px side padding and 32 px below (FoldoutGrid). */
+/** A grid of [columns] equal columns inside a foldout: 32 px side padding and 32 px below (FoldoutGrid). */
 @Composable
-private fun FoldoutGrid(count: Int, columns: Int, cellWidth: Dp?, cell: @Composable (Int, Modifier) -> Unit) {
+private fun FoldoutGrid(count: Int, columns: Int, tileWidth: Dp?, cell: @Composable (Int, Modifier) -> Unit) {
     Column(Modifier.fillMaxWidth().padding(start = Rm.FoldoutPad, end = Rm.FoldoutPad, bottom = Rm.FoldoutPad)) {
         for (rowStart in 0 until count step columns) {
             Row(Modifier.fillMaxWidth()) {
                 for (c in 0 until columns) {
-                    val m = if (cellWidth != null) Modifier.width(cellWidth) else Modifier.weight(1f)
-                    // A short last row keeps its cells aligned with the columns above it.
-                    if (rowStart + c < count) cell(rowStart + c, m) else Spacer(m)
+                    // Tiles keep their own width and sit at the start of their column, as in a Qt GridLayout.
+                    Box(Modifier.weight(1f)) { if (rowStart + c < count) cell(rowStart + c, if (tileWidth != null) Modifier.width(tileWidth) else Modifier.fillMaxWidth()) }
                 }
             }
         }
@@ -432,12 +431,12 @@ private fun FoldoutGrid(count: Int, columns: Int, cellWidth: Dp?, cell: @Composa
 @Composable
 private fun PenMenu(slot: ToolSlot, onChange: (ToolSlot) -> Unit) {
     val highlighter = slot.tool.usesHighlighterColors
-    val pens = PenTool.PENS.filter { it != PenTool.SHADER }
+    val pens = PenTool.PENS
     val thicknessNames = listOf("Thin", "Medium", "Thick")
     Column(Modifier.width(Rm.WritingFoldoutWidth).background(Ink.White).border(Rm.Outline, Ink.Black)) {
         FoldoutHeader(slot.tool.label)
-        // 4 columns of 104 px fill the 416 px between the paddings.
-        FoldoutGrid(pens.size, 4, 104.dp) { i, m ->
+        // Nine pens in three columns of 112 px tiles.
+        FoldoutGrid(pens.size, 3, Rm.ToolButton) { i, m ->
             val t = pens[i]
             MenuTile(t == slot.tool, t.label, { onChange(slot.copy(tool = t, colorId = colorFor(t, slot))) }, m) { fg -> InkIcons.Pen(t, tint = fg) }
         }
