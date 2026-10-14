@@ -297,8 +297,6 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                         }
                     }
                 }
-                // Close the notebook and go back to My files.
-                IconTile("Close notebook", { save(session); app.screen = Screen.Files(folderId = doc.parentId.takeIf { it != "trash" } ?: "") }) { InkIcons.XCircle(tint = it) }
             }
         }
         // No frame around the toolbar: its icons sit straight on the page, as on the tablet.
@@ -319,7 +317,8 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 )
             }
         if (horizontal) {
-            Row(Modifier.fillMaxWidth().height(TOOLBAR_THICKNESS).then(drag), verticalAlignment = Alignment.CenterVertically) {
+            // The close button sits at the top right of the screen, so a top toolbar leaves room for it.
+            Row(Modifier.fillMaxWidth().padding(end = if (pos == ToolbarPosition.TOP) TOOLBAR_THICKNESS else 0.dp).height(TOOLBAR_THICKNESS).then(drag), verticalAlignment = Alignment.CenterVertically) {
                 start(); Spacer(Modifier.weight(1f)); end()
             }
         } else {
@@ -380,6 +379,18 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
             ToolbarPosition.BOTTOM -> Column(Modifier.fillMaxSize()) { Box(Modifier.weight(1f)) { page() }; toolbar() }
             ToolbarPosition.LEFT -> Row(Modifier.fillMaxSize()) { toolbar(); Box(Modifier.weight(1f)) { page() } }
             ToolbarPosition.RIGHT -> Row(Modifier.fillMaxSize()) { Box(Modifier.weight(1f)) { page() }; toolbar() }
+        }
+
+        // The firmware's close button is not part of the toolbar: it floats in the top right corner of the screen
+        // (top left when the toolbar is on the right), on a white square only when the toolbar runs along the top.
+        if (!collapsed) {
+            Box(
+                Modifier.align(if (pos == ToolbarPosition.RIGHT) Alignment.TopStart else Alignment.TopEnd).size(TOOLBAR_THICKNESS)
+                    .background(if (pos == ToolbarPosition.TOP) Ink.White else Color.Transparent)
+                    .tap { save(session); app.screen = Screen.Files(folderId = doc.parentId.takeIf { it != "trash" } ?: "") }
+                    .semantics { contentDescription = "Close notebook" },
+                contentAlignment = Alignment.Center,
+            ) { InkIcons.XCircle() }
         }
 
         if (overview) PageOverview(app, doc, pageIndex, onPick = { overview = false; goTo(it) }, onAdd = { overview = false; app.addPage(doc, doc.pageIds.lastIndex) { pageIndex = it } }, onClose = { overview = false })

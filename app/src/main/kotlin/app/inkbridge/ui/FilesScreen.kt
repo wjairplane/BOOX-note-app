@@ -10,6 +10,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import app.inkbridge.AndroidPageCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import app.inkbridge.rm.render.PageRenderer
+import app.inkbridge.rm.scene.SceneTree
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -230,8 +237,8 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
 
     when (val d = dialog) {
         null -> Unit
-        Dialogs.NewNotebook -> NewNotebookDialog(app, s.folderId, onDismiss = { dialog = null })
-        Dialogs.NewFolder -> NameDialog("New folder", app.suggestName(s.folderId, "Folder"), "Create", { dialog = null }) { app.newFolder(it, s.folderId); dialog = null }
+        Dialogs.NewNotebook -> NewNotebookScreen(app, s.folderId, onDismiss = { dialog = null })
+        Dialogs.NewFolder -> NewFolderScreen(app, s.folderId, onDismiss = { dialog = null })
         is Dialogs.Rename -> NameDialog("Rename", d.e.name, "Rename", { dialog = null }) { app.rename(d.e, it); dialog = null }
         is Dialogs.Delete -> {
             val inTrash = d.es.all { it.parentId == Library.TRASH }
@@ -494,18 +501,60 @@ internal fun Thumb(app: AppController, e: LibraryEntry, modifier: Modifier) {
     }
 }
 
+/** A create form that fills the whole screen (not a popup): a navigation bar with Back, the form, and the main action at the bottom right. */
 @Composable
-private fun NewNotebookDialog(app: AppController, parentId: String, onDismiss: () -> Unit) {
+private fun CreateForm(title: String, confirm: String, enabled: Boolean, onDismiss: () -> Unit, onConfirm: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+    androidx.activity.compose.BackHandler(onBack = onDismiss)
+    Column(Modifier.fillMaxSize().background(Ink.White).pointerInput(Unit) { detectTapGestures { } }) {
+        NavigationBar(title, onDismiss)
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 80.dp, vertical = 48.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) { content() }
+        Rule()
+        Row(Modifier.fillMaxWidth().padding(horizontal = 80.dp, vertical = 32.dp), horizontalArrangement = Arrangement.End) {
+            EButton("Cancel", onDismiss)
+            Spacer(Modifier.width(24.dp))
+            EButton(confirm, onConfirm, enabled = enabled, selected = enabled)
+        }
+    }
+}
+
+@Composable
+private fun NewFolderScreen(app: AppController, parentId: String, onDismiss: () -> Unit) {
+    var name by remember { mutableStateOf(app.suggestName(parentId, "Folder")) }
+    CreateForm("New folder", "Create", name.isNotBlank(), onDismiss, { app.newFolder(name.trim(), parentId); onDismiss() }) {
+        Text("Name", style = RmText.Label, color = Ink.Grey)
+        NameField(name) { name = it }
+    }
+}
+
+@Composable
+private fun NewNotebookScreen(app: AppController, parentId: String, onDismiss: () -> Unit) {
     var name by remember { mutableStateOf(app.suggestName(parentId)) }
     var template by remember { mutableStateOf(app.prefs.defaultTemplate) }
-    EDialog("New notebook", onDismiss, actions = {
-        EButton("Cancel", onDismiss)
-        EButton("Create", { app.prefs.defaultTemplate = template; app.newNotebook(name.trim(), template, parentId); onDismiss() }, enabled = name.isNotBlank(), selected = name.isNotBlank())
-    }) {
+    CreateForm("New notebook", "Create", name.isNotBlank(), onDismiss, { app.prefs.defaultTemplate = template; app.newNotebook(name.trim(), template, parentId); onDismiss() }) {
+        Text("Name", style = RmText.Label, color = Ink.Grey)
         NameField(name) { name = it }
         Spacer(Modifier.height(24.dp))
         Text("Page template", style = RmText.Label, color = Ink.Grey)
-        PageTemplate.entries.forEach { t -> ChoiceRow(t.label, template == t, { template = t }) }
+        val layout = remember { PageRenderer(SceneTree()).layout }
+        Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+            PageTemplate.entries.forEach { t ->
+                val selected = template == t
+                Column(Modifier.width(264.dp).tap { template = t }.semantics { contentDescription = "Template ${t.label}" }, horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(Modifier.fillMaxWidth().aspectRatio(layout.width / layout.height).border(if (selected) 6.dp else Rm.Outline, Ink.Black)) {
+                        androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                            drawIntoCanvas { c ->
+                                val n = c.nativeCanvas
+                                n.save(); n.scale(size.width / layout.width, size.width / layout.width); n.translate(-layout.xMin, -layout.yMin)
+                                t.draw(AndroidPageCanvas(n), layout)
+                                n.restore()
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    Text(t.label, style = RmText.Label)
+                }
+            }
+        }
     }
 }
 
