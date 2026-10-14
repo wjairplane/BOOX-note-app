@@ -56,7 +56,7 @@ class ScreenshotTest {
                 val lp = root.layoutParams as? android.view.WindowManager.LayoutParams
                 canvas.save()
                 // Dialogs are centred in the window; popups carry their own position.
-                val centred = lp != null && (lp.gravity and android.view.Gravity.CENTER_VERTICAL) != 0
+                val centred = lp != null && (lp.gravity and android.view.Gravity.VERTICAL_GRAVITY_MASK) == android.view.Gravity.CENTER_VERTICAL
                 if (centred) canvas.translate((bmp.width - root.width) / 2f, (bmp.height - root.height) / 2f)
                 else canvas.translate((lp?.x ?: 0).toFloat(), (lp?.y ?: 0).toFloat())
                 root.draw(canvas)
@@ -116,7 +116,17 @@ class ScreenshotTest {
 
         // Press and hold selects: the black action bar replaces the header
         rule.onNodeWithText("Journal").performTouchInput { longClick() }; settle(); snapshot("selection")
-        rule.onNodeWithText("Cancel").performClick(); settle()
+        rule.onNodeWithText("More").performClick(); settle(); snapshot("action_more")
+        rule.onNodeWithText("More").performClick(); settle()
+        rule.onNodeWithText("Tag").performClick(); settle(); snapshot("tag_popup")
+        rule.onNodeWithText("New tag").performClick(); settle()
+        rule.onNode(hasSetTextAction()).performTextInput("work"); settle(); snapshot("dialog_new_tag")
+        rule.onNodeWithText("Add").performClick(); settle(); snapshot("tag_popup_with_tag")
+        rule.onNodeWithText("Tag").performClick(); settle() // closing the popup applies the tags
+        org.junit.Assert.assertEquals(listOf("work"), app.library.entries.first { it.name == "Journal" }.tags)
+        rule.onNodeWithText("Duplicate").performClick(); settle()
+        org.junit.Assert.assertTrue(app.library.entries.any { it.name == "Journal (copy)" })
+        snapshot("after_duplicate")
 
         // Search
         rule.onNodeWithContentDescription("Search").performClick(); settle()
@@ -127,6 +137,16 @@ class ScreenshotTest {
         rule.onNodeWithContentDescription("Menu").performClick(); settle(); snapshot("sidebar")
         rule.onNodeWithText("Favorites").performClick(); settle(); snapshot("favorites")
         app.screen = Screen.Files(); settle()
+
+        // Tags and Guides from the sidebar
+        rule.onNodeWithContentDescription("Menu").performClick(); settle()
+        rule.onNodeWithText("Tags").performClick(); settle(); snapshot("tags_view")
+        rule.onNodeWithContentDescription("Menu").performClick(); settle()
+        rule.onNodeWithText("Guides").performClick(); settle(); snapshot("guides")
+        rule.onNodeWithText("View all").performClick(); settle(); snapshot("guides_gestures")
+        rule.onNodeWithContentDescription("Back").performClick(); settle()
+        rule.onNodeWithText("Start tutorial").performClick(); settle(); snapshot("guides_tutorial")
+        rule.runOnUiThread { app.screen = Screen.Files() }; settle()
 
         // Settings
         rule.runOnUiThread { app.screen = Screen.Settings }; settle(); snapshot("settings_general")

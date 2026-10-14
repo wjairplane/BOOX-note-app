@@ -97,4 +97,37 @@ class LibraryOpsTest {
         assertTrue(svg.contains("<polyline"))
         assertEquals(PageTemplate.BLANK, PageTemplate.fromId("nonsense"))
     }
+
+    @Test fun tagsRoundTripInTheTabletFormat() {
+        val d = dir()
+        LibraryOps.createNotebook(d, "N", id = "n", firstPageId = "p"); LibraryOps.createFolder(d, "F", id = "f")
+        LibraryOps.setTags(d, "n", listOf(" work ", "ideas", "work", ""), now = 5)
+        LibraryOps.setTags(d, "f", listOf("archive"))
+        assertEquals(listOf("work", "ideas"), scan(d)["n"]!!.tags)
+        assertEquals(listOf("archive"), scan(d)["f"]!!.tags)
+        assertTrue(File(d, "n.content").readText().contains("\"timestamp\""))
+        LibraryOps.setTags(d, "n", emptyList())
+        assertEquals(emptyList<String>(), scan(d)["n"]!!.tags)
+    }
+
+    @Test fun duplicateCopiesNotebooksAndFoldersWithTheirContents() {
+        val d = dir()
+        LibraryOps.createFolder(d, "F", id = "f")
+        LibraryOps.createNotebook(d, "N", parentId = "f", id = "n", firstPageId = "p")
+        File(File(d, "n"), "p.rm").writeText("ink")
+        LibraryOps.setPinned(d, "n", true); LibraryOps.setTags(d, "n", listOf("t"))
+        val nCopy = LibraryOps.duplicate(d, "n", now = 9)
+        var lib = scan(d)
+        assertEquals("N (copy)", lib[nCopy]!!.name); assertEquals("f", lib[nCopy]!!.parentId)
+        assertFalse(lib[nCopy]!!.pinned); assertEquals(listOf("t"), lib[nCopy]!!.tags)
+        assertEquals("ink", File(File(d, nCopy), "p.rm").readText())
+        assertTrue(lib["n"]!!.pinned) // the original is untouched
+        val fCopy = LibraryOps.duplicate(d, "f")
+        lib = scan(d)
+        assertEquals("F (copy)", lib[fCopy]!!.name)
+        val inside = lib.children(fCopy)
+        assertEquals(2, inside.size.takeIf { it == 2 } ?: inside.size) // the notebook and its earlier copy
+        assertTrue(inside.all { it.id != "n" && it.id != nCopy })
+        assertTrue(inside.any { it.name == "N" } && inside.any { it.name == "N (copy)" })
+    }
 }

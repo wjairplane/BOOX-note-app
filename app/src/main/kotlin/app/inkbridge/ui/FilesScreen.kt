@@ -72,12 +72,14 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
     var dialog by remember { mutableStateOf<Dialogs?>(null) }
     // Press and hold selects; the header then becomes the black action bar.
     var picked by remember(s) { mutableStateOf(setOf<String>()) }
+    var tagFilter by remember(s) { mutableStateOf(setOf<String>()) }
+    var tagTab by remember(s) { mutableStateOf(0) } // 0 = All, 1 = Documents
 
     val pdfPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) app.importPdf(uri, s.folderId)
     }
 
-    val entries = remember(lib, s, prefs.sortBy, prefs.sortReversed) { visibleEntries(lib, s, prefs.sortBy, prefs.sortReversed) }
+    val entries = remember(lib, s, prefs.sortBy, prefs.sortReversed, tagFilter, tagTab) { visibleEntries(lib, s, prefs.sortBy, prefs.sortReversed, tagFilter, tagTab == 1) }
     val title = when {
         s.section != Section.MY_FILES -> s.section.title
         s.folderId.isEmpty() -> "My files"
@@ -88,7 +90,7 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
         Column(Modifier.fillMaxSize()) {
             val selection = entries.filter { it.id in picked }
             if (selection.isNotEmpty()) {
-                ActionBar(app, s, selection, onCancel = { picked = emptySet() }, onDialog = { dialog = it }, onDone = { picked = emptySet() })
+                ActionBar(app, s, selection, entries, onCancel = { picked = emptySet() }, onSelectAll = { picked = entries.map { it.id }.toSet() }, onDialog = { dialog = it }, onDone = { picked = emptySet() })
             } else {
             // --- header (120 px): menu button, wordmark, and the trash button ---
             Box(Modifier.fillMaxWidth().height(Rm.NavigationHeader).padding(horizontal = 8.dp)) {
@@ -114,26 +116,31 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
                         Text((listOf("My files") + lib.path(s.folderId)).joinToString("  /  "), style = RmText.Caption, color = Ink.Grey)
                     }
                 }
-                if (s.section != Section.TRASH) {
+                if (s.section != Section.TRASH && s.section != Section.TAGS) {
                     var sortMenu by remember { mutableStateOf(false) }
-                    Box {
-                        Row(Modifier.heightIn(min = Rm.Control).tap { sortMenu = true }.padding(start = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(when { prefs.sortBy == SortBy.MODIFIED -> "Last modified"; prefs.sortReversed -> "Alphabetical (Z-A)"; else -> "Alphabetical (A-Z)" }, style = RmText.Label)
-                            InkIcons.ChevronDown()
-                        }
-                        // The navigator's filter dropdown: 360 px wide, 80 px rows, the current choice inverted.
-                        RmMenu(sortMenu, { sortMenu = false }, MenuSide.BELOW, Rm.DropdownWidth) {
+                    val sortLabel = when { prefs.sortBy == SortBy.MODIFIED -> "Last modified"; prefs.sortReversed -> "Alphabetical (Z-A)"; else -> "Alphabetical (A-Z)" }
+                    // The navigator's dropdown: a 360 x 72 px header (label and chevron). Opened, the header gains a border and the
+                    // list hangs directly below it, one shape, 80 px rows with the current choice inverted.
+                    Box(Modifier.width(Rm.DropdownWidth).height(72.dp).tap { sortMenu = true }.padding(end = 16.dp), contentAlignment = Alignment.CenterEnd) {
+                        Row(verticalAlignment = Alignment.CenterVertically) { Text(sortLabel, style = RmText.Label); InkIcons.ChevronDown() }
+                        RmMenu(sortMenu, { sortMenu = false }, MenuSide.OVER, Rm.DropdownWidth) {
+                            Row(Modifier.fillMaxWidth().height(72.dp).tap { sortMenu = false }.padding(start = 16.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text(sortLabel, style = RmText.Label, modifier = Modifier.weight(1f)); InkIcons.ChevronUp()
+                            }
+                            Rule()
                             @Composable fun item(label: String, checked: Boolean = false, action: () -> Unit) =
                                 RmMenuItem(label, { sortMenu = false; action() }, selected = checked)
                             item("Last modified", prefs.sortBy == SortBy.MODIFIED && !prefs.sortReversed) { prefs.sortBy = SortBy.MODIFIED; prefs.sortReversed = false }
                             item("Alphabetical (A-Z)", prefs.sortBy == SortBy.NAME && !prefs.sortReversed) { prefs.sortBy = SortBy.NAME; prefs.sortReversed = false }
                             item("Alphabetical (Z-A)", prefs.sortBy == SortBy.NAME && prefs.sortReversed) { prefs.sortBy = SortBy.NAME; prefs.sortReversed = true }
+                            Rule()
                             item("Grid view", prefs.gridView) { prefs.gridView = true }
                             item("List view", !prefs.gridView) { prefs.gridView = false }
                         }
                     }
                 }
             }
+            if (s.section == Section.TAGS) TagsFilter(lib, tagFilter, tagTab, onTab = { tagTab = it }, onToggle = { t -> tagFilter = if (t in tagFilter) tagFilter - t else tagFilter + t })
             if (app.message.isNotEmpty()) {
                 Row(Modifier.fillMaxWidth().background(Ink.Panel).padding(horizontal = Rm.NavigatorMargin, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(app.message, style = RmText.BodySm, modifier = Modifier.weight(1f))
@@ -149,6 +156,7 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
                     when (s.section) {
                         Section.MY_FILES -> "Nothing here yet.\nTap + to make a notebook or a folder, or to import a PDF to annotate."
                         Section.FAVORITES -> "No favorites yet.\nPress and hold a notebook or folder in My files, then tap Favorite."
+                        Section.TAGS -> "No tagged items yet.\nPress and hold a notebook or folder in My files, then tap Tag."
                         Section.TRASH -> "The trash is empty."
                     },
                     style = RmText.Body, color = Ink.Grey, modifier = Modifier.padding(Rm.NavigatorMargin),
@@ -174,39 +182,47 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
             }
         }
 
-        // --- bottom pill: search and create (open: a "Create now" card above it, and a round close button) ---
-        if (s.section == Section.MY_FILES) {
+        // --- the create menu: a pill with search and "+" (the trash view gets a delete button instead) ---
+        if (s.section != Section.TRASH || entries.isNotEmpty()) {
             var createOpen by remember { mutableStateOf(false) }
-            Column(Modifier.align(Alignment.BottomCenter).padding(bottom = Rm.CreateMenuBottomMargin), horizontalAlignment = Alignment.CenterHorizontally) {
-                if (createOpen) {
-                    Column(Modifier.width(600.dp).background(Ink.White).border(Rm.Outline, Ink.Black)) {
-                        Text("Create now", style = RmText.Caption, color = Ink.Grey, modifier = Modifier.padding(start = 32.dp, top = 24.dp, bottom = 8.dp))
-                        @Composable fun row(title: String, sub: String, action: () -> Unit) =
-                            Column(Modifier.fillMaxWidth().heightIn(min = Rm.ToolButton).tap { createOpen = false; action() }.padding(horizontal = 32.dp, vertical = 16.dp), verticalArrangement = Arrangement.Center) {
-                                Text(title, style = RmText.LabelLgStrong)
-                                Text(sub, style = RmText.Caption, color = Ink.Grey)
-                            }
-                        row("Notebook", "Record ideas, write, and sketch") { dialog = Dialogs.NewNotebook }
-                        row("Folder", "Organise your content") { dialog = Dialogs.NewFolder }
-                        row("PDF", "Import a document to annotate") { pdfPicker.launch(arrayOf("application/pdf")) }
-                    }
-                    Spacer(Modifier.height(24.dp))
-                }
-                // The create menu bar: 112 px high with a 2 px outline, a 112 px tile per action.
+            val showCreate = s.section != Section.TRASH
+            val creates = s.section == Section.MY_FILES
+            Box(Modifier.align(Alignment.BottomCenter).padding(bottom = Rm.CreateMenuBottomMargin)) {
+                // The 4 px white ring around the outline, so the pill stays crisp over thumbnails.
                 Row(
-                    Modifier.height(Rm.CreateMenuHeight).background(Ink.White, CircleShape).border(Rm.Outline, Ink.Black, CircleShape).padding(horizontal = 12.dp),
+                    Modifier.border(4.dp, Ink.White, CircleShape).padding(4.dp).height(Rm.CreateMenuHeight - 8.dp).background(Ink.White, CircleShape).border(Rm.Outline, Ink.Black, CircleShape),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Box(Modifier.size(Rm.ToolButton).tap { createOpen = false; app.screen = Screen.Search }.semantics { contentDescription = "Search" }, contentAlignment = Alignment.Center) { InkIcons.Search() }
-                    Box(Modifier.size(Rm.ToolButton).tap { createOpen = !createOpen }.semantics { contentDescription = "Create" }, contentAlignment = Alignment.Center) { InkIcons.Plus() }
-                    if (createOpen) {
-                        Box(Modifier.size(Rm.ToolButton).tap { createOpen = false }.semantics { contentDescription = "Close" }, contentAlignment = Alignment.Center) { InkIcons.CloseDisc() }
+                    if (s.section == Section.TRASH) {
+                        Box(Modifier.size(Rm.ToolButton).tap { dialog = Dialogs.EmptyTrash }.semantics { contentDescription = "Empty trash" }, contentAlignment = Alignment.Center) { InkIcons.TrashDelete() }
+                    } else {
+                        Box(Modifier.size(Rm.ToolButton).tap { createOpen = false; app.screen = Screen.Search }.semantics { contentDescription = "Search" }, contentAlignment = Alignment.Center) { InkIcons.Search() }
+                        if (showCreate) {
+                            Box(Modifier.width(Rm.Outline).height(64.dp).background(Ink.Black))
+                            Box(Modifier.size(Rm.ToolButton).tap { createOpen = !createOpen }.semantics { contentDescription = if (createOpen) "Close" else "Create" }, contentAlignment = Alignment.Center) {
+                                if (createOpen) InkIcons.CloseX() else InkIcons.Plus()
+                            }
+                        }
+                    }
+                }
+                // The create card: centred 24 px above the pill, 40 px padding, a label, then icon + title + caption per action.
+                RmMenu(createOpen, { createOpen = false }, MenuSide.ABOVE_CENTER, width = null, gap = 24.dp + 8.dp) {
+                    Column(Modifier.padding(40.dp)) {
+                        Text("Create new", style = RmText.Label)
+                        @Composable fun action(icon: @Composable () -> Unit, title: String, caption: String, onClick: () -> Unit) =
+                            Row(Modifier.padding(top = 40.dp).tap { createOpen = false; onClick() }, verticalAlignment = Alignment.CenterVertically) {
+                                icon(); Spacer(Modifier.width(20.dp))
+                                Column { Text(title, style = RmText.LabelLgStrong); Text(caption, style = RmText.Caption) }
+                            }
+                        if (creates) action({ InkIcons.Notebook() }, "Notebook", "Record ideas, write, and sketch") { dialog = Dialogs.NewNotebook }
+                        if (creates) action({ InkIcons.FolderOutline() }, "Folder", "Organize your content") { dialog = Dialogs.NewFolder }
+                        action({ InkIcons.QuickSheet() }, "Quick sheet", "Jot down your thoughts") { app.newQuickSheet() }
                     }
                 }
             }
         }
 
-        if (menuOpen) Sidebar(app, s, onClose = { menuOpen = false })
+        if (menuOpen) Sidebar(app, s, onClose = { menuOpen = false }, onImport = { pdfPicker.launch(arrayOf("application/pdf")) })
     }
 
     when (val d = dialog) {
@@ -237,10 +253,12 @@ private fun open(app: AppController, e: LibraryEntry, s: Screen.Files) {
 internal fun middleEllipsis(name: String, head: Int = 8, tail: Int = 6): String =
     if (name.length <= head + tail + 1) name else name.take(head).trimEnd() + "…" + name.takeLast(tail).trimStart()
 
-private fun visibleEntries(lib: Library, s: Screen.Files, sort: SortBy, reversed: Boolean): List<LibraryEntry> {
+private fun visibleEntries(lib: Library, s: Screen.Files, sort: SortBy, reversed: Boolean, tags: Set<String>, documentsOnly: Boolean): List<LibraryEntry> {
     val base = when (s.section) {
         Section.MY_FILES -> lib.children(s.folderId)
         Section.FAVORITES -> lib.entries.filter { it.pinned && it.parentId != Library.TRASH }
+        // Tagged items anywhere outside the trash; with chips selected, only those carrying every selected tag.
+        Section.TAGS -> lib.entries.filter { it.parentId != Library.TRASH && it.tags.isNotEmpty() && it.tags.containsAll(tags) && (!documentsOnly || !it.isFolder) }
         Section.TRASH -> lib.trash
     }
     val byDate = compareByDescending<LibraryEntry> { it.lastModified }.thenBy { it.name.lowercase() }
@@ -260,7 +278,14 @@ private fun NotebookCell(app: AppController, e: LibraryEntry, selected: Boolean,
     val fg = if (selected) Ink.White else Ink.Black
     val pages = "${e.pageIds.size} page${if (e.pageIds.size == 1) "" else "s"}"
     Column(Modifier.fillMaxWidth().cellBackground(selected).combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp)) {
-        Thumb(app, e, Modifier.fillMaxWidth().aspectRatio(THUMB_ASPECT))
+        Box {
+            Thumb(app, e, Modifier.fillMaxWidth().aspectRatio(THUMB_ASPECT))
+            // Tags sit in the thumbnail's top-left corner (ThumbnailTags, 15 px in).
+            if (e.tags.isNotEmpty()) Row(Modifier.align(Alignment.TopStart).padding(start = 30.dp, top = 15.dp, end = 15.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                e.tags.take(2).forEach { TagPill(it, selected = false, onClick = {}, small = true, modifier = Modifier.widthIn(max = 120.dp)) }
+                if (e.tags.size > 2) TagPill("+${e.tags.size - 2}", selected = false, onClick = {}, small = true)
+            }
+        }
         Spacer(Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(middleEllipsis(e.name), style = RmText.Label, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
@@ -312,14 +337,24 @@ private fun ListRow(app: AppController, e: LibraryEntry, selected: Boolean, onCl
 }
 
 /**
- * The firmware's action bar, shown while items are selected: black, a Cancel button, then an icon over a label per action
- * (Rename only for a single item).
+ * The firmware's action bar, shown while items are selected: black, a Cancel button, then an icon over a label per action:
+ * Rename (single item only), Favorite, Tag, Duplicate, Move, Delete and More. The Tag and More menus hang from their buttons.
  */
 @Composable
-private fun ActionBar(app: AppController, s: Screen.Files, selection: List<LibraryEntry>, onCancel: () -> Unit, onDialog: (Dialogs) -> Unit, onDone: () -> Unit) {
-    @Composable fun action(label: String, onClick: () -> Unit, icon: @Composable () -> Unit) =
-        Column(Modifier.heightIn(min = Rm.NavigationHeader).tap(onClick = onClick).padding(horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            icon(); Text(label, style = RmText.LabelSmLow, color = Ink.White, maxLines = 1)
+private fun ActionBar(
+    app: AppController, s: Screen.Files, selection: List<LibraryEntry>, all: List<LibraryEntry>,
+    onCancel: () -> Unit, onSelectAll: () -> Unit, onDialog: (Dialogs) -> Unit, onDone: () -> Unit,
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var tagOpen by remember { mutableStateOf(false) }
+    var tagOpenCount by remember { mutableIntStateOf(0) } // a fresh popup state for every opening
+    var moreOpen by remember { mutableStateOf(false) }
+    @Composable fun action(label: String, onClick: () -> Unit, menu: (@Composable () -> Unit)? = null, icon: @Composable () -> Unit) =
+        Box {
+            Column(Modifier.heightIn(min = Rm.NavigationHeader).tap(onClick = onClick).padding(horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                icon(); Text(label, style = RmText.LabelSmLow, color = Ink.White, maxLines = 1)
+            }
+            menu?.invoke()
         }
     Row(Modifier.fillMaxWidth().height(Rm.NavigationHeader).background(Ink.Black).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
         Text("Cancel", style = RmText.LabelLgStrong, color = Ink.White, modifier = Modifier.heightIn(min = Rm.Control).tap(onClick = onCancel).padding(horizontal = 16.dp).wrapContentHeight(Alignment.CenterVertically))
@@ -333,9 +368,91 @@ private fun ActionBar(app: AppController, s: Screen.Files, selection: List<Libra
             action("Favorite", { selection.filter { it.pinned == allPinned }.forEach { app.togglePinned(it) }; onDone() }) {
                 if (allPinned) InkIcons.StarInverted(tint = Ink.White) else InkIcons.StarOutline(tint = Ink.White)
             }
+            action("Tag", { if (!tagOpen) tagOpenCount++; tagOpen = !tagOpen; moreOpen = false }, menu = {
+                TagPopup(app, selection, show = tagOpen, openId = tagOpenCount, onClose = { tagOpen = false })
+            }) { InkIcons.Tag(tint = Ink.White) }
+            action("Duplicate", { app.duplicate(selection); onDone() }) { InkIcons.Duplicate(tint = Ink.White) }
             action("Move", { onDialog(Dialogs.Move(selection)) }) { InkIcons.Move(tint = Ink.White) }
             action("Delete", { onDialog(Dialogs.Delete(selection)) }) { InkIcons.Trash(tint = Ink.White) }
+            action("More", { moreOpen = !moreOpen; tagOpen = false }, menu = {
+                // The More foldout hangs from the button, right edges aligned, sharing its border.
+                RmMenu(moreOpen, { moreOpen = false }, MenuSide.BELOW_END, Rm.ToolboxFoldoutWidth) {
+                    RmFoldoutItem("Select all", { moreOpen = false; onSelectAll() }) { InkIcons.Check(tint = it) }
+                    RmFoldoutItem("Export", {
+                        moreOpen = false
+                        app.exportDocuments(selection, java.io.File(context.getExternalFilesDir(null) ?: context.filesDir, "exports"))
+                        onDone()
+                    }, enabled = selection.any { !it.isFolder }, topDivider = true) { InkIcons.Export(tint = it) }
+                }
+            }) { InkIcons.More(tint = Ink.White) }
         }
+    }
+}
+
+/**
+ * The tag menu (TagSelectionPopup): 594 px wide, hanging from the Tag button. Tag chips (partly selected when only some of the
+ * chosen items carry the tag), a divider, and a "New tag" row. Changes are applied when it closes.
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun TagPopup(app: AppController, selection: List<LibraryEntry>, show: Boolean, openId: Int, onClose: () -> Unit) {
+    val known = remember(app.library) { app.library.entries.filter { it.parentId != Library.TRASH }.flatMap { it.tags }.distinct().sorted() }
+    // 0 = off for every item, 1 = some, 2 = all
+    var state by remember(openId, selection) { mutableStateOf(known.associateWith { t -> selection.count { t in it.tags }.let { n -> if (n == 0) 0 else if (n == selection.size) 2 else 1 } }) }
+    var created by remember(openId) { mutableStateOf(listOf<String>()) }
+    var newTag by remember { mutableStateOf(false) }
+    fun apply() {
+        val shown = state + created.associateWith { 2 }
+        selection.forEach { e ->
+            var tags = e.tags
+            shown.forEach { (t, st) -> if (st == 2 && t !in tags) tags = tags + t else if (st == 0) tags = tags - t } // partial = leave as is
+            if (tags != e.tags) app.setTags(e, tags)
+        }
+    }
+    // Changes are applied whenever the popup closes (or the selection is left while it is open).
+    val applyLatest by rememberUpdatedState<() -> Unit>({ apply() })
+    DisposableEffect(show) { onDispose { if (show) applyLatest() } }
+    RmMenu(show, onClose, MenuSide.BELOW_END, 594.dp) {
+        val chips = known + created.filter { it !in known }
+        androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth().padding(30.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(40.dp)) {
+            chips.forEach { t ->
+                val st = (state + created.associateWith { 2 })[t] ?: 0
+                TagPill(t, selected = st == 2, partial = st == 1, onClick = {
+                    if (t in created) created = created - t else state = state + (t to if (st == 2) 0 else 2)
+                })
+            }
+            if (chips.isEmpty()) Text("No tags yet", style = RmText.Caption, color = Ink.Grey)
+        }
+        RmFoldoutItem("New tag", { newTag = true }, topDivider = true) { InkIcons.Plus(tint = it) }
+    }
+    if (newTag) NameDialog("New tag", "", "Add", { newTag = false }) { name ->
+        val clean = name.trim()
+        if (clean.isNotEmpty() && clean !in known) created = created + clean
+        else if (clean in known) state = state + (clean to 2)
+        newTag = false
+    }
+}
+
+/** The tag row of the Tags view: All / Documents tabs, then the tag chips (tap to filter). */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun TagsFilter(lib: Library, selected: Set<String>, tab: Int, onTab: (Int) -> Unit, onToggle: (String) -> Unit) {
+    val tags = remember(lib) { lib.entries.filter { it.parentId != Library.TRASH }.flatMap { it.tags }.distinct().sorted() }
+    Column(Modifier.fillMaxWidth().padding(horizontal = Rm.NavigatorMargin)) {
+        Row {
+            listOf("All" to 200.dp, "Documents" to 270.dp).forEachIndexed { i, (label, w) ->
+                Column(Modifier.width(w).tap { onTab(i) }, horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(label, style = if (tab == i) RmText.LabelLgStrong else RmText.LabelLg, modifier = Modifier.padding(vertical = 20.dp))
+                    Box(Modifier.fillMaxWidth().height(if (tab == i) 6.dp else Rm.Outline).background(Ink.Black))
+                }
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+        androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            tags.forEach { t -> TagPill(t, selected = t in selected, onClick = { onToggle(t) }) }
+            if (tags.isEmpty()) Text("Tags you add show up here.", style = RmText.Caption, color = Ink.Grey)
+        }
+        Spacer(Modifier.height(24.dp))
     }
 }
 
@@ -406,7 +523,7 @@ private fun MoveDialog(lib: Library, es: List<LibraryEntry>, onDismiss: () -> Un
 }
 
 @Composable
-private fun Sidebar(app: AppController, s: Screen.Files, onClose: () -> Unit) {
+private fun Sidebar(app: AppController, s: Screen.Files, onClose: () -> Unit, onImport: () -> Unit) {
     Row(Modifier.fillMaxSize()) {
         // navigatorSidebarWidth 414, 120 px items (icon, label), 2 px right border; it starts below the header so the menu button stays visible.
         Column(Modifier.padding(top = Rm.NavigationHeader).width(Rm.SidebarWidth).fillMaxHeight().background(Ink.White).drawWithContent { drawContent(); drawLine(Color.Black, Offset(size.width - 1f, 0f), Offset(size.width - 1f, size.height), strokeWidth = 2f) }) {
@@ -418,9 +535,12 @@ private fun Sidebar(app: AppController, s: Screen.Files, onClose: () -> Unit) {
             }
             item("My files", s.section == Section.MY_FILES, { app.screen = Screen.Files(Section.MY_FILES); onClose() }) { InkIcons.MyFiles(tint = it) }
             item("Favorites", s.section == Section.FAVORITES, { app.screen = Screen.Files(Section.FAVORITES); onClose() }) { InkIcons.StarOutline(tint = it) }
+            item("Tags", s.section == Section.TAGS, { app.screen = Screen.Files(Section.TAGS); onClose() }) { InkIcons.Tag(tint = it) }
+            item("Import PDF", false, { onClose(); onImport() }) { InkIcons.Import(tint = it) }
             Spacer(Modifier.weight(1f))
             item("Trash", s.section == Section.TRASH, { app.screen = Screen.Files(Section.TRASH); onClose() }) { InkIcons.Trash(tint = it) }
             Rule()
+            item("Guides", false, { app.screen = Screen.Guides; onClose() }) { InkIcons.Help(tint = it) }
             item("Settings", false, { app.screen = Screen.Settings; onClose() }) { InkIcons.Settings(tint = it) }
         }
         // Tap outside to close. (No scrim animation: it would smear on e-ink.)

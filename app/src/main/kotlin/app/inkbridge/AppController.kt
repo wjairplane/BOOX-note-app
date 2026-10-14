@@ -13,12 +13,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /** Which list of the file browser is showing. */
-enum class Section(val title: String) { MY_FILES("My files"), FAVORITES("Favorites"), TRASH("Trash") }
+enum class Section(val title: String) { MY_FILES("My files"), FAVORITES("Favorites"), TAGS("Tags"), TRASH("Trash") }
 
 sealed interface Screen {
     data class Files(val section: Section = Section.MY_FILES, val folderId: String = "") : Screen
     data object Settings : Screen
     data object Search : Screen
+    data object Guides : Screen
     data class Notebook(val docId: String, val page: Int = 0) : Screen
 }
 
@@ -70,6 +71,34 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
             onMain { screen = Screen.Notebook(id, 0) }
         }
     }
+
+    /** A one-page notebook to jot something down: created at the top level and opened straight away. */
+    fun newQuickSheet() = newNotebook(suggestName("", "Quick sheet"), PageTemplate.BLANK, "")
+
+    /** Copy notebooks and folders next to the originals. */
+    fun duplicate(es: List<LibraryEntry>) = io("Couldn't duplicate") { es.forEach { LibraryOps.duplicate(store.dir, it.id) } }
+
+    /** Export every page of the given notebooks and PDFs (SVG, PNG and PDF per page) into [outDir]. */
+    fun exportDocuments(es: List<LibraryEntry>, outDir: java.io.File) {
+        say("Exporting…")
+        scope.launch(Dispatchers.IO) {
+            try {
+                var files = 0
+                for (doc in es.filter { !it.isFolder }) {
+                    val safe = doc.name.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').ifEmpty { "document" }
+                    for (i in doc.pageIds.indices) {
+                        val bg = if (doc.fileType == "pdf") app.inkbridge.rm.library.DocumentFactory.pdfPageFor(doc, i).takeIf { it >= 0 }
+                            ?.let { PdfBackground(app.inkbridge.rm.library.DocumentFactory.pdfFile(store.dir, doc), it) } else null
+                        val session = PageSession(app.inkbridge.rm.library.LibraryScanner.pageFile(store.dir, doc, i), bg, doc.template)
+                        files += session.export(outDir, "${safe}_p${i + 1}").size
+                    }
+                }
+                say("Exported $files files to ${outDir.absolutePath}")
+            } catch (e: Exception) { say("Export failed: ${e.message}") }
+        }
+    }
+
+    fun setTags(e: LibraryEntry, tags: List<String>) = io("Couldn't change the tags") { LibraryOps.setTags(store.dir, e.id, tags) }
 
     fun newFolder(name: String, parentId: String) = io("Couldn't create the folder") { LibraryOps.createFolder(store.dir, name, parentId) }
 

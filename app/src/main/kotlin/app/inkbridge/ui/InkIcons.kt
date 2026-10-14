@@ -69,6 +69,27 @@ object InkIcons {
     @Composable fun Move(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_move, modifier, tint, size)
     @Composable fun Restore(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_arrow_counter_clockwise, modifier, tint, size)
 
+    @Composable fun Tag(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_tag, modifier, tint, size)
+    @Composable fun Duplicate(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_duplicate, modifier, tint, size)
+    @Composable fun Notebook(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_notebook, modifier, tint, size)
+    @Composable fun FolderOutline(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_folder, modifier, tint, size)
+    @Composable fun QuickSheet(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_quick_sheet, modifier, tint, size)
+    @Composable fun TrashDelete(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_trashcan_delete, modifier, tint, size)
+    @Composable fun Help(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_question_circle, modifier, tint, size)
+    @Composable fun ChevronLeft(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_chevron_left, modifier, tint, size)
+    @Composable fun ChevronUp(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_chevron_up, modifier, tint, size)
+    @Composable fun Share(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_share, modifier, tint, size)
+    @Composable fun PageAdd(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_page_add, modifier, tint, size)
+    @Composable fun Template(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_template, modifier, tint, size)
+    @Composable fun Export(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_export, modifier, tint, size)
+    @Composable fun Import(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_import, modifier, tint, size)
+    @Composable fun Check(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_checkmark, modifier, tint, size)
+    @Composable fun Sliders(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_sliders_horizontal, modifier, tint, size)
+
+    @Composable fun ChevronRight(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_chevron_right, modifier, tint, size)
+
+    @Composable fun CloseX(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_x_medium, modifier, tint, size)
+
     @DrawableRes
     private fun penRes(tool: PenTool): Int = when (tool) {
         PenTool.BALLPOINT -> R.drawable.rm_ballpoint

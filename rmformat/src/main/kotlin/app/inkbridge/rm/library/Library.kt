@@ -22,6 +22,8 @@ data class LibraryEntry(
     val redirectMap: List<Int>,
     /** Page background for notebooks (an app extension key in `.content`; blank when absent). */
     val template: app.inkbridge.rm.render.PageTemplate = app.inkbridge.rm.render.PageTemplate.BLANK,
+    /** Tag names, from `.content` `tags` (the tablet keeps `{name, timestamp}` objects there). */
+    val tags: List<String> = emptyList(),
 ) {
     val isFolder get() = type == EntryType.FOLDER
 }
@@ -99,6 +101,9 @@ object LibraryScanner {
             redirectMap = content?.get("redirectMap")?.let { it as? JsonArray }
                 ?.mapNotNull { (it as? JsonPrimitive)?.intOrNull }.orEmpty(),
             template = app.inkbridge.rm.render.PageTemplate.fromId(content?.str("template")),
+            tags = (content?.get("tags") as? JsonArray).orEmpty().mapNotNull { t ->
+                (t as? JsonObject)?.str("name") ?: (t as? JsonPrimitive)?.contentOrNull
+            }.distinct(),
         )
     }
 

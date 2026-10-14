@@ -267,16 +267,27 @@ fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit, sub:
 // The firmware's menus are flat: white, a 2 px black border, no shadow, no animation. Rows are black with white text when
 // selected (the Dropdown button's `inverted` state / FoldoutItem `selected`).
 
-/** Which side of its anchor a [RmMenu] opens on. */
-enum class MenuSide { BELOW, ABOVE, RIGHT, LEFT }
+/** Where a [RmMenu] opens relative to the box it is called from. */
+enum class MenuSide {
+    BELOW, ABOVE, RIGHT, LEFT,
+    /** Hanging from the anchor's bottom edge with right edges aligned, sharing its border (the action bar's More and Tag menus). */
+    BELOW_END,
+    /** Centred above the anchor with a gap (the create menu). */
+    ABOVE_CENTER,
+    /** Exactly over the anchor, growing downward (a dropdown that opens in place). */
+    OVER,
+}
 
-private class MenuPosition(private val side: MenuSide) : PopupPositionProvider {
+private class MenuPosition(private val side: MenuSide, private val gapPx: Int, private val overlapPx: Int) : PopupPositionProvider {
     override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset {
         val (x, y) = when (side) {
             MenuSide.BELOW -> anchorBounds.left to anchorBounds.bottom
             MenuSide.ABOVE -> anchorBounds.left to anchorBounds.top - popupContentSize.height
             MenuSide.RIGHT -> anchorBounds.right to anchorBounds.top
             MenuSide.LEFT -> anchorBounds.left - popupContentSize.width to anchorBounds.top
+            MenuSide.BELOW_END -> anchorBounds.right - popupContentSize.width to anchorBounds.bottom - overlapPx
+            MenuSide.ABOVE_CENTER -> anchorBounds.center.x - popupContentSize.width / 2 to anchorBounds.top - popupContentSize.height - gapPx
+            MenuSide.OVER -> anchorBounds.left to anchorBounds.top
         }
         return IntOffset(
             x.coerceIn(0, (windowSize.width - popupContentSize.width).coerceAtLeast(0)),
@@ -285,14 +296,15 @@ private class MenuPosition(private val side: MenuSide) : PopupPositionProvider {
     }
 }
 
-/** A menu anchored to the box it is called from. Content is a column of [RmMenuItem]s. */
+/** A menu anchored to the box it is called from. Content is a column of [RmMenuItem]s; a null [width] wraps the content. */
 @Composable
-fun RmMenu(show: Boolean, onDismiss: () -> Unit, side: MenuSide = MenuSide.BELOW, width: Dp = Rm.DropdownWidth, content: @Composable ColumnScope.() -> Unit) {
+fun RmMenu(show: Boolean, onDismiss: () -> Unit, side: MenuSide = MenuSide.BELOW, width: Dp? = Rm.DropdownWidth, gap: Dp = 0.dp, content: @Composable ColumnScope.() -> Unit) {
     if (!show) return
     val density = LocalDensity.current // a popup is its own window and would otherwise fall back to the screen's density
-    Popup(popupPositionProvider = MenuPosition(side), onDismissRequest = onDismiss, properties = PopupProperties(focusable = true)) {
+    val position = remember(side, density, gap) { MenuPosition(side, with(density) { gap.roundToPx() }, with(density) { Rm.Outline.roundToPx() }) }
+    Popup(popupPositionProvider = position, onDismissRequest = onDismiss, properties = PopupProperties(focusable = true)) {
         CompositionLocalProvider(LocalDensity provides density) {
-            Column(Modifier.width(width).heightIn(max = 1700.dp).background(Ink.White).border(Rm.Outline, Ink.Black).verticalScroll(rememberScrollState())) { content() }
+            Column(Modifier.then(if (width != null) Modifier.width(width) else Modifier).heightIn(max = 1700.dp).background(Ink.White).border(Rm.Outline, Ink.Black).verticalScroll(rememberScrollState())) { content() }
         }
     }
 }
@@ -305,4 +317,30 @@ fun RmMenuItem(label: String, onClick: () -> Unit, enabled: Boolean = true, sele
         Modifier.fillMaxWidth().heightIn(min = height).background(if (selected) Ink.Black else Ink.White).tap(enabled, onClick).padding(horizontal = 32.dp, vertical = 8.dp),
         contentAlignment = Alignment.CenterStart,
     ) { Text(label, style = RmText.Label, color = fg, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
+}
+
+/** A foldout row (FoldoutItem): 112 px high, 48 px icon, label; a 2 px divider above when [topDivider]. */
+@Composable
+fun RmFoldoutItem(label: String, onClick: () -> Unit, enabled: Boolean = true, selected: Boolean = false, topDivider: Boolean = false, chevron: Boolean = false, icon: (@Composable (Color) -> Unit)? = null) {
+    val fg = if (selected) Ink.White else if (enabled) Ink.Black else Ink.Rule
+    if (topDivider) Rule()
+    Row(
+        Modifier.fillMaxWidth().height(Rm.ToolButton).background(if (selected) Ink.Black else Ink.White).tap(enabled, onClick).padding(horizontal = Rm.FoldoutPad),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (icon != null) { icon(fg); Spacer(Modifier.width(16.dp)) }
+        Text(label, style = RmText.Label, color = fg, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        if (chevron) InkIcons.ChevronRight(tint = fg)
+    }
+}
+
+/** A tag chip (SelectableChip): 56 px high pill, 2 px border, inverted when [selected]; [partial] thickens the border. */
+@Composable
+fun TagPill(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, partial: Boolean = false, small: Boolean = false) {
+    val fg = if (selected) Ink.White else Ink.Black
+    Box(
+        modifier.height(if (small) 40.dp else 56.dp).background(if (selected) Ink.Black else Ink.White, CircleShape)
+            .border(if (partial) 5.dp else Rm.Outline, Ink.Black, CircleShape).tap(onClick = onClick).padding(horizontal = if (small) 16.dp else 24.dp),
+        contentAlignment = Alignment.Center,
+    ) { Text(text, style = if (small) RmText.Caption else RmText.LabelSm, color = fg, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
 }

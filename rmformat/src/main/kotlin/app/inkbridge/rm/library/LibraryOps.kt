@@ -43,6 +43,38 @@ object LibraryOps {
 
     fun moveTo(dir: File, id: String, parentId: String) = editMetadata(dir, id) { it + ("parent" to JsonPrimitive(parentId)) }
 
+    /** Replace the tags of a notebook or folder (stored as the tablet does: `tags: [{name, timestamp}]` in `.content`). */
+    fun setTags(dir: File, id: String, tags: List<String>, now: Long = now()) = editContent(dir, id) { c ->
+        c + ("tags" to buildJsonArray { tags.map { it.trim() }.filter { it.isNotEmpty() }.distinct().forEach { n -> add(buildJsonObject { put("name", n); put("timestamp", now) }) } })
+    }
+
+    /**
+     * Copy a notebook, PDF or folder (with everything inside it) next to the original, named "<name> (copy)".
+     * Returns the id of the copy.
+     */
+    fun duplicate(dir: File, id: String, now: Long = now()): String {
+        fun copy(srcId: String, parentId: String, rename: Boolean): String {
+            val newId = newId()
+            File(dir, "$srcId.metadata").readText().let { Json.parseToJsonElement(it).jsonObject }.let { m ->
+                val name = (m["visibleName"] as? JsonPrimitive)?.contentOrNull ?: srcId
+                writeJson(File(dir, "$newId.metadata"), JsonObject(m + mapOf(
+                    "visibleName" to JsonPrimitive(if (rename) "$name (copy)" else name),
+                    "parent" to JsonPrimitive(parentId),
+                    "lastModified" to JsonPrimitive(now.toString()),
+                    "pinned" to JsonPrimitive(false),
+                ) - "trashedFrom"))
+            }
+            File(dir, "$srcId.content").takeIf { it.isFile }?.copyTo(File(dir, "$newId.content"), overwrite = true)
+            File(dir, "$srcId.pdf").takeIf { it.isFile }?.copyTo(File(dir, "$newId.pdf"), overwrite = true)
+            File(dir, "$srcId.epub").takeIf { it.isFile }?.copyTo(File(dir, "$newId.epub"), overwrite = true)
+            File(dir, srcId).takeIf { it.isDirectory }?.copyRecursively(File(dir, newId), overwrite = true)
+            for (child in LibraryScanner.scan(dir).children(srcId)) copy(child.id, newId, rename = false)
+            return newId
+        }
+        val parent = (Json.parseToJsonElement(File(dir, "$id.metadata").readText()).jsonObject["parent"] as? JsonPrimitive)?.contentOrNull ?: ""
+        return copy(id, parent, rename = true)
+    }
+
     /** Record that the document changed (bumps `lastModified`). */
     fun touch(dir: File, id: String, now: Long = now()) = editMetadata(dir, id) { it + ("lastModified" to JsonPrimitive(now.toString())) }
 

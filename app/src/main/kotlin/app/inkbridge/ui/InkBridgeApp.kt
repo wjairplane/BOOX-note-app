@@ -40,6 +40,10 @@ fun InkBridgeApp(store: LibraryStore, prefs: Prefs, controller: AppController? =
                     BackHandler { app.screen = Screen.Files() }
                     SearchScreen(app)
                 }
+                Screen.Guides -> {
+                    BackHandler { app.screen = Screen.Files() }
+                    GuidesScreen(app)
+                }
                 is Screen.Notebook -> NotebookScreen(app, s)
             }
         }
