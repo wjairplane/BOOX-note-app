@@ -60,6 +60,17 @@ class PageEditorTest {
         assertEquals(10 - erased, lines(ed.tree).size)
     }
 
+    @Test fun eraseAllRemovesEveryStrokeInOneUndoStep() {
+        val original = res("Lines_v2.rm")
+        val ed = PageEditor.fromBytes(original)
+        assertEquals(10, lines(ed.tree).size)
+        assertEquals(10, ed.eraseAll())
+        assertEquals(0, lines(PageEditor.fromBytes(ed.toBytes()).tree).size)
+        assertEquals(0, ed.eraseAll()) // nothing left
+        assertTrue(ed.undo())
+        assertArrayEquals(original, ed.toBytes())
+    }
+
     @Test fun nextStrokeAfterAnEraseDoesNotReuseIds() {
         val ed = PageEditor.fromBytes(res("More_color_highlight_shader_v3.15.4.2.rm")) // has a 223-long tombstone run at (1,14)
         val max = PageEditor.maxCounter(SceneStream.readBlocks(ed.toBytes()))

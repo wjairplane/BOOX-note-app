@@ -83,6 +83,14 @@ class PageSession(
         return true
     }
 
+    /** Erase every stroke on the page. Returns true if anything was erased. */
+    @Synchronized
+    fun eraseAll(): Boolean {
+        if (editor.eraseAll() == 0) return false
+        redrawAll()
+        return true
+    }
+
     @Synchronized fun undo(): Boolean = editor.undo().also { if (it) redrawAll() }
     @Synchronized fun redo(): Boolean = editor.redo().also { if (it) redrawAll() }
 

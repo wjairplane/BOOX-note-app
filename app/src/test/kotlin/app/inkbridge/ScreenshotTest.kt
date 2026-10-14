@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
@@ -168,7 +169,16 @@ class ScreenshotTest {
 
         // The other toolbar positions
         rule.runOnUiThread { app.prefs.toolbarPosition = ToolbarPosition.LEFT }; settle()
+        rule.onNodeWithContentDescription("Writing tool 1: Fineliner").performClick(); settle() // switches to tool 1 (if it isn't active)
         rule.onNodeWithContentDescription("Writing tool 1: Fineliner").performClick(); settle(); snapshot("notebook_left_menu")
+        rule.onNodeWithContentDescription("Writing tool 1: Fineliner").performClick(); settle() // closes it
+        rule.onNodeWithContentDescription("Eraser").performClick(); settle()
+        rule.onNodeWithContentDescription("Eraser").performClick(); settle(); snapshot("eraser_menu")
+        rule.onAllNodesWithContentDescription("Eraser")[0].performClick(); settle() // the toolbar button (the foldout has an "Eraser" tile too)
+        rule.onNodeWithContentDescription("More").performClick(); settle(); snapshot("notebook_menu")
+        rule.onNodeWithText("Add page").performClick(); settle(); snapshot("notebook_menu_add")
+        rule.onNodeWithContentDescription("More").performClick(); settle() // the back chevron
+        rule.onNodeWithContentDescription("More").performClick(); settle() // closes the menu
         rule.runOnUiThread { app.prefs.toolbarPosition = ToolbarPosition.BOTTOM }; settle(); snapshot("notebook_bottom")
         rule.onNodeWithContentDescription("More").performClick(); settle(); snapshot("menu_more")
     }

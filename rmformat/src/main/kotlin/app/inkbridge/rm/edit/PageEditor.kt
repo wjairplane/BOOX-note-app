@@ -84,6 +84,14 @@ class PageEditor private constructor(initial: List<Block>) {
         return hit.size
     }
 
+    /** Erase every visible stroke on the page (one undo step). Returns how many strokes were removed. */
+    fun eraseAll(): Int {
+        val hit = renderer.placedLines().map { it.itemId }.toSet()
+        if (hit.isEmpty()) return 0
+        commit(blocks.map { b -> if (b is SceneItemBlock && b.blockType == SceneItemBlock.LINE && b.itemId in hit && b.value is Line) tombstone(b) else b })
+        return hit.size
+    }
+
     private fun tombstone(b: SceneItemBlock) = SceneItemBlock(
         blockType = b.blockType, parentId = b.parentId, itemId = b.itemId, leftId = b.leftId, rightId = b.rightId,
         deletedLength = 1, value = null, itemType = null,

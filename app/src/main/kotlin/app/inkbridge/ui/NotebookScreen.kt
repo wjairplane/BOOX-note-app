@@ -71,7 +71,8 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 /** Radius of the eraser in view pixels. */
-private const val ERASER_RADIUS_PX = 22f
+/** Eraser radius in view pixels for thin, medium and thick. */
+private val ERASER_RADII = floatArrayOf(14f, 22f, 36f)
 
 /** Toolbar buttons are 112 px square (controlsHeight.large), edge to edge. */
 private val TOOLBAR_THICKNESS = Rm.ToolButton
@@ -101,6 +102,9 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     var toolbarBounds by remember { mutableStateOf(UiRect.Zero) }
     var rootSize by remember { mutableStateOf(IntSize.Zero) }
     var menu by remember { mutableStateOf(false) }
+    var menuPage by remember { mutableStateOf<String?>(null) } // null = the menu's first level; "add", "template", "share" = a sub-menu
+    var eraserMenu by remember { mutableStateOf(false) }
+    var eraserThickness by remember { mutableIntStateOf(2) }
     var overview by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var revision by remember { mutableIntStateOf(0) }
@@ -133,28 +137,43 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
 
     val pos = prefs.toolbarPosition
     val horizontal = pos == ToolbarPosition.TOP || pos == ToolbarPosition.BOTTOM
+    // Foldouts open on the side of the toolbar that faces the page, level with the button that opened them.
+    val side = when (pos) { ToolbarPosition.LEFT -> MenuSide.RIGHT; ToolbarPosition.RIGHT -> MenuSide.LEFT; ToolbarPosition.TOP -> MenuSide.BELOW; ToolbarPosition.BOTTOM -> MenuSide.ABOVE }
+    val exportDir = File(context.getExternalFilesDir(null) ?: context.filesDir, "exports")
 
     @Composable
     fun toolbar() {
         @Suppress("UNUSED_EXPRESSION") revision
         val start: @Composable () -> Unit = {
             // The round button hides the rest of the toolbar (and brings it back).
-            IconTile(if (collapsed) "Show toolbar" else "Hide toolbar", { collapsed = !collapsed; panel = false }) { InkIcons.MenuDot(tint = it) }
+            IconTile(if (collapsed) "Show toolbar" else "Hide toolbar", { collapsed = !collapsed; panel = false; eraserMenu = false; menu = false }) { InkIcons.MenuDot(tint = it) }
             if (!collapsed && canDraw) {
-                // Two writing tools: tap the other one to switch, tap the active one to open its menu.
+                // Two writing tools: tap the other one to switch, tap the active one to open its foldout.
                 for (i in 0..1) {
                     val s = prefs.slot(i)
                     val active = !erasing && activeSlot == i
-                    IconTile("Writing tool ${i + 1}: ${s.tool.label}", {
-                        if (active) panel = !panel else { activeSlot = i; erasing = false; panel = false }
-                    }, selected = active) { tint ->
-                        Box {
-                            InkIcons.Pen(s.tool, tint = tint)
-                            ColourDot(s.colorId, active, Modifier.align(Alignment.TopEnd))
+                    Box {
+                        IconTile("Writing tool ${i + 1}: ${s.tool.label}", {
+                            if (active) panel = !panel else { activeSlot = i; erasing = false; panel = false; eraserMenu = false }
+                        }, selected = active) { tint ->
+                            Box {
+                                InkIcons.Pen(s.tool, tint = tint)
+                                ColourDot(s.colorId, active, Modifier.align(Alignment.TopEnd))
+                            }
                         }
+                        if (active) RmMenu(panel, { panel = false }, side, Rm.WritingFoldoutWidth) { PenMenu(slot, onChange = { prefs.setSlot(activeSlot, it) }) }
                     }
                 }
-                IconTile("Eraser", { erasing = true; panel = false }, selected = erasing) { InkIcons.Eraser(tint = it) }
+                // The eraser: tap to pick it, tap again for its foldout (tool, thickness, erase all).
+                Box {
+                    IconTile("Eraser", { if (erasing) eraserMenu = !eraserMenu else { erasing = true; panel = false; eraserMenu = false } }, selected = erasing) { InkIcons.Eraser(tint = it) }
+                    RmMenu(eraserMenu && erasing, { eraserMenu = false }, side, Rm.EraserFoldoutMinWidth) {
+                        EraserMenu(eraserThickness, onThickness = { eraserThickness = it }, onEraseAll = {
+                            eraserMenu = false
+                            if (session?.eraseAll() == true) { surface?.refresh(); revision++ }
+                        })
+                    }
+                }
                 IconTile("Undo", { if (session?.undo() == true) { surface?.refresh(); revision++ } }, enabled = session?.canUndo == true) { InkIcons.Undo(tint = it) }
                 IconTile("Redo", { if (session?.redo() == true) { surface?.refresh(); revision++ } }, enabled = session?.canRedo == true) { InkIcons.Redo(tint = it) }
             }
@@ -163,44 +182,57 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
             if (!collapsed) {
                 IconTile("Page overview", { save(session); overview = true }) { InkIcons.Overview(tint = it) }
                 Box {
-                    IconTile("More", { menu = true }) { InkIcons.More(tint = it) }
-                    // The document menu is a foldout: 339 px wide, 112 px rows, opening toward the page.
-                    val side = when (pos) { ToolbarPosition.LEFT -> MenuSide.RIGHT; ToolbarPosition.RIGHT -> MenuSide.LEFT; ToolbarPosition.TOP -> MenuSide.BELOW; ToolbarPosition.BOTTOM -> MenuSide.ABOVE }
-                    RmMenu(menu, { menu = false }, side, Rm.ToolboxFoldoutWidth) {
-                        @Composable fun item(label: String, enabled: Boolean = true, selected: Boolean = false, action: () -> Unit) =
-                            RmMenuItem(label, { menu = false; action() }, enabled, selected, Rm.ToolButton)
-                        item("My files") { save(session); app.screen = Screen.Files(folderId = doc.parentId.takeIf { it != "trash" } ?: "") }
-                        item("Page ${pageIndex + 1} of ${doc.pageIds.size}", enabled = false) {}
-                        item("Add page after this one", canDraw) { newPageAfterCurrent() }
-                        item("Delete this page", doc.pageIds.size > 1) { confirmDelete = true }
-                        if (!isPdf) PageTemplate.entries.forEach { t -> item("Template: ${t.label}", selected = doc.template == t) { save(session); app.setTemplate(doc, t) } }
-                        item("Refresh the screen") { surface?.fullRefresh() }
-                        item("Export this page (SVG, PNG, PDF)", session != null) {
-                            val s = session ?: return@item
-                            val dir = File(context.getExternalFilesDir(null) ?: context.filesDir, "exports")
-                            val safe = doc.name.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').ifEmpty { "page" }
-                            message = "Exporting…"
-                            scope.launch {
-                                message = try {
-                                    val files = withContext(Dispatchers.IO) { s.export(dir, "${safe}_p${pageIndex + 1}") }
-                                    "Exported ${files.joinToString { it.name }} to ${dir.absolutePath}"
-                                } catch (e: Exception) { "Export failed: ${e.message}" }
+                    // The three dots open the notebook menu; inside a sub-menu the button becomes a back chevron.
+                    IconTile("More", { if (menu && menuPage != null) menuPage = null else { menu = !menu; menuPage = null } }, selected = menu) {
+                        if (menuPage != null) InkIcons.ChevronLeft(tint = it) else InkIcons.More(tint = it)
+                    }
+                    RmMenu(menu, { menu = false; menuPage = null }, side, Rm.FoldoutMinWidth) {
+                        fun close() { menu = false; menuPage = null }
+                        when (menuPage) {
+                            null -> {
+                                if (canDraw) RmFoldoutItem("Add page", { menuPage = "add" }, chevron = true) { InkIcons.PageAdd(tint = it) }
+                                RmFoldoutItem("Delete page", { close(); confirmDelete = true }, enabled = doc.pageIds.size > 1) { InkIcons.Trash(tint = it) }
+                                if (!isPdf) RmFoldoutItem("Template", { menuPage = "template" }, chevron = true, topDivider = true) { InkIcons.Template(tint = it) }
+                                RmFoldoutItem("Share", { menuPage = "share" }, chevron = true, topDivider = !isPdf) { InkIcons.Share(tint = it) }
+                                RmFoldoutItem("Refresh screen", { close(); surface?.fullRefresh() }, topDivider = true) { InkIcons.Refresh(tint = it) }
                             }
-                        }
-                        if (isPdf) item("Export annotated PDF") {
-                            save(session)
-                            val dir = File(context.getExternalFilesDir(null) ?: context.filesDir, "exports")
-                            val safe = doc.name.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').ifEmpty { "document" }
-                            val out = File(dir, "${safe}_annotated.pdf")
-                            scope.launch {
-                                message = try {
-                                    withContext(Dispatchers.IO) { AnnotatedPdfExporter.export(app.store, doc, out) { d, t -> message = "Exporting PDF… $d / $t" } }
-                                    "Saved ${out.name} (${out.length() / 1024} KB) to ${dir.absolutePath}"
-                                } catch (e: Exception) { "PDF export failed: ${e.message}" }
+                            "add" -> {
+                                RmFoldoutItem("Add page before", { close(); save(session); app.addPage(doc, pageIndex - 1) { pageIndex = it } }) { InkIcons.PageAdd(tint = it) }
+                                RmFoldoutItem("Add page after", { close(); newPageAfterCurrent() }) { InkIcons.PageAdd(tint = it) }
+                            }
+                            "template" -> PageTemplate.entries.forEach { t ->
+                                RmFoldoutItem(t.label, { close(); save(session); app.setTemplate(doc, t) }, selected = doc.template == t)
+                            }
+                            "share" -> {
+                                RmFoldoutItem("Export page", {
+                                    close()
+                                    val s = session ?: return@RmFoldoutItem
+                                    val safe = doc.name.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').ifEmpty { "page" }
+                                    message = "Exporting…"
+                                    scope.launch {
+                                        message = try {
+                                            val files = withContext(Dispatchers.IO) { s.export(exportDir, "${safe}_p${pageIndex + 1}") }
+                                            "Exported ${files.joinToString { it.name }} to ${exportDir.absolutePath}"
+                                        } catch (e: Exception) { "Export failed: ${e.message}" }
+                                    }
+                                }, enabled = session != null) { InkIcons.Export(tint = it) }
+                                if (isPdf) RmFoldoutItem("Export annotated PDF", {
+                                    close(); save(session)
+                                    val safe = doc.name.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').ifEmpty { "document" }
+                                    val out = File(exportDir, "${safe}_annotated.pdf")
+                                    scope.launch {
+                                        message = try {
+                                            withContext(Dispatchers.IO) { AnnotatedPdfExporter.export(app.store, doc, out) { d, t -> message = "Exporting PDF… $d / $t" } }
+                                            "Saved ${out.name} (${out.length() / 1024} KB) to ${exportDir.absolutePath}"
+                                        } catch (e: Exception) { "PDF export failed: ${e.message}" }
+                                    }
+                                }) { InkIcons.Export(tint = it) }
                             }
                         }
                     }
                 }
+                // Close the notebook and go back to My files.
+                IconTile("Close notebook", { save(session); app.screen = Screen.Files(folderId = doc.parentId.takeIf { it != "trash" } ?: "") }) { InkIcons.XCircle(tint = it) }
             }
         }
         // No frame around the toolbar: its icons sit straight on the page, as on the tablet.
@@ -210,7 +242,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
             .graphicsLayer { translationX = dragOffset.x; translationY = dragOffset.y }
             .pointerInput(Unit) {
                 detectDragGesturesAfterLongPress(
-                    onDragStart = { panel = false; menu = false },
+                    onDragStart = { panel = false; menu = false; eraserMenu = false },
                     onDrag = { change, amount -> change.consume(); dragOffset += amount },
                     onDragEnd = {
                         val c = toolbarBounds.center
@@ -244,6 +276,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
             PageArea(
                 session = session, spec = spec, drawing = canDraw && !overview,
                 swipeEnabled = prefs.swipeToTurn, fingerDraws = prefs.fingerDrawing,
+                eraserRadius = ERASER_RADII[eraserThickness - 1],
                 onSurface = { surface = it },
                 onChanged = {
                     revision++
@@ -265,26 +298,6 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
             ToolbarPosition.BOTTOM -> Column(Modifier.fillMaxSize()) { Box(Modifier.weight(1f)) { page() }; toolbar() }
             ToolbarPosition.LEFT -> Row(Modifier.fillMaxSize()) { toolbar(); Box(Modifier.weight(1f)) { page() } }
             ToolbarPosition.RIGHT -> Row(Modifier.fillMaxSize()) { Box(Modifier.weight(1f)) { page() }; toolbar() }
-        }
-
-        // The pen menu opens next to the toolbar, on the side facing the page.
-        if (panel && canDraw && !erasing) {
-            val align = when (pos) {
-                ToolbarPosition.TOP, ToolbarPosition.LEFT -> Alignment.TopStart
-                ToolbarPosition.BOTTOM -> Alignment.BottomStart
-                ToolbarPosition.RIGHT -> Alignment.TopEnd
-            }
-            // The foldout opens beside the toolbar, level with the pen button that was tapped (the menu button is first).
-            val along = TOOLBAR_THICKNESS * (1 + activeSlot)
-            val pad = when (pos) {
-                ToolbarPosition.TOP -> PaddingValues(start = along, top = TOOLBAR_THICKNESS)
-                ToolbarPosition.BOTTOM -> PaddingValues(start = along, bottom = TOOLBAR_THICKNESS)
-                ToolbarPosition.LEFT -> PaddingValues(start = TOOLBAR_THICKNESS, top = along)
-                ToolbarPosition.RIGHT -> PaddingValues(end = TOOLBAR_THICKNESS, top = along)
-            }
-            Box(Modifier.align(align).padding(pad)) {
-                PenMenu(slot, onChange = { prefs.setSlot(activeSlot, it) })
-            }
         }
 
         if (overview) PageOverview(app, doc, pageIndex, onPick = { overview = false; goTo(it) }, onAdd = { overview = false; app.addPage(doc, doc.pageIds.lastIndex) { pageIndex = it } }, onClose = { overview = false })
@@ -323,13 +336,14 @@ private fun ColourDot(colorId: Int, onDark: Boolean, modifier: Modifier = Modifi
 /** The page itself: a pen surface sized to the space available. */
 @Composable
 private fun PageArea(
-    session: PageSession?, spec: PenSpec, drawing: Boolean, swipeEnabled: Boolean, fingerDraws: Boolean,
+    session: PageSession?, spec: PenSpec, drawing: Boolean, swipeEnabled: Boolean, fingerDraws: Boolean, eraserRadius: Float,
     onSurface: (PenSurface?) -> Unit, onChanged: () -> Unit, onSwipe: (Boolean) -> Unit,
 ) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var surface by remember { mutableStateOf<PenSurface?>(null) }
     var layoutVersion by remember { mutableIntStateOf(0) }
     val currentSession by rememberUpdatedState(session)
+    val currentEraserRadius by rememberUpdatedState(eraserRadius)
     val currentOnChanged by rememberUpdatedState(onChanged)
     val currentOnSwipe by rememberUpdatedState(onSwipe)
 
@@ -374,7 +388,7 @@ private fun PageArea(
             factory = { ctx ->
                 PenSurface(ctx, object : PenListener {
                     override fun onStroke(samples: List<PenSample>) = apply(samples) { s, sp -> s.addStroke(sp, samples) }
-                    override fun onErase(samples: List<PenSample>) = apply(samples) { s, _ -> s.erase(samples, ERASER_RADIUS_PX) }
+                    override fun onErase(samples: List<PenSample>) = apply(samples) { s, _ -> s.erase(samples, currentEraserRadius) }
                     override fun onSwipe(forward: Boolean) { currentOnSwipe(forward) }
 
                     private fun apply(samples: List<PenSample>, edit: (PageSession, PenSpec) -> Boolean) {
@@ -433,7 +447,7 @@ private fun PenMenu(slot: ToolSlot, onChange: (ToolSlot) -> Unit) {
     val highlighter = slot.tool.usesHighlighterColors
     val pens = PenTool.PENS
     val thicknessNames = listOf("Thin", "Medium", "Thick")
-    Column(Modifier.width(Rm.WritingFoldoutWidth).background(Ink.White).border(Rm.Outline, Ink.Black)) {
+    Column(Modifier.fillMaxWidth()) {
         FoldoutHeader(slot.tool.label)
         // Nine pens in three columns of 112 px tiles.
         FoldoutGrid(pens.size, 3, Rm.ToolButton) { i, m ->
@@ -460,6 +474,22 @@ private fun PenMenu(slot: ToolSlot, onChange: (ToolSlot) -> Unit) {
                 Text(PenSpec.colorName(c), color = fg, style = RmText.LabelSm)
             }
         }
+    }
+}
+
+/** The eraser foldout (xochitl's eraser menu): the tool, the thickness, then "Erase all strokes" under a divider. */
+@Composable
+private fun EraserMenu(thickness: Int, onThickness: (Int) -> Unit, onEraseAll: () -> Unit) {
+    val names = listOf("Thin", "Medium", "Thick")
+    Column(Modifier.fillMaxWidth()) {
+        FoldoutHeader("Eraser")
+        FoldoutGrid(1, 3, Rm.ToolButton) { _, m -> MenuTile(true, "Eraser", {}, m) { fg -> InkIcons.Eraser(tint = fg) } }
+        Rule()
+        FoldoutHeader(names[thickness - 1])
+        FoldoutGrid(3, 3, Rm.ToolButton) { i, m ->
+            MenuTile(i + 1 == thickness, names[i], { onThickness(i + 1) }, m) { fg -> InkIcons.Thickness(i + 1, tint = fg) }
+        }
+        RmFoldoutItem("Erase all strokes", onEraseAll, topDivider = true) { InkIcons.Trash(tint = it) }
     }
 }
 

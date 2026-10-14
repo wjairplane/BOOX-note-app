@@ -75,6 +75,8 @@ object Rm {
     val CreateMenuBottomMargin = 100.dp
     val WritingFoldoutWidth = 480.dp
     val EraserFoldoutWidth = 376.dp
+    val FoldoutMinWidth = 400.dp          // ToolbarTool.minimumFoldoutWidth: menus without their own width
+    val EraserFoldoutMinWidth = 400.dp    // the eraser's 3-column grid: 3 x 112 + 2 x 32 px
     val ToolboxFoldoutWidth = 339.dp      // toolboxFoldoutMenuWidth: the notebook's document menu
     val DropdownWidth = 360.dp            // the navigator's filter dropdown
 }

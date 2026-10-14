@@ -90,6 +90,9 @@ object InkIcons {
 
     @Composable fun CloseX(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_x_medium, modifier, tint, size)
 
+    @Composable fun XCircle(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_x_circle, modifier, tint, size)
+    @Composable fun Refresh(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_rotate, modifier, tint, size)
+
     @DrawableRes
     private fun penRes(tool: PenTool): Int = when (tool) {
         PenTool.BALLPOINT -> R.drawable.rm_ballpoint
