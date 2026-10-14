@@ -6,6 +6,8 @@ import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -120,7 +122,7 @@ class ScreenshotTest {
 
         // The sort dropdown (a popup window)
         rule.onNodeWithText("Last modified").performClick(); settle(); snapshot("menu_sort")
-        rule.onAllNodesWithText("Last modified")[1].performClick(); settle() // choosing the current order closes the menu
+        rule.onNodeWithText("Sort by").performClick(); settle() // the header closes the menu
         rule.runOnUiThread { app.screen = Screen.Files() }; settle()
 
         // Create menu (the pill gains a round close button while open)
@@ -136,9 +138,9 @@ class ScreenshotTest {
         rule.onNodeWithText("More").performClick(); settle()
         rule.onNodeWithText("Tag").performClick(); settle(); snapshot("tag_popup")
         rule.onNodeWithText("New tag").performClick(); settle()
-        rule.onNode(hasSetTextAction()).performTextInput("work"); settle(); snapshot("dialog_new_tag")
-        rule.onNodeWithText("Add").performClick(); settle(); snapshot("tag_popup_with_tag")
-        rule.onNodeWithText("Tag").performClick(); settle() // closing the popup applies the tags
+        rule.onNode(hasSetTextAction() and hasText("", substring = false)).performTextInput("work"); settle(); snapshot("dialog_new_tag")
+        rule.onNodeWithText("Create").performClick(); settle(); snapshot("tag_popup_with_tag")
+        rule.onNodeWithText("Back").performClick(); settle() // closing the popup applies the tags
         org.junit.Assert.assertEquals(listOf("work"), app.library.entries.first { it.name == "Journal" }.tags)
         rule.onNodeWithText("Duplicate").performClick(); settle()
         org.junit.Assert.assertTrue(app.library.entries.any { it.name == "Journal (copy)" })
@@ -243,11 +245,14 @@ class ScreenshotTest {
         rule.onNodeWithText("Journal").performTouchInput { longClick() }; settle()
         rule.onNodeWithText("Rename").performClick(); settle(); snapshot("dialog_rename")
         rule.onAllNodesWithText("Cancel").onLast().performClick(); settle()
-        rule.onNodeWithText("Move").performClick(); settle(); snapshot("dialog_move")
-        rule.onAllNodesWithText("Cancel").onLast().performClick(); settle()
-        rule.onNodeWithText("Delete").performClick(); settle(); snapshot("dialog_delete")
-        rule.onNodeWithText("Move to trash").performClick(); settle()
+        // Move is a mode of the browser: Cancel / hint / More, and navigating into a folder offers "Move here".
+        rule.onNodeWithText("Move").performClick(); settle(); snapshot("move_mode")
+        rule.onNodeWithText("Cancel").performClick(); settle()
+        org.junit.Assert.assertNull(app.moving)
+        // Delete moves to the trash at once and says so in the bottom notification bar.
+        rule.onNodeWithText("Delete").performClick(); settle(); snapshot("notification_trashed")
         org.junit.Assert.assertEquals(1, app.library.trash.size)
+        rule.onNodeWithText("1 item was moved to Trash").assertExists()
 
         // The trash: its own create-menu button, the empty-trash dialog, and restore/delete in the action bar.
         rule.onNodeWithContentDescription("Menu").performClick(); settle()
@@ -255,7 +260,11 @@ class ScreenshotTest {
         rule.onNodeWithContentDescription("Empty trash").performClick(); settle(); snapshot("dialog_empty_trash")
         rule.onAllNodesWithText("Cancel").onLast().performClick(); settle()
         rule.onNodeWithText("Journal").performTouchInput { longClick() }; settle(); snapshot("trash_selection")
-        rule.onNodeWithText("Restore").performClick(); settle()
+        rule.onNodeWithText("Delete").performClick(); settle(); snapshot("dialog_delete_permanently")
+        rule.onNodeWithText("Delete permanently?").assertExists()
+        rule.onNodeWithContentDescription("Cancel").performClick(); settle()
+        org.junit.Assert.assertEquals(1, app.library.trash.size)
+        rule.onNodeWithText("Restore").performClick(); settle(); snapshot("notification_restored")
         org.junit.Assert.assertEquals(0, app.library.trash.size)
 
         // "Filter by": Notebooks and PDFs.
@@ -264,6 +273,7 @@ class ScreenshotTest {
         rule.onNodeWithText("Filter by").performClick(); settle(); snapshot("sidebar_filter")
         rule.onNodeWithText("Notebooks").performClick(); settle(); snapshot("notebooks_view")
         rule.onNodeWithContentDescription("Menu").performClick(); settle()
+        rule.onAllNodesWithText("Notebooks").onLast().performClick(); settle() // the chosen filter's item opens the flyout again
         rule.onNodeWithText("PDFs").performClick(); settle(); snapshot("pdfs_view")
         rule.runOnUiThread { app.screen = Screen.Files() }; settle()
 
@@ -272,6 +282,62 @@ class ScreenshotTest {
         rule.onNodeWithText("Display").performClick(); settle(); snapshot("settings_display")
         rule.onNodeWithText("Storage").performClick(); settle(); snapshot("settings_storage")
         rule.onNodeWithText("About").performClick(); settle(); snapshot("settings_about")
+    }
+
+    /** The create / rename / move / delete flows of the file browser. */
+    @Test fun fileFlows() {
+        val app = launch()
+
+        // New notebook: one full screen (Cancel / title / Create), a name, the cover choice and the recent templates.
+        rule.onNodeWithContentDescription("Create").performClick(); settle()
+        rule.onNodeWithText("Notebook").performClick(); settle(); snapshot("new_notebook")
+        rule.onNodeWithText("New notebook").assertExists()
+        rule.onNodeWithText("Notebook cover").assertExists()
+        rule.onNodeWithText("Templates").assertExists()
+        rule.onNodeWithText("View all").performClick(); settle(); snapshot("new_notebook_templates")
+        rule.onNodeWithContentDescription("Back").performClick(); settle()
+        rule.onNodeWithText("First page").performClick(); settle()
+        rule.onNodeWithText("Create").performClick(); settle()
+        val made = app.library.entries.first { it.name == "Notebook" }
+        org.junit.Assert.assertEquals(0, made.coverPage)
+        org.junit.Assert.assertTrue(app.screen is Screen.Notebook)
+        rule.runOnUiThread { app.screen = Screen.Files() }; settle()
+
+        // New folder: a name and the tags section.
+        rule.onNodeWithContentDescription("Create").performClick(); settle()
+        rule.onNodeWithText("Folder").performClick(); settle(); snapshot("new_folder")
+        rule.onNodeWithText("Tags").assertExists()
+        rule.onNodeWithContentDescription("New tag").performClick(); settle()
+        rule.onNode(hasSetTextAction() and hasText("", substring = false)).performTextInput("Home"); settle(); snapshot("new_folder_new_tag")
+        rule.onNode(hasSetTextAction() and hasText("Home", substring = false)).performImeAction(); settle(); snapshot("new_folder_tagged")
+        rule.onNodeWithText("Create").performClick(); settle()
+        org.junit.Assert.assertEquals(listOf("Home"), app.library.entries.first { it.name == "Folder" }.tags)
+
+        // Rename is a full screen with details.
+        rule.onNodeWithText("Journal").performTouchInput { longClick() }; settle()
+        rule.onNodeWithText("Rename").performClick(); settle(); snapshot("rename_screen")
+        rule.onNodeWithText("Details").assertExists()
+        rule.onAllNodesWithText("Cancel").onLast().performClick(); settle()
+
+        // Move: pick the School folder, "Move here" drops the selection into it (the selection is still there after Cancel).
+        rule.onNodeWithText("Move").performClick(); settle()
+        rule.onNodeWithText("Select where to move the item").assertExists()
+        rule.onNodeWithText("School").performClick(); settle(); snapshot("move_in_folder")
+        rule.onNodeWithText("Choose a placement").assertExists()
+        rule.onNodeWithText("Move here").performClick(); settle()
+        val school = app.library.entries.first { it.name == "School" }
+        org.junit.Assert.assertEquals(school.id, app.library.entries.first { it.name == "Journal" }.parentId)
+        org.junit.Assert.assertNull(app.moving)
+
+        // Tapping a crumb goes back to My files.
+        rule.onNodeWithText("My files").performClick(); settle()
+        org.junit.Assert.assertEquals("", (app.screen as Screen.Files).folderId)
+
+        // Quick sheets: a long press on "+" makes (or reuses) the one "Quick sheets" notebook.
+        val before = app.library.entries.count { it.name == "Quick sheets" }
+        rule.onNodeWithContentDescription("Create").performTouchInput { longClick() }; settle()
+        org.junit.Assert.assertEquals(before.coerceAtLeast(1), app.library.entries.count { it.name == "Quick sheets" })
+        org.junit.Assert.assertTrue(app.screen is Screen.Notebook)
     }
 
     /** The notebook's selection tool, layers, view controls and page dialog. */

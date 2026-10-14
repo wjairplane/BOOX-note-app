@@ -8,7 +8,11 @@ import app.inkbridge.rm.edit.PenTool
 import app.inkbridge.rm.render.PageTemplate
 import app.inkbridge.rm.scene.PenColorId
 
-enum class SortBy(val label: String) { MODIFIED("Last modified"), NAME("Name") }
+/** The file browser's sort keys (the firmware's list, minus the ones this app has no data for: Last opened, File size). */
+enum class SortBy(val label: String) { MODIFIED("Last modified"), CREATED("Date created"), NAME("Alphabetical"), PAGES("Page count") }
+
+/** The grid-size row of the sort dropdown: how many columns the file grid has (or the list). */
+enum class GridSize(val label: String, val columns: Int) { LARGE("Large grid", 3), MEDIUM("Medium grid", 4), SMALL("Small grid", 6), LIST("List", 1) }
 
 /** Where the notebook toolbar sits (the tablet's default is the top edge). */
 enum class ToolbarPosition(val label: String) { TOP("Top"), BOTTOM("Bottom"), LEFT("Left"), RIGHT("Right") }
@@ -29,8 +33,16 @@ data class ToolSlot(val tool: PenTool, val colorId: Int, val thickness: Int) {
 class Prefs(context: Context) {
     private val sp = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
-    private var _grid by mutableStateOf(sp.getBoolean("grid", true))
-    var gridView: Boolean get() = _grid; set(v) { _grid = v; sp.edit().putBoolean("grid", v).apply() }
+    private var _gridSize by mutableStateOf(
+        runCatching { GridSize.valueOf(sp.getString("gridSize", null)!!) }.getOrDefault(if (sp.getBoolean("grid", true)) GridSize.MEDIUM else GridSize.LIST),
+    )
+    var gridSize: GridSize get() = _gridSize; set(v) { _gridSize = v; sp.edit().putString("gridSize", v.name).apply() }
+    val gridView: Boolean get() = _gridSize != GridSize.LIST
+
+    private var _recent by mutableStateOf(sp.getString("recentTemplates", null)?.split(",")?.filter { it.isNotEmpty() }?.map { PageTemplate.fromId(it) }?.distinct().orEmpty())
+    /** Page templates picked for new notebooks, most recent first (the "Templates" grid of the New notebook screen). */
+    val recentTemplates: List<PageTemplate> get() = (_recent + PageTemplate.entries).distinct()
+    fun addRecentTemplate(t: PageTemplate) { _recent = (listOf(t) + _recent).distinct().take(8); sp.edit().putString("recentTemplates", _recent.joinToString(",") { it.id }).apply() }
 
     private var _sort by mutableStateOf(runCatching { SortBy.valueOf(sp.getString("sort", "MODIFIED")!!) }.getOrDefault(SortBy.MODIFIED))
     var sortBy: SortBy get() = _sort; set(v) { _sort = v; sp.edit().putString("sort", v.name).apply() }

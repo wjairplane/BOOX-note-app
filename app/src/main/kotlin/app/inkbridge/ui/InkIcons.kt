@@ -116,6 +116,24 @@ object InkIcons {
     @Composable fun Compass(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_compass, modifier, tint, size)
     @Composable fun RestoreIcon(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_restore, modifier, tint, size)
 
+    @Composable fun ChevronSmallRight(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_chevron_small_right, modifier, tint, size)
+    @Composable fun ChevronSmallUp(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_chevron_small_up, modifier, tint, size)
+    @Composable fun Ascend(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_ascend, modifier, tint, size)
+    @Composable fun Descend(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_descend, modifier, tint, size)
+    @Composable fun GridLarge(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_grid_large, modifier, tint, size)
+    @Composable fun GridMedium(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_grid, modifier, tint, size)
+    @Composable fun GridSmall(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_grid_small, modifier, tint, size)
+    @Composable fun ListView(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_list, modifier, tint, size)
+    @Composable fun FolderInverted(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_folder_inverted, modifier, tint, size)
+    @Composable fun TagInverted(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_tag_inverted, modifier, tint, size)
+    @Composable fun MoveHere(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_move_here, modifier, tint, size)
+    @Composable fun Send(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_send, modifier, tint, size)
+    @Composable fun Ebook(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_ebook, modifier, tint, size)
+    @Composable fun PageFunnel(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_page_funnel, modifier, tint, size)
+    @Composable fun Handwriting(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_note, modifier, tint, size)
+    @Composable fun Cloud(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_cloud, modifier, tint, size)
+    @Composable fun ThreeDots(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_three_dots_vertical, modifier, tint, size)
+
     @Composable fun Document(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_document, modifier, tint, size)
 
     @DrawableRes
