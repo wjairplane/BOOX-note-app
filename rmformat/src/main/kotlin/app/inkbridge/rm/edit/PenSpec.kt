@@ -17,6 +17,7 @@ enum class PenTool(val label: String, val toolId: Int) {
     PAINTBRUSH("Paintbrush", PenId.PAINTBRUSH_2),
     CALLIGRAPHY("Calligraphy pen", PenId.CALLIGRAPHY),
     HIGHLIGHTER("Highlighter", PenId.HIGHLIGHTER_2),
+    SHADER("Shader", PenId.SHADER),
     /** Not a pen: removes whole strokes it touches. */
     ERASER("Eraser", PenId.ERASER);
 
@@ -24,6 +25,9 @@ enum class PenTool(val label: String, val toolId: Int) {
 
     /** Highlighters use their own colour set and a fixed width. */
     val isHighlighter: Boolean get() = this == HIGHLIGHTER
+
+    /** Tools whose colour comes from the highlighter set rather than the ink set. */
+    val usesHighlighterColors: Boolean get() = this == HIGHLIGHTER
 
     companion object {
         val PENS: List<PenTool> = entries.filter { it.isPen }
@@ -42,13 +46,20 @@ data class PenSpec(val tool: PenTool, val colorId: Int = PenColorId.BLACK, val t
 
     companion object {
         val HIGHLIGHTER_COLORS = intArrayOf(PenColorId.YELLOW, PenColorId.GREEN, PenColorId.PINK, PenColorId.BLUE, PenColorId.GRAY)
-        val INK_COLORS = intArrayOf(PenColorId.BLACK, PenColorId.GRAY, PenColorId.BLUE, PenColorId.RED, PenColorId.GREEN, PenColorId.PINK)
+
+        /** The nine colours of the pen menu, in its 3 x 3 order (rows: neutrals, primaries, light colours). */
+        val INK_COLORS = intArrayOf(
+            PenColorId.BLACK, PenColorId.GRAY, PenColorId.WHITE,
+            PenColorId.BLUE, PenColorId.RED, PenColorId.GREEN,
+            PenColorId.YELLOW, PenColorId.CYAN, PenColorId.MAGENTA,
+        )
 
         /** Display names for the colour ids above. */
         fun colorName(id: Int): String = when (id) {
             PenColorId.BLACK -> "Black"; PenColorId.GRAY -> "Gray"; PenColorId.WHITE -> "White"
             PenColorId.YELLOW -> "Yellow"; PenColorId.GREEN -> "Green"; PenColorId.PINK -> "Pink"
-            PenColorId.BLUE -> "Blue"; PenColorId.RED -> "Red"; else -> "Colour $id"
+            PenColorId.BLUE -> "Blue"; PenColorId.RED -> "Red"; PenColorId.CYAN -> "Cyan"; PenColorId.MAGENTA -> "Magenta"
+            else -> "Colour $id"
         }
     }
 }

@@ -10,6 +10,21 @@ import app.inkbridge.rm.scene.PenColorId
 
 enum class SortBy(val label: String) { MODIFIED("Last modified"), NAME("Name") }
 
+/** Where the notebook toolbar sits (the tablet's default is the top edge). */
+enum class ToolbarPosition(val label: String) { TOP("Top"), BOTTOM("Bottom"), LEFT("Left"), RIGHT("Right") }
+
+/** One of the two quick-switch writing tools: a pen with its own colour and thickness. */
+data class ToolSlot(val tool: PenTool, val colorId: Int, val thickness: Int) {
+    fun encode() = "${tool.name},$colorId,$thickness"
+
+    companion object {
+        fun decode(s: String?, fallback: ToolSlot): ToolSlot = runCatching {
+            val (t, c, th) = s!!.split(",")
+            ToolSlot(PenTool.valueOf(t).takeIf { it.isPen } ?: fallback.tool, c.toInt(), th.toInt().coerceIn(1, 3))
+        }.getOrDefault(fallback)
+    }
+}
+
 /** App settings, persisted in SharedPreferences and observable from Compose. */
 class Prefs(context: Context) {
     private val sp = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
@@ -27,18 +42,18 @@ class Prefs(context: Context) {
     private var _template by mutableStateOf(PageTemplate.fromId(sp.getString("template", "lines")))
     var defaultTemplate: PageTemplate get() = _template; set(v) { _template = v; sp.edit().putString("template", v.id).apply() }
 
-    private var _pen by mutableStateOf(runCatching { PenTool.valueOf(sp.getString("pen", "FINELINER")!!) }.getOrDefault(PenTool.FINELINER))
-    /** The pen selected when a notebook opens. */
-    var defaultPen: PenTool get() = _pen; set(v) { _pen = v; sp.edit().putString("pen", v.name).apply() }
+    private var _slotA by mutableStateOf(ToolSlot.decode(sp.getString("slotA", null), ToolSlot(PenTool.FINELINER, PenColorId.BLACK, 2)))
+    private var _slotB by mutableStateOf(ToolSlot.decode(sp.getString("slotB", null), ToolSlot(PenTool.HIGHLIGHTER, PenColorId.YELLOW, 2)))
 
-    private var _color by mutableStateOf(sp.getInt("color", PenColorId.BLACK))
-    var defaultColor: Int get() = _color; set(v) { _color = v; sp.edit().putInt("color", v).apply() }
+    /** The two writing-tool slots on the toolbar (index 0 or 1). They remember their pen, colour and thickness. */
+    fun slot(i: Int): ToolSlot = if (i == 0) _slotA else _slotB
+    fun setSlot(i: Int, v: ToolSlot) {
+        if (i == 0) _slotA = v else _slotB = v
+        sp.edit().putString(if (i == 0) "slotA" else "slotB", v.encode()).apply()
+    }
 
-    private var _hl by mutableStateOf(sp.getInt("hlColor", PenColorId.YELLOW))
-    var highlighterColor: Int get() = _hl; set(v) { _hl = v; sp.edit().putInt("hlColor", v).apply() }
-
-    private var _thickness by mutableStateOf(sp.getInt("thickness", 2))
-    var defaultThickness: Int get() = _thickness; set(v) { _thickness = v; sp.edit().putInt("thickness", v).apply() }
+    private var _tbPos by mutableStateOf(runCatching { ToolbarPosition.valueOf(sp.getString("toolbar", "TOP")!!) }.getOrDefault(ToolbarPosition.TOP))
+    var toolbarPosition: ToolbarPosition get() = _tbPos; set(v) { _tbPos = v; sp.edit().putString("toolbar", v.name).apply() }
 
     private var _swipe by mutableStateOf(sp.getBoolean("swipe", true))
     /** Swipe a finger left/right to turn pages. */

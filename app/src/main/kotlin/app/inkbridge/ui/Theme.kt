@@ -81,19 +81,6 @@ fun IconBtn(icon: ImageVector, description: String, onClick: () -> Unit, modifie
     ) { Icon(icon, contentDescription = description, tint = fg, modifier = Modifier.size(30.dp)) }
 }
 
-/** Toolbar tile: a short word, inverted when active. */
-@Composable
-fun ToolTile(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, selected: Boolean = false, sub: String? = null) {
-    val fg = if (selected) Ink.White else if (enabled) Ink.Black else Ink.Rule
-    Column(
-        modifier.fillMaxWidth().background(if (selected) Ink.Black else Ink.White).tap(enabled, onClick).padding(vertical = 14.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(label, color = fg, fontSize = 17.sp, maxLines = 1)
-        if (sub != null) Text(sub, color = fg, fontSize = 13.sp, maxLines = 1)
-    }
-}
-
 /** A modal box with a title, content and action buttons. */
 @Composable
 fun EDialog(title: String, onDismiss: () -> Unit, actions: @Composable RowScope.() -> Unit, content: @Composable ColumnScope.() -> Unit) {

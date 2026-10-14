@@ -109,7 +109,7 @@ class PageRenderer(private val tree: SceneTree) {
 
     private fun drawLine(line: Line, ox: Float, oy: Float, canvas: PageCanvas) {
         val rgba = PenPalette.lookup(line.color, line.colorRgba)
-        val pen = Pen.create(line.tool, rgba, line.thicknessScale) ?: return
+        val pen = Pen.create(line.tool, rgba, line.thicknessScale, explicitAlpha = line.colorRgba != null) ?: return
         val pts = line.points
         if (pts.isEmpty()) return
 

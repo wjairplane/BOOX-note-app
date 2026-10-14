@@ -1,6 +1,8 @@
 package app.inkbridge.rm.edit
 
+import app.inkbridge.rm.render.PenPalette
 import app.inkbridge.rm.scene.Line
+import app.inkbridge.rm.scene.PenColorId
 import app.inkbridge.rm.scene.Point
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -31,6 +33,8 @@ object StrokeBuilder {
 
     /** File speed ≈ 2.1 × distance per nominal sample interval (median fit over sample pages). */
     private const val SPEED_PER_UNIT = 2.1
+
+    private const val SHADER_ALPHA = 100
 
     /**
      * Build a stroke whose points are expressed relative to its layer ([ox], [oy] is the layer's
@@ -65,12 +69,19 @@ object StrokeBuilder {
                 pressure = (pressure01 * 255).roundToInt().coerceIn(0, 255),
             )
         }
+        // The shader is stored the way newer firmware stores it: the "highlight" colour id plus an explicit,
+        // translucent RGBA (the sample pages use alpha 64..128 of 255).
+        val shaderRgba = if (spec.tool == PenTool.SHADER) {
+            val c = PenPalette.lookup(spec.colorId, null)
+            intArrayOf(c[0], c[1], c[2], SHADER_ALPHA)
+        } else null
         return Line(
             tool = spec.tool.toolId,
-            color = spec.colorId,
+            color = if (shaderRgba != null) PenColorId.HIGHLIGHT else spec.colorId,
             points = points,
             thicknessScale = if (spec.tool.isHighlighter) 1.0 else spec.thickness.toDouble(),
             startingLength = 0f,
+            colorRgba = shaderRgba,
         )
     }
 
@@ -95,6 +106,8 @@ object StrokeBuilder {
         return when (spec.tool) {
             PenTool.FINELINER -> 8 * th
             PenTool.HIGHLIGHTER -> 120
+            // Fitted: thickness 1.2 spans raw 19..56 and thickness 2 spans 29..88 in real pages.
+            PenTool.SHADER -> (th * (14 + 30 * pressure01)).roundToInt()
             PenTool.BALLPOINT, PenTool.PENCIL -> ballpointLike.roundToInt()
             PenTool.MARKER -> (16 * th).coerceAtLeast(16)
             PenTool.MECHANICAL_PENCIL -> (5 * th).coerceAtLeast(6)

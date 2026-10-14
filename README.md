@@ -10,6 +10,8 @@ eraser) with colours.
 **What it is not:** a viewer for reMarkable files. You create notebooks in the app; there is no import of
 reMarkable notebooks.
 
+*The look follows reMarkable's current interface (firmware 3.22 and later), checked against photos of it; the older 3.12-era layout was replaced.*
+
 *InkBridge is an independent project, not made by, affiliated with or endorsed by reMarkable AS. It copies the
 layout and behaviour of an interface, not artwork, fonts, icons or brush textures.*
 
@@ -21,10 +23,10 @@ the screens have never actually been seen rendered and the pen has never touched
 | Area | State |
 |---|---|
 | My files: grid/list, folders, favorites, trash, rename/move/delete, sort, page thumbnails | written, untested on device |
-| Notebook: left toolbar, pen panel (live sample of each pen), page overview, swipe to turn pages, add/delete pages | written, untested on device |
-| Pens: all nine, 3 sizes, colours | written; widths for fineliner/ballpoint/highlighter fitted to real data, the rest estimated |
+| Notebook: icon toolbar (top by default; top/bottom/left/right in Settings), two writing-tool slots, three-section pen menu (9 pens, 3 thicknesses, 9 named colours), eraser, undo/redo, page overview, swipe to turn pages, add/delete pages | written; layout checked against photos of firmware 3.22+, untested on device |
+| Pens: ballpoint, fineliner, marker, pencil, mechanical pencil, paintbrush, calligraphy, highlighter, shader; 3 sizes; colours | written; widths for fineliner/ballpoint/highlighter/shader fitted to real data, the rest estimated |
 | Page templates: blank, lined, grid, dotted | done (tested on the JVM) |
-| Settings: general, pens, display (e-ink refresh), storage, about | written, untested on device |
+| Settings: general, display (e-ink refresh), accessibility (toolbar position), storage, about | written, untested on device |
 | Annotate PDFs: import, draw over, export flattened PDF | written, untested on device |
 | Export a page to SVG / PNG / PDF | SVG tested; PNG/PDF untested on device |
 | Pen input through the Onyx SDK | written against the SDK's real API; feel and refresh need tuning on the device |

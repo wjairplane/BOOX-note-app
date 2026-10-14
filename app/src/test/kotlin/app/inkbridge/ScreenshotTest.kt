@@ -87,13 +87,21 @@ class ScreenshotTest {
 
         // Settings
         rule.runOnUiThread { app.screen = Screen.Settings }; settle(); snapshot("settings_general")
-        rule.onNodeWithText("Pens").performClick(); settle(); snapshot("settings_pens")
+        rule.onNodeWithText("Accessibility").performClick(); settle(); snapshot("settings_accessibility")
 
-        // Notebook, pen panel, overview
+        // Notebook: toolbar at the top (the default), pen menu, page overview
         val nb = app.library.entries.first { it.name == "Meeting notes" }
-        rule.runOnUiThread { app.screen = Screen.Notebook(nb.id, 0) }; settle(); snapshot("notebook")
-        rule.onNodeWithText("Pen").performClick(); settle(); snapshot("pen_panel")
-        rule.onNodeWithText("Done").performClick(); settle()
-        rule.onNodeWithText("Pages").performClick(); settle(); snapshot("overview")
+        rule.runOnUiThread { app.screen = Screen.Notebook(nb.id, 0) }; settle(); snapshot("notebook_top")
+        rule.onNodeWithContentDescription("Writing tool 1: Fineliner").performClick(); settle(); snapshot("pen_menu")
+        rule.onNodeWithContentDescription("Writing tool 2: Highlighter").performClick(); settle()
+        rule.onNodeWithContentDescription("Writing tool 2: Highlighter").performClick(); settle(); snapshot("pen_menu_highlighter")
+        rule.onNodeWithContentDescription("Writing tool 2: Highlighter").performClick(); settle()
+        rule.onNodeWithContentDescription("Page overview").performClick(); settle(); snapshot("overview")
+        rule.onNodeWithText("Close").performClick(); settle()
+
+        // The other toolbar positions
+        rule.runOnUiThread { app.prefs.toolbarPosition = ToolbarPosition.LEFT }; settle()
+        rule.onNodeWithContentDescription("Writing tool 1: Fineliner").performClick(); settle(); snapshot("notebook_left_menu")
+        rule.runOnUiThread { app.prefs.toolbarPosition = ToolbarPosition.BOTTOM }; settle(); snapshot("notebook_bottom")
     }
 }

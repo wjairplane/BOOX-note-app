@@ -41,7 +41,7 @@ abstract class Pen(val baseWidth: Double, val baseColor: IntArray /* r,g,b,a */)
 
     companion object {
         /** Returns null for tools that are not drawn (erasers). */
-        fun create(tool: Int, color: IntArray, thicknessScale: Double): Pen? = when (tool) {
+        fun create(tool: Int, color: IntArray, thicknessScale: Double, explicitAlpha: Boolean = false): Pen? = when (tool) {
             PenId.PAINTBRUSH_1, PenId.PAINTBRUSH_2 -> Brush(thicknessScale, color)
             PenId.CALLIGRAPHY -> Calligraphy(thicknessScale, color)
             PenId.MARKER_1, PenId.MARKER_2 -> Marker(thicknessScale, color)
@@ -50,7 +50,7 @@ abstract class Pen(val baseWidth: Double, val baseColor: IntArray /* r,g,b,a */)
             PenId.PENCIL_1, PenId.PENCIL_2 -> Pencil(thicknessScale, color)
             PenId.MECHANICAL_PENCIL_1, PenId.MECHANICAL_PENCIL_2 -> MechanicalPencil(thicknessScale, color)
             PenId.HIGHLIGHTER_1, PenId.HIGHLIGHTER_2 -> Highlighter(color)
-            PenId.SHADER -> Shader(color)
+            PenId.SHADER -> Shader(color, explicitAlpha)
             PenId.ERASER, PenId.ERASER_AREA -> null
             else -> Fineliner(thicknessScale, color) // unknown future pen: draw something sensible
         }
@@ -116,8 +116,9 @@ abstract class Pen(val baseWidth: Double, val baseColor: IntArray /* r,g,b,a */)
         override val baseOpacity = 0.3
     }
 
-    class Shader(c: IntArray) : Pen(12.0, c) {
-        override val baseOpacity = 0.1
+    /** Soft tonal overlay. When the stroke stores an explicit RGBA, its alpha already is the translucency. */
+    class Shader(c: IntArray, explicitAlpha: Boolean = false) : Pen(12.0, c) {
+        override val baseOpacity = if (explicitAlpha) 1.0 else 0.4
     }
 }
 

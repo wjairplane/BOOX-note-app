@@ -36,6 +36,21 @@ class PenSamplerTest {
         System.getProperty("rm.renderOut")?.let { File(it).mkdirs(); ImageIO.write(c.finish(), "png", File(it, "pen_sampler.png")) }
     }
 
+    @Test fun theNinePensAndNineColoursMatchThePenMenu() {
+        assertEquals(9, PenTool.PENS.size)
+        assertEquals(listOf("Ballpoint", "Fineliner", "Marker", "Pencil", "Mechanical pencil", "Paintbrush", "Calligraphy pen", "Highlighter", "Shader"), PenTool.PENS.map { it.label })
+        assertEquals(listOf("Black", "Gray", "White", "Blue", "Red", "Green", "Yellow", "Cyan", "Magenta"), PenSpec.INK_COLORS.map { PenSpec.colorName(it) })
+    }
+
+    @Test fun shaderIsStoredWithExplicitTranslucentRgba() {
+        val ed = PageEditor.blank()
+        ed.addStroke(PenSpec(PenTool.SHADER, PenColorId.BLUE, 2), wave(300f, true))
+        val l = PageEditor.fromBytes(ed.toBytes()).tree.walk().filterIsInstance<app.inkbridge.rm.scene.Line>().single()
+        assertEquals(PenColorId.HIGHLIGHT, l.color)
+        assertEquals(100, l.colorRgba!![3])
+        assertEquals(78, l.colorRgba!![0]) // blue's red channel
+    }
+
     @Test fun pensHaveSensibleWidthsAcrossPressure() {
         for (tool in PenTool.PENS) for (th in 1..3) for (p in listOf(0f, 0.5f, 1f)) {
             val w = StrokeBuilder.widthRaw(PenSpec(tool, thickness = th), p)

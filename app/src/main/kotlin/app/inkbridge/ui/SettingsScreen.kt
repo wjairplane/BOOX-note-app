@@ -17,13 +17,12 @@ import androidx.compose.ui.unit.sp
 import app.inkbridge.AppController
 import app.inkbridge.BuildConfig
 import app.inkbridge.Screen
-import app.inkbridge.rm.edit.PenSpec
-import app.inkbridge.rm.edit.PenTool
+import app.inkbridge.ToolbarPosition
 import app.inkbridge.rm.render.PageTemplate
 import java.io.File
 
 private enum class Category(val title: String) {
-    GENERAL("General"), PENS("Pens"), DISPLAY("Display"), STORAGE("Storage"), ABOUT("About")
+    GENERAL("General"), DISPLAY("Display"), ACCESSIBILITY("Accessibility"), STORAGE("Storage"), ABOUT("About")
 }
 
 @Composable
@@ -51,7 +50,7 @@ fun SettingsScreen(app: AppController) {
             Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 16.dp)) {
                 when (category) {
                     Category.GENERAL -> General(app)
-                    Category.PENS -> Pens(app)
+                    Category.ACCESSIBILITY -> Accessibility(app)
                     Category.DISPLAY -> Display(app)
                     Category.STORAGE -> Storage(app)
                     Category.ABOUT -> About()
@@ -75,15 +74,11 @@ private fun General(app: AppController) {
 }
 
 @Composable
-private fun Pens(app: AppController) {
+private fun Accessibility(app: AppController) {
     val p = app.prefs
-    Heading("Pen when a notebook opens")
-    PenTool.entries.filter { it.isPen }.forEach { t -> ChoiceRow(t.label, p.defaultPen == t, { p.defaultPen = t }) }
-    Heading("Thickness")
-    listOf(1 to "Thin", 2 to "Medium", 3 to "Thick").forEach { (v, l) -> ChoiceRow(l, p.defaultThickness == v, { p.defaultThickness = v }) }
-    Heading("Colour")
-    PenSpec.INK_COLORS.forEach { c -> ChoiceRow(PenSpec.colorName(c), p.defaultColor == c, { p.defaultColor = c }) }
-    Text("Colours show on this colour e-ink screen; on a black-and-white screen they appear as shades of grey.", fontSize = 15.sp, color = Ink.Grey)
+    Heading("Toolbar position")
+    Text("Where the toolbar sits while you write in a notebook.", fontSize = 16.sp, color = Ink.Grey)
+    ToolbarPosition.entries.forEach { pos -> ChoiceRow(pos.label, p.toolbarPosition == pos, { p.toolbarPosition = pos }) }
 }
 
 @Composable
