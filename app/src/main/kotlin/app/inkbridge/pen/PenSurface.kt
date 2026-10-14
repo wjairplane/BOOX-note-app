@@ -26,8 +26,14 @@ interface PenListener {
     fun onErase(samples: List<PenSample>)
     /** A finger swiped across the page: [forward] = towards the next page. */
     fun onSwipe(forward: Boolean) {}
+    /** A quick tap with [fingers] (2 or 3) fingers: the tablet's undo / redo shortcuts. */
+    fun onFingerTap(fingers: Int) {}
     /** A stroke made with the selection tool (a lasso, or a drag of the current selection). */
     fun onLasso(samples: List<PenSample>) {}
+    /** A stroke made with "Erase selection": erase what the lasso encloses. */
+    fun onEraseArea(samples: List<PenSample>) {}
+    /** The selection is being dragged, resized or rotated ([active]) or the gesture ended. */
+    fun onSelectionGesture(active: Boolean) {}
     /** A pinch / two-finger drag ended: zoom by [factor] around ([focusX], [focusY]), then pan by ([panX], [panY]) view pixels. */
     fun onViewGesture(factor: Float, focusX: Float, focusY: Float, panX: Float, panY: Float) {}
 }
@@ -115,6 +121,25 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         }
     })
 
+    // A quick tap with two or three fingers (undo / redo): short, and the fingers barely move.
+    private var tapStart = 0L
+    private var tapMaxFingers = 0
+    private var tapStartX = 0f
+    private var tapStartY = 0f
+    private var tapMoved = false
+    private fun trackFingerTap(e: MotionEvent) {
+        when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN -> { tapStart = e.eventTime; tapMaxFingers = 1; tapStartX = e.x; tapStartY = e.y; tapMoved = false }
+            MotionEvent.ACTION_POINTER_DOWN -> tapMaxFingers = maxOf(tapMaxFingers, e.pointerCount)
+            MotionEvent.ACTION_MOVE -> if (kotlin.math.hypot(e.x - tapStartX, e.y - tapStartY) > 40f) tapMoved = true
+            MotionEvent.ACTION_UP -> {
+                if (!tapMoved && tapMaxFingers in 2..3 && e.eventTime - tapStart < 350) listener.onFingerTap(tapMaxFingers)
+                tapMaxFingers = 0
+            }
+            MotionEvent.ACTION_CANCEL -> tapMaxFingers = 0
+        }
+    }
+
     private var fastPreview = false
 
     /** Switch the panel to a fast, low-fidelity update mode and park the pen layer while something is being previewed. */
@@ -161,6 +186,7 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         touchHelper?.let { runCatching { it.setRawDrawingRenderEnabled(false) } }
         runCatching { EpdController.setViewDefaultUpdateMode(this, com.onyx.android.sdk.api.device.epd.UpdateMode.DU) }
         dragMode = true
+        listener.onSelectionGesture(true)
     }
 
     private fun moveSelectionDrag(x: Float, y: Float) {
@@ -182,6 +208,7 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
     private fun endSelectionDrag() {
         if (!dragMode) return
         dragMode = false; dragHit = null
+        listener.onSelectionGesture(false)
         runCatching { EpdController.resetViewUpdateMode(this) }
         touchHelper?.let { runCatching { it.setRawDrawingRenderEnabled(tool.tool != PenTool.ERASER) } }
     }
@@ -230,6 +257,14 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
     }
 
     /** Limit pen input to the page area (view px) so strokes can't start in the margins. */
+    /** Parts of the screen the pen must not draw on (the toolbar, which floats over the page). */
+    fun setExcludeRects(rects: List<Rect>) {
+        if (rects == excludeRects) return
+        excludeRects = rects
+        if (width > 0 && useOnyx) reopenHelper()
+    }
+    private var excludeRects: List<Rect> = emptyList()
+
     fun setPageArea(rect: Rect) {
         pageArea = rect
         if (width > 0 && useOnyx) reopenHelper()
@@ -244,7 +279,7 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         val limit = pageArea ?: Rect(0, 0, width, height)
         if (limit.isEmpty) return
         val helper = TouchHelper.create(this, callback)
-        helper.setStrokeWidth(3f).setLimitRect(limit, emptyList()).openRawDrawing()
+        helper.setStrokeWidth(3f).setLimitRect(limit, excludeRects).openRawDrawing()
         applyToolToHelper(helper)
         touchHelper = helper
         applyEnabled()
@@ -253,14 +288,14 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
     private fun applyToolToHelper(helper: TouchHelper) {
         val widthPx = when (tool.tool) {
             PenTool.HIGHLIGHTER -> 15f
-            PenTool.SELECTION -> 2f
+            PenTool.SELECTION, PenTool.ERASE_AREA -> 2f
             else -> 2f * tool.thickness
         } * pageScale
         helper.setStrokeWidth(widthPx.coerceAtLeast(1f))
         // Live preview style only (what is saved comes from our own pen model). Guesses; tune on the device.
         helper.setStrokeStyle(
             when (tool.tool) {
-                PenTool.FINELINER, PenTool.MECHANICAL_PENCIL, PenTool.SELECTION -> TouchHelper.STROKE_STYLE_PENCIL   // constant width
+                PenTool.FINELINER, PenTool.MECHANICAL_PENCIL, PenTool.SELECTION, PenTool.ERASE_AREA -> TouchHelper.STROKE_STYLE_PENCIL   // constant width
                 PenTool.MARKER, PenTool.HIGHLIGHTER -> TouchHelper.STROKE_STYLE_MARKER
                 PenTool.PENCIL -> TouchHelper.STROKE_STYLE_CHARCOAL
                 PenTool.PAINTBRUSH -> TouchHelper.STROKE_STYLE_NEO_BRUSH
@@ -307,6 +342,7 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
             when (tool.tool) {
                 PenTool.ERASER -> listener.onErase(samples)
                 PenTool.SELECTION -> listener.onLasso(samples)
+                PenTool.ERASE_AREA -> listener.onEraseArea(samples)
                 else -> listener.onStroke(samples)
             }
         }
@@ -327,6 +363,7 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         val isFinger = event.getToolType(0) == MotionEvent.TOOL_TYPE_FINGER
         // A finger swipes (turns pages) unless this is a non-Onyx device with finger drawing switched on.
         if (isFinger && !(fingerDraws && !useOnyx && penEnabled)) {
+            trackFingerTap(event)
             scaleDetector.onTouchEvent(event)
             if (event.pointerCount > 1 || scaleDetector.isInProgress) multiTouch = true
             // A pinch or two-finger drag must not also count as a page-turning swipe.
@@ -349,6 +386,7 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
             when (tool.tool) {
                 PenTool.ERASER -> listener.onErase(done)
                 PenTool.SELECTION -> listener.onLasso(done)
+                PenTool.ERASE_AREA -> listener.onEraseArea(done)
                 else -> listener.onStroke(done)
             }
         }

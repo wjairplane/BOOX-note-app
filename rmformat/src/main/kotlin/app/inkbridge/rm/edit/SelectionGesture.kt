@@ -25,8 +25,12 @@ object SelectionGesture {
         fun rotateHandle(offset: Float) = centerX to (top - offset)
     }
 
-    const val HANDLE_RADIUS = 44f
-    const val ROTATE_OFFSET = 72f
+    /** Handles are 30 px squares (rotate: a 40 px circle) with a 15 px touch margin, as in the firmware. */
+    const val HANDLE_SIZE = 30f
+    const val ROTATE_SIZE = 40f
+    const val HANDLE_RADIUS = 30f
+    /** The rotate handle is centred on the middle of the top edge. */
+    const val ROTATE_OFFSET = 0f
 
     fun hit(frame: Frame, x: Float, y: Float, radius: Float = HANDLE_RADIUS, rotateOffset: Float = ROTATE_OFFSET): Hit {
         val (rx, ry) = frame.rotateHandle(rotateOffset)
@@ -53,7 +57,11 @@ object SelectionGesture {
             PageEditor.Affine(k, 0f, 0f, k, hit.anchorX * (1 - k), hit.anchorY * (1 - k))
         }
         Mode.ROTATE -> {
-            val t = atan2(cy - hit.anchorY, cx - hit.anchorX) - atan2(sy - hit.anchorY, sx - hit.anchorX)
+            var t = atan2(cy - hit.anchorY, cx - hit.anchorX) - atan2(sy - hit.anchorY, sx - hit.anchorX)
+            // Snap to the quarter and eighth turns (0, 45, 90, ...) when within about 10 degrees.
+            val step = (Math.PI / 4).toFloat()
+            val nearest = Math.round(t / step) * step
+            if (kotlin.math.abs(t - nearest) < Math.toRadians(10.0)) t = nearest
             val co = cos(t); val si = sin(t)
             PageEditor.Affine(co, si, -si, co, hit.anchorX - (co * hit.anchorX - si * hit.anchorY), hit.anchorY - (si * hit.anchorX + co * hit.anchorY))
         }

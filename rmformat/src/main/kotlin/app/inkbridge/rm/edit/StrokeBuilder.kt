@@ -115,7 +115,7 @@ object StrokeBuilder {
             PenTool.MECHANICAL_PENCIL -> (5 * th).coerceAtLeast(6)
             PenTool.PAINTBRUSH -> (th * (8 + 16 * pressure01)).roundToInt()
             PenTool.CALLIGRAPHY -> (th * (8 + 12 * pressure01)).roundToInt()
-            PenTool.ERASER, PenTool.SELECTION -> 0
+            PenTool.ERASER, PenTool.SELECTION, PenTool.ERASE_AREA -> 0
         }
     }
 }

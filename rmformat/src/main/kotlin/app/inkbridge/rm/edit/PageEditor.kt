@@ -91,6 +91,12 @@ class PageEditor private constructor(initial: List<Block>) {
     /** Erase every visible stroke on the page (one undo step). Returns how many strokes were removed. */
     fun eraseAll(): Int = deleteStrokes(renderer.placedLines().map { it.itemId }.toSet())
 
+    /** Erase every visible stroke on the current layer only (one undo step). Returns how many strokes were removed. */
+    fun eraseCurrentLayer(): Int {
+        val layer = activeLayer()?.nodeId ?: return 0
+        return deleteStrokes(renderer.placedLines().filter { it.parent.nodeId == layer }.map { it.itemId }.toSet())
+    }
+
     // ---- selection ----
 
     /** A stroke's bounds in page units. */

@@ -57,7 +57,7 @@ class ScreenshotTest {
         decor.draw(canvas)
         // The page itself lives on a SurfaceView, which a view capture leaves out: lay its bitmap over the capture, darkest wins
         // (so the toolbar and menus drawn by Compose stay on top of the white page).
-        findSurface(decor)?.let { v ->
+        findSurface(decor)?.takeIf { !(name.startsWith("template_picker") || name.startsWith("overview") || name.startsWith("dialog_delete_page")) }?.let { v ->
             val bitmap = v.shownBitmap ?: return@let
             val at = IntArray(2).also { v.getLocationInWindow(it) }
             canvas.drawBitmap(bitmap, at[0].toFloat(), at[1].toFloat(), android.graphics.Paint().apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DARKEN) })
@@ -176,7 +176,7 @@ class ScreenshotTest {
         rule.onNodeWithContentDescription("Writing tool 2: Highlighter").performClick(); settle(); snapshot("pen_menu_highlighter")
         rule.onNodeWithContentDescription("Writing tool 2: Highlighter").performClick(); settle()
         rule.onNodeWithContentDescription("Page overview").performClick(); settle(); snapshot("overview")
-        rule.onNodeWithText("Close").performClick(); settle()
+        rule.onNodeWithContentDescription("Back").performClick(); settle()
 
         // Hiding the toolbar leaves only the round button
         rule.onNodeWithContentDescription("Hide toolbar").performClick(); settle(); snapshot("notebook_collapsed")
@@ -217,6 +217,7 @@ class ScreenshotTest {
     private fun stylusStroke(points: List<Pair<Float, Float>>) {
         val view = findSurface(rule.activity.window.decorView)!!
         val t0 = SystemClock.uptimeMillis()
+        val points = if (points.size == 1) points + points else points // a tap: down, then up
         fun event(action: Int, x: Float, y: Float, t: Long): MotionEvent {
             val props = arrayOf(MotionEvent.PointerProperties().apply { id = 0; toolType = MotionEvent.TOOL_TYPE_STYLUS })
             val coords = arrayOf(MotionEvent.PointerCoords().apply { this.x = x; this.y = y; pressure = 0.5f; size = 1f })
@@ -279,49 +280,38 @@ class ScreenshotTest {
         val nb = app.library.entries.first { it.name == "Meeting notes" }
         rule.runOnUiThread { app.prefs.toolbarPosition = ToolbarPosition.LEFT; app.screen = Screen.Notebook(nb.id, 0) }; settle()
 
-        // Selection tool: a lasso around the handwriting, then duplicate and delete from the selection's menu.
+        // Selection tool: a lasso around the handwriting; Copy ends the selection, a tap with the pen pastes.
         rule.onNodeWithContentDescription("Selection tool").performClick(); settle()
-        stylusStroke(listOf(150f to 150f, 900f to 150f, 900f to 800f, 150f to 800f, 150f to 150f)); settle(); snapshot("selection_tool")
-        // Copy it (the bar then offers Paste), paste a copy, then resize the pasted strokes by a corner handle and turn them by the round one.
+        stylusStroke(listOf(150f to 150f, 950f to 150f, 950f to 1000f, 150f to 1000f, 150f to 150f)); settle(); snapshot("selection_tool")
         rule.onNodeWithContentDescription("Copy").performClick(); settle(); snapshot("selection_copied")
-        rule.onNodeWithContentDescription("Paste").performClick(); settle(); snapshot("selection_pasted")
+        stylusStroke(listOf(700f to 1250f)); settle(); snapshot("selection_pasted")
+        // Resize the pasted strokes by a corner handle and turn them by the round one.
         val surface = findSurface(rule.activity.window.decorView)!!
         val corner = surface.selectionFrameProvider()!!.corners()[2]
-        stylusStroke(listOf(corner.first to corner.second, corner.first + 80f to corner.second + 60f, corner.first + 160f to corner.second + 120f)); settle(); snapshot("selection_resized")
+        stylusStroke(listOf(corner.first to corner.second, corner.first + 60f to corner.second + 40f, corner.first + 120f to corner.second + 80f)); settle(); snapshot("selection_resized")
         val frame = surface.selectionFrameProvider()!!
         val handle = frame.rotateHandle(SelectionGesture.ROTATE_OFFSET)
         stylusStroke(listOf(handle.first to handle.second, handle.first + 120f to handle.second + 60f, frame.right + 80f to frame.centerY)); settle(); snapshot("selection_rotated")
-        rule.onNodeWithContentDescription("Duplicate").performClick(); settle(); snapshot("selection_duplicated")
         rule.onNodeWithContentDescription("Delete").performClick(); settle(); snapshot("selection_deleted")
         rule.onNodeWithContentDescription("Writing tool 1: Fineliner").performClick(); settle() // back to a pen
 
-        // Layers.
-        rule.onNodeWithContentDescription("More").performClick(); settle()
-        rule.onNodeWithText("Layers").performClick(); settle(); snapshot("layers_menu")
+        // Layers: a button in the toolbar with its own foldout.
+        rule.onNodeWithContentDescription("Layers").performClick(); settle(); snapshot("layers_menu")
         rule.onNodeWithText("New layer").performClick(); settle(); snapshot("layers_menu_two")
         rule.onNodeWithContentDescription("Hide Layer 1").performClick(); settle(); snapshot("layers_hidden")
-        // A layer's options: rename, move, merge. (Layer 2 is on top; Layer 1 is hidden.)
-        rule.onNodeWithContentDescription("Options for Layer 2").performClick(); settle(); snapshot("layer_options")
-        rule.onNodeWithText("Move down").performClick(); settle(); snapshot("layers_reordered")
-        rule.onNodeWithContentDescription("Options for Layer 1").performClick(); settle()
-        rule.onNodeWithText("Merge down").performClick(); settle(); snapshot("layers_merged")
+        rule.onNodeWithContentDescription("Move down Layer 2").performClick(); settle(); snapshot("layers_reordered")
+        rule.onNodeWithContentDescription("Merge down Layer 1").performClick(); settle(); snapshot("layers_merged")
         rule.onNodeWithContentDescription("Hide background").performClick(); settle(); snapshot("layers_background_hidden")
-        rule.onNodeWithContentDescription("Options for Layer 2").performClick(); settle()
-        rule.onNodeWithText("Rename").performClick(); settle(); snapshot("dialog_rename_layer")
-        rule.onNodeWithText("Cancel").performClick(); settle()
+        rule.onNodeWithText("Template").performClick(); settle(); snapshot("template_picker")
+        rule.onNodeWithContentDescription("Back").performClick(); settle()
 
-        // Adjust view: fit to height zooms in a little (the toolbar leaves the page area narrower than the page).
-        rule.onNodeWithContentDescription("More").performClick(); settle()
-        rule.onNodeWithText("Adjust view").performClick(); settle(); snapshot("view_menu")
-        rule.onNodeWithText("Fit to height").performClick(); settle(); snapshot("zoomed_page")
-
-        // Page dialogs: add a page, then delete it.
-        rule.onNodeWithContentDescription("More").performClick(); settle()
+        // The notebook menu: Add page adds one after this page; then the overview with a page selected, and the delete confirmation.
+        rule.onNodeWithContentDescription("More").performClick(); settle(); snapshot("notebook_menu_firmware")
         rule.onNodeWithText("Add page").performClick(); settle()
-        rule.onNodeWithText("Add page after").performClick(); settle()
         org.junit.Assert.assertEquals(2, app.library[nb.id]!!.pageIds.size)
-        rule.onNodeWithContentDescription("More").performClick(); settle()
-        rule.onNodeWithText("Delete page").performClick(); settle(); snapshot("dialog_delete_page")
+        rule.onNodeWithContentDescription("Page overview").performClick(); settle(); snapshot("overview_firmware")
+        rule.onNodeWithContentDescription("Page 1").performTouchInput { longClick() }; settle(); snapshot("overview_selection")
+        rule.onNodeWithContentDescription("Delete").performClick(); settle(); snapshot("dialog_delete_page")
         rule.onAllNodesWithText("Cancel").onLast().performClick(); settle()
     }
 }

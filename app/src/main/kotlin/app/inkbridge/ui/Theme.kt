@@ -280,13 +280,16 @@ enum class MenuSide {
     OVER,
 }
 
-private class MenuPosition(private val side: MenuSide, private val gapPx: Int, private val overlapPx: Int) : PopupPositionProvider {
+private class MenuPosition(private val side: MenuSide, private val gapPx: Int, private val overlapPx: Int, private val flip: Boolean) : PopupPositionProvider {
     override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset {
+        // A toolbar foldout lines up with its button's far edge when the button is in the lower (or right) half of the screen.
+        val lower = flip && anchorBounds.center.y > windowSize.height / 2
+        val rightHalf = flip && anchorBounds.center.x > windowSize.width / 2
         val (x, y) = when (side) {
-            MenuSide.BELOW -> anchorBounds.left to anchorBounds.bottom
-            MenuSide.ABOVE -> anchorBounds.left to anchorBounds.top - popupContentSize.height
-            MenuSide.RIGHT -> anchorBounds.right to anchorBounds.top
-            MenuSide.LEFT -> anchorBounds.left - popupContentSize.width to anchorBounds.top
+            MenuSide.BELOW -> (if (rightHalf) anchorBounds.right - popupContentSize.width else anchorBounds.left) to anchorBounds.bottom
+            MenuSide.ABOVE -> (if (rightHalf) anchorBounds.right - popupContentSize.width else anchorBounds.left) to anchorBounds.top - popupContentSize.height
+            MenuSide.RIGHT -> anchorBounds.right to (if (lower) anchorBounds.bottom - popupContentSize.height else anchorBounds.top)
+            MenuSide.LEFT -> anchorBounds.left - popupContentSize.width to (if (lower) anchorBounds.bottom - popupContentSize.height else anchorBounds.top)
             MenuSide.BELOW_END -> anchorBounds.right - popupContentSize.width to anchorBounds.bottom - overlapPx
             MenuSide.ABOVE_CENTER -> anchorBounds.center.x - popupContentSize.width / 2 to anchorBounds.top - popupContentSize.height - gapPx
             MenuSide.OVER -> anchorBounds.left to anchorBounds.top
@@ -300,10 +303,10 @@ private class MenuPosition(private val side: MenuSide, private val gapPx: Int, p
 
 /** A menu anchored to the box it is called from. Content is a column of [RmMenuItem]s; a null [width] wraps the content. */
 @Composable
-fun RmMenu(show: Boolean, onDismiss: () -> Unit, side: MenuSide = MenuSide.BELOW, width: Dp? = Rm.DropdownWidth, gap: Dp = 0.dp, content: @Composable ColumnScope.() -> Unit) {
+fun RmMenu(show: Boolean, onDismiss: () -> Unit, side: MenuSide = MenuSide.BELOW, width: Dp? = Rm.DropdownWidth, gap: Dp = 0.dp, toolbarFoldout: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
     if (!show) return
     val density = LocalDensity.current // a popup is its own window and would otherwise fall back to the screen's density
-    val position = remember(side, density, gap) { MenuPosition(side, with(density) { gap.roundToPx() }, with(density) { Rm.Outline.roundToPx() }) }
+    val position = remember(side, density, gap, toolbarFoldout) { MenuPosition(side, with(density) { gap.roundToPx() }, with(density) { Rm.Outline.roundToPx() }, toolbarFoldout) }
     Popup(popupPositionProvider = position, onDismissRequest = onDismiss, properties = PopupProperties(focusable = true)) {
         CompositionLocalProvider(LocalDensity provides density) {
             Column(Modifier.then(if (width != null) Modifier.width(width) else Modifier).heightIn(max = 1700.dp).background(Ink.White).border(Rm.Outline, Ink.Black).verticalScroll(rememberScrollState())) { content() }

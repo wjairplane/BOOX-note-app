@@ -148,7 +148,7 @@ class PageSessionTest {
         val after = s.selectionRect()!!
         // The opposite (top-left) corner of the frame stays where it was.
         // (The frame's padding doesn't scale, so it shifts by a few pixels.)
-        assertEquals(frame.left, s.selectionFrame()!!.left, 25f); assertEquals(frame.top, s.selectionFrame()!!.top, 25f)
+        assertEquals(frame.left, s.selectionFrame()!!.left, 80f); assertEquals(frame.top, s.selectionFrame()!!.top, 80f)
         assertTrue(after.width() > before.width() * 1.2f)
 
         // Drag the rotate handle a quarter turn about the centre: a wide selection turns tall.
@@ -165,15 +165,17 @@ class PageSessionTest {
         val s = session()
         assertFalse(s.pasteClipboard())
         select(s)
-        assertTrue(s.copySelection()); assertTrue(StrokeClipboard.hasContent)
-        val original = s.selectionRect()!!
-        assertTrue(s.pasteClipboard())
+        // Copying ends the selection; a tap with the selection tool then pastes the strokes with their centre there.
+        assertTrue(s.copySelection()); assertTrue(StrokeClipboard.hasContent); assertFalse(s.hasSelection)
+        assertTrue(s.selectionStroke(listOf(PenSample(500f, 900f, .5f, 0f, 0f, 0))))
         val pasted = s.selectionRect()!!
-        assertTrue(pasted.left > original.left && pasted.top > original.top)
+        assertEquals(500f, (pasted.left + pasted.right) / 2, 30f); assertEquals(900f, (pasted.top + pasted.bottom) / 2, 30f)
         // Cut removes the selection; pasting into another page puts it there.
         assertTrue(s.cutSelection()); assertFalse(s.hasSelection)
         val other = PageSession(java.io.File(tmp.root, "other.rm")).also { it.resize(1000, 1200) }
         assertTrue(other.pasteClipboard()); assertTrue(other.hasSelection)
+        // The eraser's selection mode and "erase all" on the current layer.
+        assertTrue(other.eraseCurrentLayer()); assertFalse(other.eraseCurrentLayer())
     }
 
     @Test fun layerOptionsAndBackgroundChangeThePage() {

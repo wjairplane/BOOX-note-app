@@ -535,25 +535,8 @@ private fun NewNotebookScreen(app: AppController, parentId: String, onDismiss: (
         NameField(name) { name = it }
         Spacer(Modifier.height(24.dp))
         Text("Page template", style = RmText.Label, color = Ink.Grey)
-        val layout = remember { PageRenderer(SceneTree()).layout }
         Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-            PageTemplate.entries.forEach { t ->
-                val selected = template == t
-                Column(Modifier.width(264.dp).tap { template = t }.semantics { contentDescription = "Template ${t.label}" }, horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(Modifier.fillMaxWidth().aspectRatio(layout.width / layout.height).border(if (selected) 6.dp else Rm.Outline, Ink.Black)) {
-                        androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
-                            drawIntoCanvas { c ->
-                                val n = c.nativeCanvas
-                                n.save(); n.scale(size.width / layout.width, size.width / layout.width); n.translate(-layout.xMin, -layout.yMin)
-                                t.draw(AndroidPageCanvas(n), layout)
-                                n.restore()
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(16.dp))
-                    Text(t.label, style = RmText.Label)
-                }
-            }
+            PageTemplate.entries.forEach { t -> TemplateCard(t, template == t, { template = t }, Modifier.width(264.dp)) }
         }
     }
 }

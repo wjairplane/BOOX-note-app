@@ -122,6 +122,14 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
     fun addPage(e: LibraryEntry, afterIndex: Int, onAdded: (Int) -> Unit) =
         io("Couldn't add a page") { LibraryOps.addPage(store.dir, e, afterIndex); publish(store.load()); onMain { onAdded(afterIndex + 1) } }
 
+    /** Delete several pages at once (highest first, so the indices stay valid); at least one page always remains. */
+    fun deletePages(e: LibraryEntry, indices: Set<Int>, onDone: () -> Unit) =
+        io("Couldn't delete the pages") {
+            var deleted = false
+            for (i in indices.sortedDescending()) deleted = LibraryOps.deletePage(store.dir, store.load()[e.id] ?: e, i) || deleted
+            if (deleted) onMain { onDone() }
+        }
+
     fun deletePage(e: LibraryEntry, index: Int, onDone: () -> Unit) =
         io("Couldn't delete the page") { if (LibraryOps.deletePage(store.dir, e, index)) { publish(store.load()); onMain { onDone() } } }
 

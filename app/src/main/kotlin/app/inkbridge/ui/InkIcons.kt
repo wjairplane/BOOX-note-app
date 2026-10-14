@@ -80,6 +80,13 @@ object InkIcons {
     @Composable fun Scissors(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_cut, modifier, tint, size)
     @Composable fun Copy(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_copy, modifier, tint, size)
     @Composable fun Paste(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_paste, modifier, tint, size)
+    @Composable fun ArrowUp(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_arrow_up, modifier, tint, size)
+    @Composable fun ArrowDown(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_arrow_down, modifier, tint, size)
+    @Composable fun Merge(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_merge, modifier, tint, size)
+    @Composable fun InformationCircle(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_information_circle, modifier, tint, size)
+    @Composable fun EraseSelection(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_erase_selection, modifier, tint, size)
+    @Composable fun Cog(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_cog, modifier, tint, size)
+    @Composable fun Lens(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_lens, modifier, tint, size)
     @Composable fun ChevronUp(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_chevron_up, modifier, tint, size)
     @Composable fun Share(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_share, modifier, tint, size)
     @Composable fun PageAdd(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_page_add, modifier, tint, size)
@@ -124,6 +131,7 @@ object InkIcons {
         PenTool.SHADER -> R.drawable.rm_shader
         PenTool.ERASER -> R.drawable.rm_eraser
         PenTool.SELECTION -> R.drawable.rm_selection_tool
+        PenTool.ERASE_AREA -> R.drawable.rm_erase_selection
     }
 
     @Composable

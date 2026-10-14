@@ -125,7 +125,13 @@ class PageSession(
     @Synchronized
     fun selectionStroke(samples: List<PenSample>): Boolean {
         val t = transform ?: return false
-        if (samples.size < 2) { val had = selection.isNotEmpty(); selection = emptySet(); if (had) redrawAll(); return had }
+        val extent = if (samples.size < 2) 0f else kotlin.math.hypot(samples.maxOf { it.x } - samples.minOf { it.x }, samples.maxOf { it.y } - samples.minOf { it.y })
+        if (extent < 16f) {
+            // A tap: it ends the selection, or (nothing selected, something copied) pastes the clipboard there.
+            val at = samples.firstOrNull()
+            if (selection.isEmpty() && at != null && StrokeClipboard.hasContent) return pasteAt(at.x, at.y)
+            val had = selection.isNotEmpty(); selection = emptySet(); if (had) redrawAll(); return had
+        }
         val frame = selectionFrame()
         if (frame != null) {
             val first = samples.first(); val last = samples.last()
@@ -155,7 +161,12 @@ class PageSession(
         val t = transform ?: return null
         val b = (if (selection.isEmpty()) null else editor.boundsOf(selection)) ?: return null
         val pad = 14f
-        return SelectionGesture.Frame(t.toViewX(b.left - pad), t.toViewY(b.top - pad), t.toViewX(b.right + pad), t.toViewY(b.bottom + pad))
+        var l = t.toViewX(b.left - pad); var tp = t.toViewY(b.top - pad); var r = t.toViewX(b.right + pad); var bt = t.toViewY(b.bottom + pad)
+        // As in the firmware, the frame is never smaller than 100 px, so a small selection's handles don't cover it.
+        val min = 100f
+        if (r - l < min) { val c = (l + r) / 2; l = c - min / 2; r = c + min / 2 }
+        if (bt - tp < min) { val c = (tp + bt) / 2; tp = c - min / 2; bt = c + min / 2 }
+        return SelectionGesture.Frame(l, tp, r, bt)
     }
 
     /** The selection's bounds in view pixels, or null when nothing is selected. */
@@ -192,18 +203,60 @@ class PageSession(
         val lines = editor.copyStrokes(selection)
         if (lines.isEmpty()) return false
         StrokeClipboard.lines = lines
+        // As on the tablet, copying ends the selection; the strokes are pasted by tapping the page with the selection tool.
+        selection = emptySet()
+        redrawAll()
         return true
     }
 
     @Synchronized
-    fun cutSelection(): Boolean = copySelection().also { if (it) deleteSelection() }
+    fun cutSelection(): Boolean {
+        val ids = selection
+        if (!copySelection()) return false
+        editor.deleteStrokes(ids)
+        redrawAll()
+        return true
+    }
 
-    /** Paste the clipboard onto the current layer a little down and to the right of where it was copied; selects the pasted strokes. */
+    /** Paste the clipboard onto the current layer with its centre at the view point ([x], [y]); selects the pasted strokes. */
+    @Synchronized
+    fun pasteAt(x: Float, y: Float): Boolean {
+        val t = transform ?: return false
+        val pts = StrokeClipboard.lines.flatMap { it.points }
+        if (pts.isEmpty()) return false
+        val cx = (pts.minOf { it.x } + pts.maxOf { it.x }) / 2; val cy = (pts.minOf { it.y } + pts.maxOf { it.y }) / 2
+        val ids = editor.pasteStrokes(StrokeClipboard.lines, t.toPageX(x) - cx, t.toPageY(y) - cy)
+        if (ids.isEmpty()) return false
+        selection = ids
+        redrawAll()
+        return true
+    }
+
+    /** Paste the clipboard a little down and to the right of where it was copied (used by tests and menus). */
     @Synchronized
     fun pasteClipboard(): Boolean {
         val ids = editor.pasteStrokes(StrokeClipboard.lines, 40f, 40f)
         if (ids.isEmpty()) return false
         selection = ids
+        redrawAll()
+        return true
+    }
+
+    /** The "Erase selection" tool: erase the strokes a lasso encloses. */
+    @Synchronized
+    fun eraseInside(samples: List<PenSample>): Boolean {
+        val t = transform ?: return false
+        val ids = editor.selectInside(samples.map { t.toPageX(it.x) to t.toPageY(it.y) })
+        if (editor.deleteStrokes(ids) == 0) return false
+        redrawAll()
+        return true
+    }
+
+    /** "Erase all strokes": the current layer only. */
+    @Synchronized
+    fun eraseCurrentLayer(): Boolean {
+        if (editor.eraseCurrentLayer() == 0) return false
+        selection = emptySet()
         redrawAll()
         return true
     }
@@ -333,22 +386,20 @@ class PageSession(
         if (selection.isNotEmpty() && editor.boundsOf(selection) == null) selection = emptySet()
     }.also { drawSelectionFrame() }
 
-    /** The selection: a dashed frame with corner handles to resize and a round handle to rotate (no colour: it has to read on e-ink). */
+    /** The selection: a solid 2 px frame with white square handles on the corners and a white circle on the middle of the top edge (as in the firmware). */
     private fun drawSelectionFrame() {
         val bmp = bitmap ?: return
         val f = selectionFrame() ?: return
         val canvas = Canvas(bmp)
-        val line = Paint().apply { style = Paint.Style.STROKE; color = Color.BLACK; strokeWidth = 3f; pathEffect = DashPathEffect(floatArrayOf(14f, 10f), 0f) }
-        canvas.drawRect(f.left, f.top, f.right, f.bottom, line)
-        val solid = Paint().apply { style = Paint.Style.STROKE; color = Color.BLACK; strokeWidth = 3f }
+        val border = Paint().apply { style = Paint.Style.STROKE; color = Color.BLACK; strokeWidth = 2f }
         val fill = Paint().apply { style = Paint.Style.FILL; color = Color.WHITE }
-        val half = 14f
+        canvas.drawRect(f.left, f.top, f.right, f.bottom, border)
+        val half = SelectionGesture.HANDLE_SIZE / 2
         for ((x, y) in f.corners()) {
-            canvas.drawRect(x - half, y - half, x + half, y + half, fill); canvas.drawRect(x - half, y - half, x + half, y + half, solid)
+            canvas.drawRect(x - half, y - half, x + half, y + half, fill); canvas.drawRect(x - half, y - half, x + half, y + half, border)
         }
         val (rx, ry) = f.rotateHandle(SelectionGesture.ROTATE_OFFSET)
-        canvas.drawLine(f.centerX, f.top, rx, ry, solid)
-        canvas.drawCircle(rx, ry, 18f, fill); canvas.drawCircle(rx, ry, 18f, solid)
+        canvas.drawCircle(rx, ry, SelectionGesture.ROTATE_SIZE / 2, fill); canvas.drawCircle(rx, ry, SelectionGesture.ROTATE_SIZE / 2, border)
     }
 
     private fun withPageCanvas(clear: Boolean = false, draw: (Canvas) -> Unit) {
