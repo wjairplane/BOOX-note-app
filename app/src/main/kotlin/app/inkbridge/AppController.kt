@@ -31,7 +31,14 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
     var library by mutableStateOf(Library(emptyList()))
         private set
     var screen by mutableStateOf<Screen>(Screen.Files())
+    /** The bottom notification bar's text ("3 items were moved to Trash", errors, progress); empty = no bar. */
     var message by mutableStateOf("")
+
+    /** Ids of the items being moved while the file browser is in its Move mode (null = not moving). */
+    var moving by mutableStateOf<List<String>?>(null)
+
+    /** An item to select when the file browser next opens (search results reveal an item in its folder). */
+    var pendingSelect by mutableStateOf<String?>(null)
 
     val thumbnails = Thumbnails(store)
 
@@ -52,11 +59,12 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
     }
 
     /** Run [block] off the main thread, then refresh. [onDone] runs after the library has been reloaded. */
-    private fun io(failure: String, onDone: (() -> Unit)? = null, block: () -> Unit) {
+    private fun io(failure: String, onDone: (() -> Unit)? = null, notice: String? = null, block: () -> Unit) {
         scope.launch(Dispatchers.IO) {
             try {
                 block()
                 publish(store.load())
+                notice?.let { say(it) }
                 onDone?.let { done -> onMain { done() } }
             } catch (e: Exception) {
                 say("$failure: ${e.message ?: e.javaClass.simpleName}")
@@ -64,19 +72,54 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
         }
     }
 
-    fun newNotebook(name: String, template: PageTemplate, parentId: String) {
+    /** Create a notebook and open it. [coverPage] is -1 (the last visited page) or 0 (the first page). */
+    fun newNotebook(name: String, template: PageTemplate, parentId: String, coverPage: Int = -1) {
         io("Couldn't create the notebook", onDone = null) {
-            val id = LibraryOps.createNotebook(store.dir, name, parentId, template)
+            val id = LibraryOps.createNotebook(store.dir, name, parentId, template, coverPage = coverPage)
             publish(store.load())
             onMain { screen = Screen.Notebook(id, 0) }
         }
     }
 
-    /** A one-page notebook to jot something down: created at the top level and opened straight away. */
-    fun newQuickSheet() = newNotebook(suggestName("", "Quick sheet"), PageTemplate.BLANK, "")
+    /**
+     * The one "Quick sheets" notebook: a blank page is added only when the last page has ink, otherwise the last (empty)
+     * page is reused; the notebook opens on that page.
+     */
+    fun newQuickSheet() {
+        io("Couldn't create the quick sheet") {
+            val lib = store.load()
+            val existing = lib.entries.firstOrNull { !it.isFolder && it.fileType == "notebook" && it.name == QUICK_SHEETS && it.parentId != Library.TRASH }
+            val id: String
+            val page: Int
+            if (existing == null) {
+                id = LibraryOps.createNotebook(store.dir, QUICK_SHEETS, "", PageTemplate.BLANK)
+                page = 0
+            } else {
+                id = existing.id
+                val last = existing.pageIds.lastIndex
+                val f = app.inkbridge.rm.library.LibraryScanner.pageFile(store.dir, existing, last)
+                if (f.isFile && f.length() > 0) { LibraryOps.addPage(store.dir, existing, last); page = last + 1 } else page = last
+            }
+            publish(store.load())
+            onMain { screen = Screen.Notebook(id, page) }
+        }
+    }
 
     /** Copy notebooks and folders next to the originals. */
-    fun duplicate(es: List<LibraryEntry>) = io("Couldn't duplicate") { es.forEach { LibraryOps.duplicate(store.dir, it.id) } }
+    fun duplicate(es: List<LibraryEntry>) = io("Couldn't duplicate", notice = "${items(es.size)} duplicated") { es.forEach { LibraryOps.duplicate(store.dir, it.id) } }
+
+    /** "1 item was" / "3 items were": the notification wording for [n] items. */
+    private fun items(n: Int) = if (n == 1) "1 item was" else "$n items were"
+
+    fun trashAll(es: List<LibraryEntry>) = io("Couldn't move to the trash", notice = "${items(es.size)} moved to Trash") { es.forEach { LibraryOps.trash(store.dir, it.id) } }
+
+    fun restoreAll(es: List<LibraryEntry>) = io("Couldn't restore", notice = "${items(es.size)} restored to My files") { es.forEach { LibraryOps.restore(store.dir, it.id) } }
+
+    fun deleteAll(es: List<LibraryEntry>) = io("Couldn't delete", notice = "${items(es.size)} deleted") { es.forEach { LibraryOps.deletePermanently(store.dir, it.id) } }
+
+    fun moveAll(es: List<LibraryEntry>, parentId: String) = io("Couldn't move") { es.forEach { LibraryOps.moveTo(store.dir, it.id, parentId) } }
+
+    fun setPinned(es: List<LibraryEntry>, pinned: Boolean) = io("Couldn't change the favourite") { es.forEach { LibraryOps.setPinned(store.dir, it.id, pinned) } }
 
     /** Export every page of the given notebooks and PDFs (SVG, PNG and PDF per page) into [outDir]. */
     fun exportDocuments(es: List<LibraryEntry>, outDir: java.io.File) {
@@ -100,7 +143,13 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
 
     fun setTags(e: LibraryEntry, tags: List<String>) = io("Couldn't change the tags") { LibraryOps.setTags(store.dir, e.id, tags) }
 
-    fun newFolder(name: String, parentId: String) = io("Couldn't create the folder") { LibraryOps.createFolder(store.dir, name, parentId) }
+    fun newFolder(name: String, parentId: String, tags: List<String> = emptyList(), onCreated: ((String) -> Unit)? = null) {
+        var id = ""
+        io("Couldn't create the folder", onDone = { onCreated?.invoke(id) }) {
+            id = LibraryOps.createFolder(store.dir, name, parentId)
+            if (tags.isNotEmpty()) LibraryOps.setTags(store.dir, id, tags)
+        }
+    }
 
     fun rename(e: LibraryEntry, name: String) = io("Couldn't rename") { LibraryOps.rename(store.dir, e.id, name) }
 
@@ -114,7 +163,10 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
 
     fun deleteForever(e: LibraryEntry) = io("Couldn't delete") { LibraryOps.deletePermanently(store.dir, e.id) }
 
-    fun emptyTrash() = io("Couldn't empty the trash") { LibraryOps.emptyTrash(store.dir) }
+    fun emptyTrash() {
+        val n = library.trash.size
+        io("Couldn't empty the trash", notice = "${items(n)} deleted") { LibraryOps.emptyTrash(store.dir) }
+    }
 
     fun setTemplate(e: LibraryEntry, t: PageTemplate) = io("Couldn't change the template") { LibraryOps.setTemplate(store.dir, e.id, t) }
 
@@ -154,5 +206,9 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
         val taken = library.children(parentId).map { it.name }.toSet()
         if (base !in taken) return base
         return generateSequence(2) { it + 1 }.map { "$base $it" }.first { it !in taken }
+    }
+
+    companion object {
+        const val QUICK_SHEETS = "Quick sheets"
     }
 }

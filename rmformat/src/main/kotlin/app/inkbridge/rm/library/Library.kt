@@ -24,6 +24,10 @@ data class LibraryEntry(
     val template: app.inkbridge.rm.render.PageTemplate = app.inkbridge.rm.render.PageTemplate.BLANK,
     /** Tag names, from `.content` `tags` (the tablet keeps `{name, timestamp}` objects there). */
     val tags: List<String> = emptyList(),
+    /** When the entry was created (falls back to [lastModified] for items made elsewhere). */
+    val created: Long = lastModified,
+    /** Which page is the notebook's cover: -1 = the last visited page (default), 0 = the first page (`coverPageNumber`). */
+    val coverPage: Int = -1,
 ) {
     val isFolder get() = type == EntryType.FOLDER
 }
@@ -104,6 +108,8 @@ object LibraryScanner {
             tags = (content?.get("tags") as? JsonArray).orEmpty().mapNotNull { t ->
                 (t as? JsonObject)?.str("name") ?: (t as? JsonPrimitive)?.contentOrNull
             }.distinct(),
+            created = m.str("createdTime")?.toLongOrNull() ?: content?.str("createdTime")?.toLongOrNull() ?: m.str("lastModified")?.toLongOrNull() ?: 0L,
+            coverPage = content?.get("coverPageNumber")?.let { (it as? JsonPrimitive)?.intOrNull } ?: -1,
         )
     }
 

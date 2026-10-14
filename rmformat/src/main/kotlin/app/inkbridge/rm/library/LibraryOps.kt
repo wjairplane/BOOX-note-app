@@ -20,7 +20,7 @@ object LibraryOps {
 
     fun createNotebook(
         dir: File, name: String, parentId: String = "", template: PageTemplate = PageTemplate.BLANK,
-        id: String = newId(), now: Long = now(), firstPageId: String = newId(),
+        id: String = newId(), now: Long = now(), firstPageId: String = newId(), coverPage: Int = -1,
     ): String {
         writeJson(File(dir, "$id.metadata"), metadata(name, parentId, "DocumentType", now))
         writeJson(File(dir, "$id.content"), buildJsonObject {
@@ -30,6 +30,7 @@ object LibraryOps {
             putJsonArray("pages") { add(firstPageId) }
             putJsonArray("tags") {}
             put("template", template.id)
+            put("coverPageNumber", coverPage)
         })
         File(dir, id).mkdirs()
         return id
@@ -75,6 +76,9 @@ object LibraryOps {
         return copy(id, parent, rename = true)
     }
 
+    /** Remember which page is the notebook's cover (-1 = last visited, 0 = first). */
+    fun setCoverPage(dir: File, id: String, coverPage: Int) = editContent(dir, id) { it + ("coverPageNumber" to JsonPrimitive(coverPage)) }
+
     /** Record that the document changed (bumps `lastModified`). */
     fun touch(dir: File, id: String, now: Long = now()) = editMetadata(dir, id) { it + ("lastModified" to JsonPrimitive(now.toString())) }
 
@@ -82,7 +86,7 @@ object LibraryOps {
     fun trash(dir: File, id: String) = editMetadata(dir, id) { m ->
         val parent = (m["parent"] as? JsonPrimitive)?.contentOrNull ?: ""
         if (parent == Library.TRASH) m
-        else m + ("parent" to JsonPrimitive(Library.TRASH)) + ("trashedFrom" to JsonPrimitive(parent))
+        else m + ("parent" to JsonPrimitive(Library.TRASH)) + ("trashedFrom" to JsonPrimitive(parent)) + ("lastModified" to JsonPrimitive(now().toString()))
     }
 
     /** Put a trashed item back where it was (top level if that folder no longer exists). */
@@ -163,6 +167,7 @@ object LibraryOps {
         put("type", type)
         put("version", 0)
         put("visibleName", name.trim())
+        put("createdTime", now.toString())
     }
 
     private fun editMetadata(dir: File, id: String, edit: (Map<String, JsonElement>) -> Map<String, JsonElement>) =
