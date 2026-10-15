@@ -109,6 +109,7 @@ class PageSession(
         val t = transform ?: return
         val next = t.zoomedAround(t.zoom * factor, fx, fy).pannedBy(dx, dy)
         customView = Triple(next.zoom, next.offsetX, next.offsetY)
+        fitMode = null
         applyView(next)
     }
 
@@ -123,15 +124,20 @@ class PageSession(
         return true
     }
 
-    @Synchronized fun fitPage() { val t = transform ?: return; applyView(PageTransform(t.layout, t.viewWidth, t.viewHeight)) }
-    @Synchronized fun fitWidth() { val t = transform ?: return; applyView(t.fitWidth()) }
-    @Synchronized fun fitHeight() { val t = transform ?: return; applyView(t.fitHeight()) }
+    /** Which "Adjust view" mode the view is in: "width", "height", "custom", or null after a pinch or a reset. */
+    @Volatile var fitMode: String? = null
+        private set
+
+    @Synchronized fun fitPage() { val t = transform ?: return; fitMode = null; applyView(PageTransform(t.layout, t.viewWidth, t.viewHeight)) }
+    @Synchronized fun fitWidth() { val t = transform ?: return; fitMode = "width"; applyView(t.fitWidth()) }
+    @Synchronized fun fitHeight() { val t = transform ?: return; fitMode = "height"; applyView(t.fitHeight()) }
 
     /** Go back to the zoom and pan the user last chose by pinching. */
     @Synchronized
     fun fitCustom() {
         val (z, x, y) = customView ?: return
         val t = transform ?: return
+        fitMode = "custom"
         applyView(PageTransform(t.layout, t.viewWidth, t.viewHeight, z, x, y))
     }
 

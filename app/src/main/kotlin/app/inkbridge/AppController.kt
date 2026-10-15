@@ -155,6 +155,8 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
         }
     }
 
+    fun setCoverPage(e: LibraryEntry, cover: Int) = io("Couldn't change the cover") { LibraryOps.setCoverPage(store.dir, e.id, cover) }
+
     fun rename(e: LibraryEntry, name: String) = io("Couldn't rename") { LibraryOps.rename(store.dir, e.id, name) }
 
     fun togglePinned(e: LibraryEntry) = io("Couldn't change the favourite") { LibraryOps.setPinned(store.dir, e.id, !e.pinned) }

@@ -175,7 +175,7 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         val bmp = bitmap
         drawPreviewCanvas { c ->
             bmp?.let { c.drawBitmap(it, bitmapLeft, 0f, null) }
-            val paint = android.graphics.Paint().apply { style = android.graphics.Paint.Style.STROKE; color = Color.BLACK; strokeWidth = 4f; pathEffect = android.graphics.DashPathEffect(floatArrayOf(14f, 10f), 0f) }
+            val paint = android.graphics.Paint().apply { style = android.graphics.Paint.Style.STROKE; color = Color.BLACK; strokeWidth = 2f }
             val path = android.graphics.Path().apply { moveTo(outline[0].first, outline[0].second); outline.drop(1).forEach { lineTo(it.first, it.second) }; close() }
             c.drawPath(path, paint)
         }

@@ -74,7 +74,7 @@ object Rm {
     val SidebarWidth = 414.dp
     val CreateMenuHeight = 112.dp
     val CreateMenuBottomMargin = 100.dp
-    val WritingFoldoutWidth = 480.dp
+    val WritingFoldoutWidth = 400.dp
     val EraserFoldoutWidth = 376.dp
     val FoldoutMinWidth = 400.dp          // ToolbarTool.minimumFoldoutWidth: menus without their own width
     val EraserFoldoutMinWidth = 400.dp    // the eraser's 3-column grid: 3 x 112 + 2 x 32 px
@@ -101,6 +101,7 @@ object RmText {
     val BodyLg = sans(36, FontWeight.Normal, 1.5f)
     val Body = sans(28, FontWeight.Normal, 1.5f)
     val BodySm = sans(25, FontWeight.Normal, 1.5f)
+    val BodyLow = sans(28, FontWeight.Normal, 1.1f)
     val Caption = sans(22, FontWeight.Normal, 1.45f)
     val Label = sans(25, FontWeight.Medium, 1.58f)
     val LabelLg = sans(28, FontWeight.Medium, 1.56f)
@@ -254,7 +255,10 @@ fun ConfirmDialog(title: String, message: String, confirm: String, onDismiss: ()
     }
 }
 
-/** The firmware's NotificationBar: along the bottom edge, white with a 2 px top border, a message, a divider and a plain action label. */
+/**
+ * The firmware's NotificationBar (secondary): white with a 2 px top border, 32 px side padding and 16 px vertical padding, the message
+ * (28 px, tight lines), a 2 px divider and the action as an 80 px high text button.
+ */
 @Composable
 fun NotificationBar(message: String, onAction: () -> Unit, modifier: Modifier = Modifier, action: String = "OK") {
     Row(
@@ -262,10 +266,11 @@ fun NotificationBar(message: String, onAction: () -> Unit, modifier: Modifier = 
             .drawBehind { drawLine(Color.Black, androidx.compose.ui.geometry.Offset(0f, 1f), androidx.compose.ui.geometry.Offset(size.width, 1f), strokeWidth = 2f * density) }
             .padding(horizontal = 32.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(message, style = RmText.BodySm, modifier = Modifier.weight(1f))
-        Box(Modifier.width(2.dp).height(48.dp).background(Ink.Black)); Spacer(Modifier.width(24.dp))
-        Text(action, style = RmText.Label, modifier = Modifier.tap(onClick = onAction).padding(8.dp).semantics { contentDescription = action })
+        Text(message, style = RmText.BodyLow, modifier = Modifier.weight(1f))
+        Box(Modifier.width(Rm.Outline).height(48.dp).background(Ink.Black))
+        Box(Modifier.height(Rm.Control).tap(onClick = onAction).padding(horizontal = 32.dp).semantics { contentDescription = action }, contentAlignment = Alignment.Center) { Text(action, style = RmText.LabelLg) }
     }
 }
 
@@ -357,8 +362,8 @@ enum class MenuSide {
 private class MenuPosition(private val side: MenuSide, private val gapPx: Int, private val overlapPx: Int, private val flip: Boolean) : PopupPositionProvider {
     override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset {
         // A toolbar foldout lines up with its button's far edge when the button is in the lower (or right) half of the screen.
-        val lower = flip && anchorBounds.center.y > windowSize.height / 2
-        val rightHalf = flip && anchorBounds.center.x > windowSize.width / 2
+        val lower = flip && anchorBounds.top > windowSize.height / 2
+        val rightHalf = flip && anchorBounds.left > windowSize.width / 2
         val (x, y) = when (side) {
             MenuSide.BELOW -> (if (rightHalf) anchorBounds.right - popupContentSize.width else anchorBounds.left) to anchorBounds.bottom
             MenuSide.ABOVE -> (if (rightHalf) anchorBounds.right - popupContentSize.width else anchorBounds.left) to anchorBounds.top - popupContentSize.height
@@ -400,7 +405,7 @@ fun RmMenuItem(label: String, onClick: () -> Unit, enabled: Boolean = true, sele
 
 /** A foldout row (FoldoutItem): 112 px high, 48 px icon, label; a 2 px divider above when [topDivider]. */
 @Composable
-fun RmFoldoutItem(label: String, onClick: () -> Unit, enabled: Boolean = true, selected: Boolean = false, topDivider: Boolean = false, chevron: Boolean = false, icon: (@Composable (Color) -> Unit)? = null) {
+fun RmFoldoutItem(label: String, onClick: () -> Unit, enabled: Boolean = true, selected: Boolean = false, topDivider: Boolean = false, chevron: Boolean = false, bottomDivider: Boolean = false, icon: (@Composable (Color) -> Unit)? = null) {
     val fg = if (selected) Ink.White else if (enabled) Ink.Black else Ink.Rule
     if (topDivider) Rule()
     Row(
@@ -411,6 +416,7 @@ fun RmFoldoutItem(label: String, onClick: () -> Unit, enabled: Boolean = true, s
         Text(label, style = RmText.Label, color = fg, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         if (chevron) InkIcons.ChevronRight(tint = fg)
     }
+    if (bottomDivider) Rule()
 }
 
 /** A tag chip (SelectableChip): 56 px high pill, 2 px border, inverted when [selected]; [partial] thickens the border. */

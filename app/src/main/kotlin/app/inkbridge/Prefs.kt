@@ -67,7 +67,18 @@ class Prefs(context: Context) {
     }
 
     private var _tbPos by mutableStateOf(runCatching { ToolbarPosition.valueOf(sp.getString("toolbar", "LEFT")!!) }.getOrDefault(ToolbarPosition.LEFT))
+    /** The toolbar's edge in portrait (the firmware keeps one per orientation). */
     var toolbarPosition: ToolbarPosition get() = _tbPos; set(v) { _tbPos = v; sp.edit().putString("toolbar", v.name).apply() }
+
+    private var _tbLandscape by mutableStateOf(runCatching { ToolbarPosition.valueOf(sp.getString("toolbarLandscape", "LEFT")!!) }.getOrDefault(ToolbarPosition.LEFT))
+    var toolbarLandscape: ToolbarPosition get() = _tbLandscape; set(v) { _tbLandscape = v; sp.edit().putString("toolbarLandscape", v.name).apply() }
+
+    fun toolbarFor(landscape: Boolean) = if (landscape) toolbarLandscape else toolbarPosition
+    fun setToolbarFor(landscape: Boolean, v: ToolbarPosition) { if (landscape) toolbarLandscape = v else toolbarPosition = v }
+
+    private var _shapes by mutableStateOf(sp.getBoolean("shapes", true))
+    /** "Enable shapes": hold at the end of a stroke to turn it into a clean shape. */
+    var shapesEnabled: Boolean get() = _shapes; set(v) { _shapes = v; sp.edit().putBoolean("shapes", v).apply() }
 
     private var _block by mutableStateOf(sp.getBoolean("blockDeviceGestures", true))
     /** Hold off the device's own edge gestures (BOOX status bar / back swipes) while the app is open. */

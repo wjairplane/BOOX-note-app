@@ -252,11 +252,32 @@ fun PageSlider(app: AppController, doc: LibraryEntry, current: Int, bottomInset:
 }
 
 
-/** The zoom button: shows the zoom level at the top centre while the page is zoomed; a tap snaps back to the whole page. */
+/**
+ * The zoom button: a white, borderless button showing the fit icon and the zoom level ("1.5x"); a tap snaps back to the whole page.
+ */
 @Composable
-fun ZoomButton(zoom: Float, onReset: () -> Unit, modifier: Modifier = Modifier) {
-    Box(
-        modifier.height(Rm.Control).background(Ink.White).border(Rm.Outline, Ink.Black).tap(onClick = onReset).padding(horizontal = 32.dp).semantics { contentDescription = "Reset zoom" },
-        contentAlignment = Alignment.Center,
-    ) { Text("${(zoom * 100).toInt()}%", style = RmText.LabelLg) }
+fun ZoomButton(zoom: Float, mode: String?, onReset: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier.height(Rm.ToolButton).background(Ink.White).tap(onClick = onReset).padding(horizontal = 40.dp).semantics { contentDescription = "Reset zoom" },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        when (mode) {
+            "height" -> InkIcons.FitToHeight()
+            "custom" -> InkIcons.FitCustom()
+            else -> InkIcons.FitToWidth()
+        }
+        Spacer(Modifier.width(16.dp))
+        Text(String.format(java.util.Locale.US, "%.1fx", zoom), style = RmText.LabelLg)
+    }
+}
+
+/** The low-battery warning shown at the top right of a document when the charge is 10 % or less and not charging. */
+@Composable
+fun LowBatteryIndicator(modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
+    val (percent, charging) = rememberBattery()
+    if (percent > 10 || charging) return
+    Row(modifier.background(Ink.White).tap(onClick = onClick).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text("$percent%", style = RmText.Label, modifier = Modifier.padding(end = 12.dp))
+        BatteryIndicator(percent)
+    }
 }

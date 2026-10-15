@@ -2,6 +2,8 @@ package app.inkbridge.ui
 
 import android.graphics.Bitmap
 import android.graphics.Rect
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import app.inkbridge.pen.FingerGestures
 import app.inkbridge.pen.HoldGesture
 import app.inkbridge.rm.edit.ShapeSnap
@@ -114,7 +116,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     var selectionRect by remember { mutableStateOf<android.graphics.RectF?>(null) }
     var panel by remember { mutableStateOf(false) }
     var collapsed by remember { mutableStateOf(false) }
-    var dragOffset by remember { mutableStateOf(Offset.Zero) }
+    var hideBounds by remember { mutableStateOf(UiRect.Zero) }
     var toolbarBounds by remember { mutableStateOf(UiRect.Zero) }
     // Everything that floats over the page and must stay clickable with the pen (the pen's raw-drawing layer would otherwise take those taps).
     val blockers = remember { PenBlockers() }
@@ -129,7 +131,11 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     var strokes by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf("") }
     var slider by remember { mutableStateOf(false) }
-    val foldoutOpen = panel || (eraserMenu && erasing) || layersMenu || menu || slider || app.overlay != null
+    // Notifications go away after five seconds, except the clipboard hint, which stays until it is dismissed.
+    LaunchedEffect(message) { if (message.isNotEmpty() && !message.startsWith("Copied to clipboard")) { kotlinx.coroutines.delay(5000); message = "" } }
+    var notebookSettings by remember { mutableStateOf(false) }
+    var tagsScreen by remember { mutableStateOf(false) }
+    val foldoutOpen = panel || (eraserMenu && erasing) || layersMenu || menu || slider || notebookSettings || tagsScreen || app.overlay != null
 
     val slot = prefs.slot(activeSlot)
     val spec = if (selecting) PenSpec(PenTool.SELECTION) else if (erasing) PenSpec(if (eraseArea) PenTool.ERASE_AREA else PenTool.ERASER) else PenSpec(slot.tool, slot.colorId, slot.thickness)
@@ -163,7 +169,8 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     fun goTo(i: Int) { if (i in doc.pageIds.indices && i != pageIndex) { save(session); selectionRect = null; newPagePrompt = false; pageIndex = i; if (prefs.refreshEveryStrokes > 0) surface?.fullRefresh() } }
     fun newPageAfterCurrent() { save(session); app.addPage(doc, pageIndex) { pageIndex = it } }
 
-    val pos = prefs.toolbarPosition
+    val landscape = androidx.compose.ui.platform.LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val pos = prefs.toolbarFor(landscape)
     val horizontal = pos == ToolbarPosition.TOP || pos == ToolbarPosition.BOTTOM
     // Foldouts open on the side of the toolbar that faces the page, level with the button that opened them.
     val side = when (pos) { ToolbarPosition.LEFT -> MenuSide.RIGHT; ToolbarPosition.RIGHT -> MenuSide.LEFT; ToolbarPosition.TOP -> MenuSide.BELOW; ToolbarPosition.BOTTOM -> MenuSide.ABOVE }
@@ -172,22 +179,32 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     @Composable
     fun toolbar() {
         @Suppress("UNUSED_EXPRESSION") revision
+        val iconShift = when (pos) { ToolbarPosition.TOP -> 10.dp; ToolbarPosition.BOTTOM -> (-10).dp; else -> 0.dp }
         val start: @Composable () -> Unit = {
             // The round button hides the rest of the toolbar (and brings it back).
             // The round button hides the rest of the toolbar (and brings it back). It is also the handle: drag it to move the toolbar to another edge.
+            // The firmware's dragTarget is invisible: the toolbar stays where it is while the finger picks an edge (a 56 px threshold starts it).
             IconTile(if (collapsed) "Show toolbar" else "Hide toolbar", { collapsed = !collapsed; panel = false; eraserMenu = false; menu = false; layersMenu = false },
-                modifier = Modifier.pointerInput(Unit) {
-                    detectDragGestures(
-                        onDragStart = { panel = false; menu = false; eraserMenu = false; layersMenu = false },
-                        onDrag = { change, amount ->
-                            change.consume(); dragOffset += amount
-                            val c = toolbarBounds.center
-                            dragEdge = nearestEdge(c.x + dragOffset.x, c.y + dragOffset.y, rootSize.width.toFloat(), rootSize.height.toFloat())
-                        },
-                        onDragEnd = { dragEdge?.let { prefs.toolbarPosition = it }; dragEdge = null; dragOffset = Offset.Zero },
-                        onDragCancel = { dragEdge = null; dragOffset = Offset.Zero },
-                    )
-                }) { InkIcons.MenuDot(tint = it) }
+                plain = true, shift = if (pos == ToolbarPosition.BOTTOM) (-10).dp else 10.dp,
+                modifier = Modifier.onGloballyPositioned { hideBounds = it.boundsInRoot() }.pointerInput(pos) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val threshold = 56.dp.toPx()
+                        var dragging = false
+                        while (true) {
+                            val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                            if (!change.pressed) break
+                            val moved = (change.position - down.position).getDistance()
+                            if (!dragging && moved >= threshold) { dragging = true; panel = false; menu = false; eraserMenu = false; layersMenu = false }
+                            if (dragging) {
+                                change.consume()
+                                val p = change.position + hideBounds.topLeft
+                                dragEdge = ToolbarZones.target(pos, p.x, p.y, rootSize.width.toFloat(), rootSize.height.toFloat())
+                            }
+                        }
+                        if (dragging) { dragEdge?.let { prefs.setToolbarFor(landscape, it) }; dragEdge = null }
+                    }
+                }) { InkIcons.MenuDot(tint = it, modifier = Modifier.graphicsLayer { rotationZ = if (collapsed && pos == ToolbarPosition.RIGHT) 90f else 0f }) }
             if (!collapsed && canDraw) {
                 // Two writing tools: tap the other one to switch, tap the active one to open its foldout.
                 for (i in 0..1) {
@@ -207,7 +224,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 }
                 // The eraser: tap to pick it, tap again for its foldout (tool, thickness, erase all).
                 Box {
-                    IconTile("Eraser", { if (erasing) eraserMenu = !eraserMenu else { leaveSelection(); erasing = true; panel = false; eraserMenu = false } }, selected = erasing) { InkIcons.Eraser(tint = it) }
+                    IconTile("Eraser", { if (erasing) eraserMenu = !eraserMenu else { leaveSelection(); erasing = true; panel = false; eraserMenu = false } }, selected = erasing) { if (eraseArea) InkIcons.EraseSelection(tint = it) else InkIcons.Eraser(tint = it) }
                     RmMenu(eraserMenu && erasing, { eraserMenu = false }, side, Rm.EraserFoldoutMinWidth) {
                         EraserMenu(eraseArea, onTool = { eraseArea = it }, eraserThickness, onThickness = { eraserThickness = it }, onEraseAll = {
                             // "Erase all strokes" clears the current layer only, then goes back to the last pen.
@@ -241,10 +258,13 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                         fun close() { menu = false; menuPage = null }
                         when (menuPage) {
                             null -> {
-                                // The firmware's notebook menu: Add page (after this page, one tap), Adjust view (PDF only), Share.
-                                if (canDraw) RmFoldoutItem("Add page", { close(); newPageAfterCurrent() }) { InkIcons.PageAdd(tint = it) }
-                                if (isPdf) RmFoldoutItem("Adjust view", { menuPage = "view" }, chevron = true) { InkIcons.Sliders(tint = it) }
-                                RmFoldoutItem("Share", { menuPage = "share" }, chevron = true) { InkIcons.Share(tint = it) }
+                                // The firmware's notebook menu: Enable shapes, Share, Tags, Adjust view (PDF), Add page between dividers, settings.
+                                if (canDraw) Box(Modifier.padding(horizontal = Rm.FoldoutPad)) { SwitchRow("Enable shapes", prefs.shapesEnabled, { prefs.shapesEnabled = it }) }
+                                RmFoldoutItem("Share", { menuPage = "share" }, chevron = true, topDivider = canDraw) { InkIcons.Share(tint = it) }
+                                RmFoldoutItem("Tags", { close(); tagsScreen = true }) { if (doc.tags.isEmpty()) InkIcons.Tag(tint = it) else InkIcons.TagInverted(tint = it) }
+                                if (isPdf) RmFoldoutItem("Adjust view", { menuPage = "view" }, chevron = true, topDivider = true) { InkIcons.Sliders(tint = it) }
+                                if (canDraw) RmFoldoutItem(if (isPdf) "Add note page" else "Add page", { close(); newPageAfterCurrent() }, topDivider = true, bottomDivider = true) { InkIcons.PageAdd(tint = it) }
+                                RmFoldoutItem(if (isPdf) "PDF settings" else "Notebook settings", { close(); notebookSettings = true }) { InkIcons.Cog(tint = it) }
                                 RmFoldoutItem("Refresh screen", { close(); surface?.fullRefresh() }, topDivider = true) { InkIcons.Refresh(tint = it) }
                             }
                             "view" -> {
@@ -256,9 +276,9 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                                         withContext(Dispatchers.Main) { surface?.let { v -> pushView(v, s); v.setTool(v.currentSpec, s.transform?.scale ?: 1f) }; selectionRect = s.selectionRect(); revision++ }
                                     }
                                 }
-                                RmFoldoutItem("Fit to width", { changeView { it.fitWidth() } }, selected = false) { InkIcons.FitToWidth(tint = it) }
-                                RmFoldoutItem("Fit to height", { changeView { it.fitHeight() } }) { InkIcons.FitToHeight(tint = it) }
-                                RmFoldoutItem("Fit to custom view", { changeView { it.fitCustom() } }, enabled = session?.customView != null) { InkIcons.FitCustom(tint = it) }
+                                RmFoldoutItem("Fit to width", { changeView { it.fitWidth() } }, selected = session?.fitMode == "width") { InkIcons.FitToWidth(tint = it) }
+                                RmFoldoutItem("Fit to height", { changeView { it.fitHeight() } }, selected = session?.fitMode == "height") { InkIcons.FitToHeight(tint = it) }
+                                RmFoldoutItem("Fit to custom view", { changeView { it.fitCustom() } }, enabled = session?.customView != null, selected = session?.fitMode == "custom") { InkIcons.FitCustom(tint = it) }
                             }
                             "share" -> {
                                 RmFoldoutItem("Export page", {
@@ -295,16 +315,15 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
         val drag = Modifier
             .onGloballyPositioned { toolbarBounds = it.boundsInRoot() }
             .blocksPen(blockers, "toolbar")
-            .graphicsLayer { translationX = dragOffset.x; translationY = dragOffset.y }
         val bg = if (collapsed) Modifier else Modifier.background(Ink.White)
         if (horizontal) {
             // The close button sits at the top right of the screen, so a top toolbar leaves room for it.
             Row((if (collapsed) Modifier else Modifier.fillMaxWidth()).padding(end = if (pos == ToolbarPosition.TOP && !collapsed) TOOLBAR_THICKNESS else 0.dp).height(TOOLBAR_THICKNESS).then(drag).then(bg), verticalAlignment = Alignment.CenterVertically) {
-                start(); if (!collapsed) Spacer(Modifier.weight(1f)); end()
+                androidx.compose.runtime.CompositionLocalProvider(LocalIconShift provides iconShift) { start(); if (!collapsed) Spacer(Modifier.weight(1f)); end() }
             }
         } else {
             Column((if (collapsed) Modifier else Modifier.fillMaxHeight()).width(TOOLBAR_THICKNESS).then(drag).then(bg), horizontalAlignment = Alignment.CenterHorizontally) {
-                start(); if (!collapsed) Spacer(Modifier.weight(1f)); end()
+                androidx.compose.runtime.CompositionLocalProvider(LocalIconShift provides iconShift) { start(); if (!collapsed) Spacer(Modifier.weight(1f)); end() }
             }
         }
     }
@@ -323,8 +342,8 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                     if (s != null) {
                         val done = when (action) {
                             "delete" -> s.deleteSelection()
-                            "cut" -> s.cutSelection().also { if (it) message = "Cut to clipboard. Tap any page with the selection tool to paste." }
-                            else -> s.copySelection().also { if (it) message = "Copied to clipboard. Tap any page with the selection tool to paste." }
+                            "cut" -> s.cutSelection().also { if (it) message = "Copied to clipboard. Tap any page with Marker to paste." }
+                            else -> s.copySelection().also { if (it) message = "Copied to clipboard. Tap any page with Marker to paste." }
                         }
                         if (done) { surface?.refresh(); revision++ }
                         selectionRect = s.selectionRect()
@@ -344,6 +363,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 },
                 excludeRects = blockers.rects(),
                 blockers = blockers,
+                shapes = prefs.shapesEnabled,
                 onSelectBelow = { selecting = true; erasing = false; panel = false; eraserMenu = false },
                 onEdgeSwipe = { edge ->
                     panel = false; menu = false; eraserMenu = false; layersMenu = false
@@ -365,30 +385,32 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
             @Suppress("UNUSED_EXPRESSION") revision
             val zoomNow = session?.zoom ?: 1f
             if (zoomNow > 1.01f && !overview) {
-                ZoomButton(zoomNow, {
+                ZoomButton(zoomNow, session?.fitMode, {
                     val s = session ?: return@ZoomButton
                     scope.launch(Dispatchers.Default) { s.fitPage(); withContext(Dispatchers.Main) { surface?.let { v -> pushView(v, s); v.setTool(v.currentSpec, s.transform?.scale ?: 1f) }; selectionRect = s.selectionRect(); revision++ } }
-                }, Modifier.align(if (pos == ToolbarPosition.TOP) Alignment.BottomCenter else Alignment.TopCenter).padding(top = if (pos == ToolbarPosition.TOP) 0.dp else 24.dp, bottom = if (pos == ToolbarPosition.TOP) 120.dp else 0.dp).blocksPen(blockers, "zoom"))
+                }, Modifier.align(if (pos == ToolbarPosition.TOP) Alignment.BottomCenter else Alignment.TopCenter).padding(bottom = if (pos == ToolbarPosition.TOP) (if (message.isNotEmpty()) 96.dp else 0.dp) else 0.dp).blocksPen(blockers, "zoom"))
             }
 
             // "Page X of Y": a white 258 x 72 label at the bottom centre for four seconds after the page changes.
             LaunchedEffect(pageIndex, doc.pageIds.size) { pageLabelVisible = true; kotlinx.coroutines.delay(4000); pageLabelVisible = false }
-            if (pageLabelVisible && !overview) {
-                Box(Modifier.align(Alignment.BottomCenter).padding(bottom = (if (message.isNotEmpty()) 96.dp else 24.dp) + (if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp)).size(258.dp, 72.dp).background(Ink.White), contentAlignment = Alignment.Center) {
+            if (pageLabelVisible && !overview && message.isEmpty()) {
+                Box(Modifier.align(Alignment.BottomCenter).padding(bottom = if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp).size(258.dp, 72.dp).background(Ink.White), contentAlignment = Alignment.Center) {
                     Text("Page ${pageIndex + 1} of ${doc.pageIds.size}", style = RmText.Label)
                 }
             }
             if (newPagePrompt && pageIndex == doc.pageIds.lastIndex) {
+                // A black button with a white 4 px border and the add-page icon, 80 px from the edge (and clear of a toolbar on the right).
                 Box(
-                    Modifier.align(Alignment.CenterEnd).padding(end = 80.dp).blocksPen(blockers, "newPage").background(Ink.White).border(4.dp, Ink.Black).tap { newPageAfterCurrent() }.padding(horizontal = 32.dp, vertical = 24.dp).semantics { contentDescription = "New page" },
+                    Modifier.align(Alignment.CenterEnd).padding(end = 80.dp + (if (pos == ToolbarPosition.RIGHT && !collapsed) TOOLBAR_THICKNESS else 0.dp)).blocksPen(blockers, "newPage")
+                        .background(Ink.Black).border(4.dp, Ink.White).tap { newPageAfterCurrent() }.size(Rm.ToolButton).semantics { contentDescription = "New page" },
                     contentAlignment = Alignment.Center,
-                ) { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) { InkIcons.PageAdd(); Text("New page", style = RmText.Label) } }
+                ) { InkIcons.PageAdd(tint = Ink.White) }
             }
 
             // The notification bar: along the bottom edge, beside the toolbar when that is on the left, right or bottom.
             if (message.isNotEmpty()) {
                 NotificationBar(
-                    message, { message = "" },
+                    message, { if (message.startsWith("Copied to clipboard")) StrokeClipboard.lines = emptyList(); message = "" },
                     Modifier.align(Alignment.BottomCenter).padding(start = if (pos == ToolbarPosition.LEFT) TOOLBAR_THICKNESS else 0.dp, end = if (pos == ToolbarPosition.RIGHT) TOOLBAR_THICKNESS else 0.dp, bottom = if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp).blocksPen(blockers, "notification"),
                 )
             }
@@ -424,8 +446,19 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                     .tap { closeDoc() }
                     .semantics { contentDescription = "Close notebook" },
                 contentAlignment = Alignment.Center,
-            ) { InkIcons.XCircle() }
+            ) { InkIcons.XCircle(Modifier.offset(y = 10.dp)) }
         }
+
+        // Low battery: a warning at the top right, clear of the close button and the toolbar.
+        LowBatteryIndicator(
+            Modifier.align(Alignment.TopEnd).padding(
+                end = if ((pos == ToolbarPosition.RIGHT || pos != ToolbarPosition.TOP) && !collapsed) 112.dp else 32.dp,
+                top = if (pos == ToolbarPosition.TOP && !collapsed) 112.dp else 32.dp,
+            ).blocksPen(blockers, "battery"),
+        )
+
+        if (notebookSettings) NotebookSettingsScreen(app, doc, onDismiss = { notebookSettings = false })
+        if (tagsScreen) DocumentTagsScreen(app, doc, onDismiss = { tagsScreen = false })
 
         if (slider) PageSlider(app, doc, pageIndex, if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp, if (pos == ToolbarPosition.LEFT) TOOLBAR_THICKNESS else 0.dp, if (pos == ToolbarPosition.RIGHT) TOOLBAR_THICKNESS else 0.dp, onPick = { slider = false; goTo(it) }, onClose = { slider = false })
 
@@ -435,20 +468,17 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     }
 }
 
-/** Which screen edge a toolbar dropped with its centre at ([x], [y]) should snap to. */
-internal fun nearestEdge(x: Float, y: Float, width: Float, height: Float): ToolbarPosition {
-    val d = mapOf(ToolbarPosition.LEFT to x, ToolbarPosition.RIGHT to width - x, ToolbarPosition.TOP to y, ToolbarPosition.BOTTOM to height - y)
-    return d.minBy { it.value }.key
-}
+/** The icons sit in the 92 px part of a 112 px button when the toolbar is on the top or bottom edge (the other 20 px is the gesture margin). */
+private val LocalIconShift = androidx.compose.runtime.compositionLocalOf { 0.dp }
 
 /** A toolbar button: icon only, inverted when selected. [description] doubles as its accessibility label. */
 @Composable
-private fun IconTile(description: String, onClick: () -> Unit, selected: Boolean = false, enabled: Boolean = true, modifier: Modifier = Modifier, icon: @Composable (Color) -> Unit) {
+private fun IconTile(description: String, onClick: () -> Unit, selected: Boolean = false, enabled: Boolean = true, modifier: Modifier = Modifier, plain: Boolean = false, shift: androidx.compose.ui.unit.Dp = LocalIconShift.current, icon: @Composable (Color) -> Unit) {
     val tint = if (selected) Ink.White else if (enabled) Ink.Black else Ink.Rule
     Box(
-        modifier.size(TOOLBAR_THICKNESS).background(if (selected) Ink.Dark else Ink.White).tap(enabled, onClick).semantics { contentDescription = description },
+        modifier.size(TOOLBAR_THICKNESS).then(if (plain) Modifier else Modifier.background(if (selected) Ink.Dark else Ink.White)).tap(enabled, onClick).semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
-    ) { icon(tint) }
+    ) { Box(Modifier.offset(y = shift)) { icon(tint) } }
 }
 
 /**
@@ -476,9 +506,10 @@ private fun PageArea(
     selecting: Boolean, selectionRect: android.graphics.RectF?, onSelectionRect: (android.graphics.RectF?) -> Unit, onSelectionAction: (String) -> Unit,
     onSurface: (PenSurface?) -> Unit, onChanged: () -> Unit, onSwipe: (Boolean) -> Unit,
     excludeRects: List<Rect>, onFingerTap: (Int) -> Unit, blockers: PenBlockers,
-    onEdgeSwipe: (FingerGestures.Edge) -> Unit, onSelectBelow: () -> Unit,
+    onEdgeSwipe: (FingerGestures.Edge) -> Unit, onSelectBelow: () -> Unit, shapes: Boolean,
 ) {
     val currentOnEdge by rememberUpdatedState(onEdgeSwipe)
+    val currentShapes by rememberUpdatedState(shapes)
     val currentOnSelectBelow by rememberUpdatedState(onSelectBelow)
     val scope = rememberCoroutineScope()
     val currentOnSelectionRect by rememberUpdatedState(onSelectionRect)
@@ -533,7 +564,7 @@ private fun PageArea(
                 PenSurface(ctx, object : PenListener {
                     override fun onStroke(samples: List<PenSample>) {
                         val spec = surface?.currentSpec
-                        val body = if (spec != null && spec.tool != PenTool.ERASER) HoldGesture.body(samples) else null
+                        val body = if (spec != null && spec.tool != PenTool.ERASER && currentShapes) HoldGesture.body(samples) else null
                         val shape = body?.let { ShapeSnap.detect(it.map { p -> p.x to p.y }) }
                         if (shape == null) { apply(samples) { s, sp -> s.addStroke(sp, samples) }; return }
                         if (ShapeSnap.isHorizontalLine(shape)) {
@@ -658,7 +689,7 @@ private fun FoldoutGrid(count: Int, columns: Int, tileWidth: Dp?, cell: @Composa
 }
 
 /**
- * The pen menu (xochitl's writing-tool foldout): 480 px wide with a 2 px border. A pen grid titled with the current pen,
+ * The pen menu (xochitl's writing-tool foldout): 400 px wide (3 x 112 + 64) with a 2 px border. A pen grid titled with the current pen,
  * a divider, the three thicknesses titled with the current one, a divider, then a 3-column grid of named colours.
  */
 @Composable

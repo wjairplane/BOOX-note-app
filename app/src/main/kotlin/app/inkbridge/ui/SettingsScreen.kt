@@ -119,9 +119,15 @@ private fun General(app: AppController, onStorage: () -> Unit) {
 private fun Accessibility(app: AppController) {
     val p = app.prefs
     Group("Toolbar position") {
-        Text("Where the toolbar sits while you write in a notebook.", style = RmText.Body)
+        Text("Choose your preferred toolbar position.", style = RmText.Body)
         Spacer(Modifier.height(8.dp))
+        Text("Portrait", style = RmText.LabelLg)
         SegmentedRow(ToolbarPosition.entries.map { it.label }, ToolbarPosition.entries.indexOf(p.toolbarPosition), { p.toolbarPosition = ToolbarPosition.entries[it] })
+        Spacer(Modifier.height(24.dp))
+        Text("Landscape", style = RmText.LabelLg)
+        SegmentedRow(ToolbarPosition.entries.map { it.label }, ToolbarPosition.entries.indexOf(p.toolbarLandscape), { p.toolbarLandscape = ToolbarPosition.entries[it] })
+        Spacer(Modifier.height(16.dp))
+        Text("To reposition the toolbar while in a document, drag the hide/show button to any edge of the screen.", style = RmText.Caption)
     }
 }
 
