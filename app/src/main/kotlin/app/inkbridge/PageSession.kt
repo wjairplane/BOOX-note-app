@@ -62,6 +62,9 @@ class PageSession(
     private var zoomLevel = 1f
     private var renderedBackgroundWidth = 0
 
+    /** [basePx] holds the paper, template, PDF and text for the current view; only a change of view or background invalidates it, not strokes. */
+    private var baseValid = false
+
     /** The zoom level (1 = the whole page fits the view). */
     val zoom: Float @Synchronized get() = zoomLevel
 
@@ -85,11 +88,13 @@ class PageSession(
         // Not recycled when replaced: the surface may still be showing the previous bitmap; the GC frees it.
         if (newBitmap || bitmap == null) bitmap = Bitmap.createBitmap(viewW, viewH, Bitmap.Config.ARGB_8888)
         // A PDF page is rendered at the on-screen size, but never wider than 2600 px (zoomed far in it is scaled up instead).
+        // The render is kept while the zoom moves a little (it is scaled to fit); a new one is made when it would look soft or wasteful.
         val wanted = background?.let { (it.placement.width * t.scale).coerceAtMost(2600f).roundToInt() } ?: 0
-        if (background != null && (backgroundBitmap == null || wanted != renderedBackgroundWidth)) {
+        if (background != null && (backgroundBitmap == null || wanted > renderedBackgroundWidth * 1.05f || wanted < renderedBackgroundWidth * 0.55f)) {
             backgroundBitmap = background.render(wanted)
             renderedBackgroundWidth = wanted
         }
+        baseValid = false
         redrawAll()
     }
 
@@ -278,7 +283,7 @@ class PageSession(
     @Synchronized fun moveLayer(id: CrdtId, up: Boolean): Boolean = editor.moveLayer(id, up).also { if (it) redrawAll() }
     @Synchronized fun mergeLayerDown(id: CrdtId): Boolean = editor.mergeLayerDown(id).also { if (it) { selection = emptySet(); redrawAll() } }
     @Synchronized fun backgroundVisible(): Boolean = editor.backgroundVisible
-    @Synchronized fun setBackgroundVisible(v: Boolean) { editor.setBackgroundVisible(v); redrawAll() }
+    @Synchronized fun setBackgroundVisible(v: Boolean) { editor.setBackgroundVisible(v); baseValid = false; redrawAll() }
     @Synchronized fun deleteLayer(id: CrdtId): Boolean = editor.deleteLayer(id).also { if (it) { selection = emptySet(); redrawAll() } }
 
     /** Add a stroke from view-pixel [samples]. Returns true if the page changed. */
@@ -397,21 +402,24 @@ class PageSession(
     )
 
     private fun redrawAll() {
-        withPageCanvas(clear = true) { canvas ->
-            val bg = backgroundBitmap
-            val p = background?.placement
-            val showBackground = editor.backgroundVisible
-            if (bg != null && p != null && showBackground) {
-                canvas.drawBitmap(bg, null, RectF(p.left, p.top, p.left + p.width, p.top + p.height), Paint(Paint.FILTER_BITMAP_FLAG))
-            }
-            if (background == null && showBackground) template.draw(AndroidPageCanvas(canvas), editor.renderer.layout)
-            editor.renderer.render(AndroidPageCanvas(canvas), strokes = false)
-            if (selection.isNotEmpty() && editor.boundsOf(selection) == null) selection = emptySet()
-        }
         val bmp = bitmap ?: return
         val w = bmp.width; val h = bmp.height
-        val base = (if (basePx?.size == w * h) basePx else null) ?: IntArray(w * h).also { basePx = it }
-        bmp.getPixels(base, 0, w, 0, 0, w, h)
+        val base = (if (basePx?.size == w * h) basePx else null) ?: IntArray(w * h).also { basePx = it; baseValid = false }
+        if (!baseValid) {
+            withPageCanvas(clear = true) { canvas ->
+                val bg = backgroundBitmap
+                val p = background?.placement
+                val showBackground = editor.backgroundVisible
+                if (bg != null && p != null && showBackground) {
+                    canvas.drawBitmap(bg, null, RectF(p.left, p.top, p.left + p.width, p.top + p.height), Paint(Paint.FILTER_BITMAP_FLAG))
+                }
+                if (background == null && showBackground) template.draw(AndroidPageCanvas(canvas), editor.renderer.layout)
+                editor.renderer.render(AndroidPageCanvas(canvas), strokes = false)
+            }
+            bmp.getPixels(base, 0, w, 0, 0, w, h)
+            baseValid = true
+        }
+        if (selection.isNotEmpty() && editor.boundsOf(selection) == null) selection = emptySet()
         val layer = (if (ink?.width == w && ink?.height == h) ink else null) ?: PixelInk(w, h).also { ink = it }
         layer.clear()
         val tf = inkTransform() ?: return

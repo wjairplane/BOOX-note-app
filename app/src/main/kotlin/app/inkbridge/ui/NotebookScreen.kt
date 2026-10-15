@@ -113,6 +113,8 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     var collapsed by remember { mutableStateOf(false) }
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
     var toolbarBounds by remember { mutableStateOf(UiRect.Zero) }
+    // Everything that floats over the page and must stay clickable with the pen (the pen's raw-drawing layer would otherwise take those taps).
+    val blockers = remember { PenBlockers() }
     var rootSize by remember { mutableStateOf(IntSize.Zero) }
     var menu by remember { mutableStateOf(false) }
     var menuPage by remember { mutableStateOf<String?>(null) } // null = the menu's first level; "add", "template", "share" = a sub-menu
@@ -123,6 +125,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     var surface by remember { mutableStateOf<PenSurface?>(null) }
     var strokes by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf("") }
+    val foldoutOpen = panel || (eraserMenu && erasing) || layersMenu || menu
 
     val slot = prefs.slot(activeSlot)
     val spec = if (selecting) PenSpec(PenTool.SELECTION) else if (erasing) PenSpec(if (eraseArea) PenTool.ERASE_AREA else PenTool.ERASER) else PenSpec(slot.tool, slot.colorId, slot.thickness)
@@ -284,6 +287,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
         // The toolbar overlays the page (it does not shrink it). Its position is bounded by the toolbar's own box.
         val drag = Modifier
             .onGloballyPositioned { toolbarBounds = it.boundsInRoot() }
+            .blocksPen(blockers, "toolbar")
             .graphicsLayer { translationX = dragOffset.x; translationY = dragOffset.y }
         val bg = if (collapsed) Modifier else Modifier.background(Ink.White)
         if (horizontal) {
@@ -303,7 +307,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
         Box(Modifier.fillMaxSize()) {
             if (!canDraw) Text("This kind of document can't be shown yet.", style = RmText.Body, modifier = Modifier.padding(32.dp))
             PageArea(
-                session = session, spec = spec, drawing = canDraw && !overview,
+                session = session, spec = spec, drawing = canDraw && !overview && !foldoutOpen && !templatePicker,
                 swipeEnabled = prefs.swipeToTurn, fingerDraws = prefs.fingerDrawing,
                 eraserRadius = ERASER_RADII[eraserThickness - 1],
                 selecting = selecting, selectionRect = selectionRect, onSelectionRect = { selectionRect = it },
@@ -332,7 +336,8 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                     if (forward) { if (pageIndex < doc.pageIds.lastIndex) goTo(pageIndex + 1) else if (canDraw) { if (newPagePrompt) newPageAfterCurrent() else { newPagePrompt = true; pageLabelVisible = true } } }
                     else goTo(pageIndex - 1)
                 },
-                excludeRects = listOf(android.graphics.Rect(toolbarBounds.left.toInt(), toolbarBounds.top.toInt(), toolbarBounds.right.toInt(), toolbarBounds.bottom.toInt())).filter { !it.isEmpty },
+                excludeRects = blockers.rects(),
+                blockers = blockers,
                 onFingerTap = { fingers ->
                     // Two fingers tapping undo, three redo (the tablet's shortcuts).
                     if (fingers == 2 && session?.undo() == true) { selectionRect = null; surface?.refresh(); revision++ }
@@ -349,7 +354,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
             }
             if (newPagePrompt && pageIndex == doc.pageIds.lastIndex) {
                 Box(
-                    Modifier.align(Alignment.CenterEnd).padding(end = 80.dp).background(Ink.White).border(4.dp, Ink.Black).tap { newPageAfterCurrent() }.padding(horizontal = 32.dp, vertical = 24.dp).semantics { contentDescription = "New page" },
+                    Modifier.align(Alignment.CenterEnd).padding(end = 80.dp).blocksPen(blockers, "newPage").background(Ink.White).border(4.dp, Ink.Black).tap { newPageAfterCurrent() }.padding(horizontal = 32.dp, vertical = 24.dp).semantics { contentDescription = "New page" },
                     contentAlignment = Alignment.Center,
                 ) { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) { InkIcons.PageAdd(); Text("New page", style = RmText.Label) } }
             }
@@ -358,7 +363,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
             if (message.isNotEmpty()) {
                 NotificationBar(
                     message, { message = "" },
-                    Modifier.align(Alignment.BottomCenter).padding(start = if (pos == ToolbarPosition.LEFT) TOOLBAR_THICKNESS else 0.dp, end = if (pos == ToolbarPosition.RIGHT) TOOLBAR_THICKNESS else 0.dp, bottom = if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp),
+                    Modifier.align(Alignment.BottomCenter).padding(start = if (pos == ToolbarPosition.LEFT) TOOLBAR_THICKNESS else 0.dp, end = if (pos == ToolbarPosition.RIGHT) TOOLBAR_THICKNESS else 0.dp, bottom = if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp).blocksPen(blockers, "notification"),
                 )
             }
         }
@@ -388,6 +393,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
         if (!collapsed && dragEdge == null) {
             Box(
                 Modifier.align(if (pos == ToolbarPosition.RIGHT) Alignment.TopStart else Alignment.TopEnd).size(TOOLBAR_THICKNESS)
+                    .blocksPen(blockers, "close")
                     .background(if (pos == ToolbarPosition.TOP) Ink.White else Color.Transparent)
                     .tap { save(session); app.screen = Screen.Files(folderId = doc.parentId.takeIf { it != "trash" } ?: "") }
                     .semantics { contentDescription = "Close notebook" },
@@ -441,7 +447,7 @@ private fun PageArea(
     session: PageSession?, spec: PenSpec, drawing: Boolean, swipeEnabled: Boolean, fingerDraws: Boolean, eraserRadius: Float,
     selecting: Boolean, selectionRect: android.graphics.RectF?, onSelectionRect: (android.graphics.RectF?) -> Unit, onSelectionAction: (String) -> Unit,
     onSurface: (PenSurface?) -> Unit, onChanged: () -> Unit, onSwipe: (Boolean) -> Unit,
-    excludeRects: List<Rect>, onFingerTap: (Int) -> Unit,
+    excludeRects: List<Rect>, onFingerTap: (Int) -> Unit, blockers: PenBlockers,
 ) {
     val scope = rememberCoroutineScope()
     val currentOnSelectionRect by rememberUpdatedState(onSelectionRect)
@@ -539,7 +545,7 @@ private fun PageArea(
             val below = r.bottom.toInt() + gap
             val y = (if (below + barH <= h) below else (r.top.toInt() - gap - barH).coerceAtLeast(gap / 2)).coerceAtLeast(gap / 2)
             Row(
-                Modifier.offset { androidx.compose.ui.unit.IntOffset(x, y) }.background(Ink.White).border(Rm.Outline, Ink.Black),
+                Modifier.offset { androidx.compose.ui.unit.IntOffset(x, y) }.blocksPen(blockers, "selection").background(Ink.White).border(Rm.Outline, Ink.Black),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 @Composable fun action(label: String, id: String, divider: Boolean, icon: @Composable () -> Unit) {
@@ -813,3 +819,21 @@ private fun LayersMenu(session: PageSession?, isPdf: Boolean, revision: Int, onC
 }
 
 private const val MAX_LAYERS = 5
+
+/** The screen rectangles of the controls that float over the page, so the pen can be kept off them. */
+internal class PenBlockers {
+    private val map = androidx.compose.runtime.mutableStateMapOf<String, Rect>()
+    fun set(key: String, r: Rect) { if (map[key] != r) map[key] = r }
+    fun remove(key: String) { map.remove(key) }
+    fun rects(): List<Rect> = map.values.filter { !it.isEmpty }.sortedWith(compareBy({ it.left }, { it.top }, { it.right }, { it.bottom }))
+}
+
+/** Report this element's bounds to [blockers] while it is on screen. */
+@Composable
+internal fun Modifier.blocksPen(blockers: PenBlockers, key: String): Modifier {
+    DisposableEffect(blockers, key) { onDispose { blockers.remove(key) } }
+    return onGloballyPositioned {
+        val b = it.boundsInRoot()
+        blockers.set(key, Rect(b.left.toInt(), b.top.toInt(), b.right.toInt(), b.bottom.toInt()))
+    }
+}

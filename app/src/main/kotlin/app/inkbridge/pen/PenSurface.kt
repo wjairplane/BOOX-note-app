@@ -213,11 +213,16 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         touchHelper?.let { runCatching { it.setRawDrawingRenderEnabled(tool.tool != PenTool.ERASER) } }
     }
 
+    /** A hardware-accelerated canvas when there is one (much faster for scaled bitmaps), else a software one. */
+    private fun lock(): android.graphics.Canvas? =
+        runCatching { if (Build.VERSION.SDK_INT >= 26) holder.lockHardwareCanvas() else holder.lockCanvas() }.getOrNull()
+            ?: runCatching { holder.lockCanvas() }.getOrNull()
+
     /** Draw one preview frame (no pen-layer toggling: that is only for the final, sharp picture). */
     private fun drawPreviewCanvas(content: (android.graphics.Canvas) -> Unit) {
         val surface = holder.surface ?: return
         if (!surface.isValid) return
-        val canvas = runCatching { holder.lockCanvas() }.getOrNull() ?: return
+        val canvas = lock() ?: return
         try { canvas.drawColor(Color.WHITE); content(canvas) } finally { holder.unlockCanvasAndPost(canvas) }
     }
 
@@ -261,13 +266,22 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
     fun setExcludeRects(rects: List<Rect>) {
         if (rects == excludeRects) return
         excludeRects = rects
-        if (width > 0 && useOnyx) reopenHelper()
+        scheduleReopen()
     }
     private var excludeRects: List<Rect> = emptyList()
 
     fun setPageArea(rect: Rect) {
+        if (rect == pageArea) return
         pageArea = rect
-        if (width > 0 && useOnyx) reopenHelper()
+        scheduleReopen()
+    }
+
+    // Re-opening the Onyx raw-drawing layer is slow, so changes made together (page area, excluded buttons) share one reopen.
+    private val reopenTask = Runnable { if (width > 0 && useOnyx) reopenHelper() }
+    private fun scheduleReopen() {
+        if (!useOnyx) return
+        removeCallbacks(reopenTask)
+        postDelayed(reopenTask, 60)
     }
     private var pageArea: Rect? = null
 
@@ -404,7 +418,7 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         val holder = holder
         val surface = holder.surface ?: return
         if (!surface.isValid) return
-        val canvas = runCatching { holder.lockCanvas() }.getOrNull() ?: return
+        val canvas = lock() ?: return
         try {
             canvas.drawColor(Color.WHITE)
             bitmap?.let { canvas.drawBitmap(it, bitmapLeft, 0f, null) }

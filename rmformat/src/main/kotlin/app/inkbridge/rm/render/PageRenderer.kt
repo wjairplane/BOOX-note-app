@@ -74,15 +74,19 @@ class PageRenderer(private val tree: SceneTree) {
     }
 
     /** Draw the page's strokes with the firmware's pen renderer, bottom layer first. */
-    fun renderInk(ink: PixelInk, tf: PixelInk.Transform, paletteMode: Int = 0) = inkGroup(tree.root, 0f, 0f, ink, tf, paletteMode)
+    fun renderInk(ink: PixelInk, tf: PixelInk.Transform, paletteMode: Int = 0) {
+        val items = ArrayList<PixelInk.Placed>()
+        inkGroup(tree.root, 0f, 0f, items)
+        ink.drawLines(items, tf, paletteMode)
+    }
 
-    private fun inkGroup(g: Group, ox: Float, oy: Float, ink: PixelInk, tf: PixelInk.Transform, paletteMode: Int) {
+    private fun inkGroup(g: Group, ox: Float, oy: Float, out: MutableList<PixelInk.Placed>) {
         for (c in g.childItems()) when (c) {
             is Group -> if (c.visible.value) {
                 val (ax, ay) = anchorOffset(c)
-                inkGroup(c, ox + ax, oy + ay, ink, tf, paletteMode)
+                inkGroup(c, ox + ax, oy + ay, out)
             }
-            is Line -> ink.drawLine(c, ox, oy, tf, paletteMode)
+            is Line -> out += PixelInk.Placed(c, ox, oy)
             is GlyphRange -> Unit
         }
     }
