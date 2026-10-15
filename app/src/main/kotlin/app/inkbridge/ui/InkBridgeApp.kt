@@ -87,7 +87,7 @@ private fun Modifier.globalSwipes(enabled: Boolean, pixelsPerCm: Float, onQuickS
                 for (c in down) if (c.id !in starts && c.position.y <= zone) starts[c.id] = c.position
                 val moved = down.filter { it.id in starts }.map { it.position.y - starts.getValue(it.id).y }
                 if (down.size == 2 && moved.size == 2 && moved.all { it >= 0.3f * pixelsPerCm }) { fired = true; onDrawer() }
-                else if (down.size == 1 && moved.size == 1 && moved[0] >= pixelsPerCm && starts.getValue(down[0].id).x >= size.width - minOf(400f, size.width / 3f)) { fired = true; onQuickSettings() }
+                else if (down.size == 1 && moved.size == 1 && moved[0] >= 0.3f * pixelsPerCm && starts.getValue(down[0].id).x >= size.width - minOf(400f, size.width / 3f)) { fired = true; onQuickSettings() }
             }
         }
     }

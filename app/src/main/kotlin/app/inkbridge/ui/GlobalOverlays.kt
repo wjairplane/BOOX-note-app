@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -117,30 +118,40 @@ fun BatteryIndicator(percent: Int, highlighted: Boolean = percent <= 10, modifie
     }
 }
 
-/** The quick settings panel: battery level, then Wi-Fi, a screen refresh and Settings. Anything outside it closes it. */
+/**
+ * The quick settings panel (xochitl `00e31b12`): hugs the top-right corner with a 2 px border on its left and bottom; a 120 px battery
+ * row (percentage, the five-bar icon; press and hold opens the battery settings), then a grid of 112 px icon toggles with 48 px side
+ * padding. Anything outside it closes it.
+ */
 @Composable
 fun QuickSettingsPanel(app: AppController, onClose: () -> Unit, onRefresh: () -> Unit) {
     val context = LocalContext.current
     val (percent, charging) = rememberBattery()
+    fun open(intent: Intent) { runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
     Box(Modifier.fillMaxSize().tap(onClick = onClose)) {
-        Column(
-            Modifier.align(Alignment.TopEnd).width(520.dp).background(Ink.White).tap { }
-                .drawBehind2(left = true, bottom = true),
-        ) {
-            Row(Modifier.fillMaxWidth().height(Rm.NavigationHeader).padding(horizontal = 48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
-                if (charging) Text("Charging", style = RmText.Caption, modifier = Modifier.padding(end = 16.dp))
-                Text("$percent%", style = RmText.Label, modifier = Modifier.padding(end = 16.dp))
+        Column(Modifier.align(Alignment.TopEnd).background(Ink.White).tap { }.drawBehind2(left = true, bottom = true).padding(horizontal = 48.dp)) {
+            Row(
+                Modifier.fillMaxWidth().height(Rm.NavigationHeader).pointerInput(Unit) {
+                    detectTapGestures(onTap = { onClose() }, onLongPress = { onClose(); open(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS)) })
+                },
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End,
+            ) {
+                Text(if (charging) "$percent %  +" else "$percent %", style = RmText.Label, modifier = Modifier.padding(end = 16.dp))
                 BatteryIndicator(percent)
             }
             Rule()
-            RmFoldoutItem("Wi-Fi", {
-                onClose()
-                val panel = if (android.os.Build.VERSION.SDK_INT >= 29) Intent(Settings.Panel.ACTION_INTERNET_CONNECTIVITY) else Intent(Settings.ACTION_WIFI_SETTINGS)
-                runCatching { context.startActivity(panel.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-                    .onFailure { runCatching { context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
-            }, topDivider = false, chevron = true) { Image(painterResource(R.drawable.rm_wifi_3), null, Modifier.size(Rm.Icon), colorFilter = ColorFilter.tint(it)) }
-            RmFoldoutItem("Refresh screen", { onClose(); onRefresh() }, topDivider = true) { InkIcons.Refresh(tint = it) }
-            RmFoldoutItem("Settings", { onClose(); app.screen = Screen.Settings }, topDivider = true) { InkIcons.Cog(tint = it) }
+            Spacer(Modifier.height(32.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(32.dp), modifier = Modifier.padding(bottom = 48.dp)) {
+                @Composable fun toggle(label: String, on: () -> Unit, icon: @Composable (Color) -> Unit) {
+                    Box(Modifier.size(Rm.ToolButton).border(Rm.Outline, Ink.Black).tap(onClick = on).semantics { contentDescription = label }, contentAlignment = Alignment.Center) { icon(Ink.Black) }
+                }
+                toggle("Wi-Fi", {
+                    onClose()
+                    open(if (android.os.Build.VERSION.SDK_INT >= 29) Intent(Settings.Panel.ACTION_INTERNET_CONNECTIVITY) else Intent(Settings.ACTION_WIFI_SETTINGS))
+                }) { Image(painterResource(R.drawable.rm_wifi_3), null, Modifier.size(Rm.Icon), colorFilter = ColorFilter.tint(it)) }
+                toggle("Refresh screen", { onClose(); onRefresh() }) { InkIcons.Refresh(tint = it) }
+                toggle("Settings", { onClose(); app.screen = Screen.Settings }) { InkIcons.Cog(tint = it) }
+            }
         }
     }
 }
@@ -155,8 +166,9 @@ private fun Modifier.drawBehind2(left: Boolean = false, bottom: Boolean = false)
 )
 
 /**
- * The document drawer: a sheet hanging from the top edge with Recent and Favorites tabs and a row of document thumbnails.
- * Tapping one opens it; tapping below the sheet closes it.
+ * The document drawer (xochitl `00cbcb2c`): a sheet hanging from the top edge with Recent and Favorites tabs, a single row of thumbnails
+ * (4 across, the next ones peeking in at the sides, stepping a page at a time) and a 4 px black line. Tapping a document opens it;
+ * tapping below the sheet closes it.
  */
 @Composable
 fun DocumentDrawer(app: AppController, activeId: String?, onClose: () -> Unit) {
@@ -165,22 +177,33 @@ fun DocumentDrawer(app: AppController, activeId: String?, onClose: () -> Unit) {
     val shown = (if (tab == 0) docs.sortedByDescending { it.lastModified } else docs.filter { it.pinned }.sortedByDescending { it.lastModified }).take(12)
     Box(Modifier.fillMaxSize().tap(onClick = onClose)) {
         Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().background(Ink.White).tap { }) {
-            Row(Modifier.fillMaxWidth().height(Rm.ToolButton)) {
+            Row(Modifier.fillMaxWidth()) {
                 listOf("Recent", "Favorites").forEachIndexed { i, label ->
-                    Box(
-                        Modifier.weight(1f).fillMaxHeight().background(if (tab == i) Ink.Black else Ink.White).tap { tab = i }.semantics { contentDescription = label },
-                        contentAlignment = Alignment.Center,
-                    ) { Text(label, style = RmText.LabelLg, color = if (tab == i) Ink.White else Ink.Black) }
+                    Box(Modifier.width(230.dp).height(Rm.ToolButton).tap { tab = i }.semantics { contentDescription = label }, contentAlignment = Alignment.Center) {
+                        Text(label, style = if (tab == i) RmText.LabelLgStrong else RmText.LabelLg)
+                        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(if (tab == i) 6.dp else 2.dp).background(Ink.Black))
+                    }
                 }
+                Box(Modifier.weight(1f).height(Rm.ToolButton)) { Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(2.dp).background(Ink.Black)) }
             }
-            Rule()
-            Box(Modifier.fillMaxWidth().height(480.dp), contentAlignment = Alignment.Center) {
-                if (shown.isEmpty()) Text(if (tab == 0) "No recent documents" else "No favorited documents", style = RmText.BodyLg, textAlign = TextAlign.Center)
-                else LazyRow(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(32.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 40.dp, vertical = 32.dp)) {
-                    items(shown, key = { it.id }) { e ->
-                        Column(Modifier.width(280.dp).tap { onClose(); app.screen = Screen.Notebook(e.id, 0) }.semantics { contentDescription = e.name }) {
-                            Thumb(app, e, Modifier.fillMaxWidth().aspectRatio(312f / 416f))
-                            Text(e.name, style = RmText.Label, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 12.dp))
+            Spacer(Modifier.height(20.dp))
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val full = maxWidth
+                val visible = Math.ceil(((full.value - 342f * 0.4f * 1.2f) / 342f).toDouble()).toInt().coerceAtLeast(1)
+                val cellW = (full.value / (visible + 0.4f)).dp
+                val cellH = (cellW.value * 510f / 342f).dp
+                Box(Modifier.fillMaxWidth().height(cellH + 32.dp), contentAlignment = Alignment.Center) {
+                    if (shown.isEmpty()) Text(if (tab == 0) "No recent documents" else "No favorited documents", style = RmText.BodyLg, textAlign = TextAlign.Center)
+                    else {
+                        val state = androidx.compose.foundation.lazy.rememberLazyListState()
+                        LazyRow(Modifier.fillMaxSize(), state = state, flingBehavior = androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior(state), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = cellW * 0.2f, vertical = 16.dp)) {
+                            items(shown, key = { it.id }) { e ->
+                                Column(Modifier.width(cellW).padding(15.dp).tap { onClose(); app.screen = Screen.Notebook(e.id, 0) }.semantics { contentDescription = e.name }) {
+                                    Thumb(app, e, Modifier.fillMaxWidth().aspectRatio(312f / 416f))
+                                    Text(e.name, style = RmText.Label, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 8.dp))
+                                    Text("${e.pageIds.size} pages", style = RmText.Caption, maxLines = 1)
+                                }
+                            }
                         }
                     }
                 }

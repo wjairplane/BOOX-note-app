@@ -106,10 +106,9 @@ class FingerGestures(private val pixelsPerCm: Float, private val host: Host) {
         if (horizontal && abs(dx) >= LONG_SWIPE_CM * cm && startedAwayFromEdges()) {
             mode = Mode.DONE; host.onPageSwipe(forward = dx < 0); return
         }
-        if (vertical && dy >= EDGE_SWIPE_CM * cm && startY < edge) {
-            mode = Mode.DONE
-            host.onEdgeSwipe(if (startX >= host.viewWidth - quickSettingsWidth) Edge.QUICK_SETTINGS else Edge.CLOSE); return
-        }
+        val inCorner = startX >= host.viewWidth - minOf(quickSettingsWidth, host.viewWidth / 3f)
+        if (vertical && startY < edge && inCorner && dy >= DRAWER_SWIPE_CM * cm) { mode = Mode.DONE; host.onEdgeSwipe(Edge.QUICK_SETTINGS); return }
+        if (vertical && dy >= EDGE_SWIPE_CM * cm && startY < edge && !inCorner) { mode = Mode.DONE; host.onEdgeSwipe(Edge.CLOSE); return }
         if (vertical && -dy >= EDGE_SWIPE_CM * cm && startY > host.viewHeight - edge) {
             mode = Mode.DONE; host.onEdgeSwipe(Edge.QUICK_BROWSE)
         }
