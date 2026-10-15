@@ -285,7 +285,8 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         // Live preview style only (what is saved comes from our own pen model). Guesses; tune on the device.
         helper.setStrokeStyle(
             when (tool.tool) {
-                PenTool.FINELINER, PenTool.MECHANICAL_PENCIL, PenTool.SELECTION, PenTool.ERASE_AREA -> TouchHelper.STROKE_STYLE_PENCIL   // constant width
+                PenTool.SELECTION, PenTool.ERASE_AREA -> TouchHelper.STROKE_STYLE_DASH                                       // the lasso is a dotted line
+                PenTool.FINELINER, PenTool.MECHANICAL_PENCIL -> TouchHelper.STROKE_STYLE_PENCIL   // constant width
                 PenTool.MARKER, PenTool.HIGHLIGHTER -> TouchHelper.STROKE_STYLE_MARKER
                 PenTool.PENCIL -> TouchHelper.STROKE_STYLE_CHARCOAL
                 PenTool.PAINTBRUSH -> TouchHelper.STROKE_STYLE_NEO_BRUSH

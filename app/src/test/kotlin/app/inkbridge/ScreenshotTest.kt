@@ -50,6 +50,9 @@ import java.io.File
 class ScreenshotTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
 
+    @org.junit.Before fun transparentRoot() { app.inkbridge.ui.RootBackground = androidx.compose.ui.graphics.Color.Transparent; rule.activity.window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)) }
+    @org.junit.After fun opaqueRoot() { app.inkbridge.ui.RootBackground = androidx.compose.ui.graphics.Color.White }
+
     /**
      * Draw the whole window into a PNG, plus any popup windows (menus) on top of it at their own positions.
      * (Compose's captureToImage waits for a draw callback Robolectric never sends.)
@@ -58,14 +61,16 @@ class ScreenshotTest {
         val decor = rule.activity.window.decorView
         val bmp = android.graphics.Bitmap.createBitmap(decor.width.coerceAtLeast(1), decor.height.coerceAtLeast(1), android.graphics.Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(bmp)
-        decor.draw(canvas)
+        canvas.drawColor(android.graphics.Color.WHITE)
         // The page itself lives on a SurfaceView, which a view capture leaves out: lay its bitmap over the capture, darkest wins
         // (so the toolbar and menus drawn by Compose stay on top of the white page).
         findSurface(decor)?.takeIf { !(name.startsWith("template_picker") || name.startsWith("overview") || name.startsWith("dialog_delete_page")) }?.let { v ->
             val bitmap = v.shownBitmap ?: return@let
             val at = IntArray(2).also { v.getLocationInWindow(it) }
-            canvas.drawBitmap(bitmap, at[0].toFloat(), at[1].toFloat(), android.graphics.Paint().apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DARKEN) })
+            canvas.drawBitmap(bitmap, at[0].toFloat(), at[1].toFloat(), null)
         }
+        // As on the device the page is underneath: everything Compose draws (toolbar, panels, menus) goes on top of it.
+        decor.draw(canvas)
         runCatching {
             val wmg = Class.forName("android.view.WindowManagerGlobal")
             val global = wmg.getMethod("getInstance").invoke(null)

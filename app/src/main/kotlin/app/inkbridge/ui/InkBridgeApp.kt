@@ -17,6 +17,9 @@ import app.inkbridge.Prefs
 import app.inkbridge.Screen
 import app.inkbridge.Section
 
+/** The root fill; the screenshot tests make it transparent so the pen surface (drawn underneath, as on the device) shows through the page. */
+internal var RootBackground: androidx.compose.ui.graphics.Color = Ink.White
+
 @Composable
 fun InkBridgeApp(store: LibraryStore, prefs: Prefs, controller: AppController? = null) {
     RmDensity {
@@ -28,7 +31,7 @@ fun InkBridgeApp(store: LibraryStore, prefs: Prefs, controller: AppController? =
         val pixelsPerCm = (res.displayMetrics.xdpi.takeIf { it > 50f } ?: (160f * res.displayMetrics.density)) / 2.54f
         // The firmware's global gestures: two fingers down from the top edge (the document drawer) and one finger down from the
         // top-right corner (quick settings) work on every screen; in a notebook the page surface reports them itself.
-        Surface(Modifier.fillMaxSize().globalSwipes(app.screen !is Screen.Notebook && app.overlay == null, pixelsPerCm, { app.overlay = Overlay.QUICK_SETTINGS }, { app.overlay = Overlay.DRAWER }), color = Ink.White) {
+        Surface(Modifier.fillMaxSize().globalSwipes(app.screen !is Screen.Notebook && app.overlay == null, pixelsPerCm, { app.overlay = Overlay.QUICK_SETTINGS }, { app.overlay = Overlay.DRAWER }), color = RootBackground) {
 
             when (val s = app.screen) {
                 is Screen.Files -> {

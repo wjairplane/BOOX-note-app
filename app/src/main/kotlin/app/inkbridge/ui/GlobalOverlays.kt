@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -129,7 +130,7 @@ fun QuickSettingsPanel(app: AppController, onClose: () -> Unit, onRefresh: () ->
     val (percent, charging) = rememberBattery()
     fun open(intent: Intent) { runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
     Box(Modifier.fillMaxSize().tap(onClick = onClose)) {
-        Column(Modifier.align(Alignment.TopEnd).background(Ink.White).tap { }.drawBehind2(left = true, bottom = true).padding(horizontal = 48.dp)) {
+        Column(Modifier.align(Alignment.TopEnd).width(androidx.compose.foundation.layout.IntrinsicSize.Max).background(Ink.White).tap { }.drawBehind2(left = true, bottom = true).padding(horizontal = 48.dp)) {
             Row(
                 Modifier.fillMaxWidth().height(Rm.NavigationHeader).pointerInput(Unit) {
                     detectTapGestures(onTap = { onClose() }, onLongPress = { onClose(); open(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS)) })
@@ -230,7 +231,7 @@ fun PageSlider(app: AppController, doc: LibraryEntry, current: Int, bottomInset:
                 .background(Ink.White).border(Rm.Outline, Ink.Black).tap { }.padding(horizontal = 40.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(doc.name, style = RmText.LabelLg, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 16.dp))
+            Text(doc.name, style = RmText.LabelLg, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.padding(bottom = 16.dp))
             if (pressed) {
                 Row(horizontalArrangement = Arrangement.spacedBy(24.dp), verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(bottom = 16.dp)) {
                     for (p in listOf(picked - 1, picked, picked + 1)) {
@@ -244,14 +245,16 @@ fun PageSlider(app: AppController, doc: LibraryEntry, current: Int, bottomInset:
                     }
                 }
             }
-            Text("${picked + 1} of ${last + 1}", style = RmText.Label, modifier = Modifier.padding(bottom = 8.dp))
-            // The track: a 2 px line with a round handle that follows the finger.
+            // The track: a line with a round handle that carries the page number and follows the finger; first and last page at its ends.
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            val handle = 72.dp
+            val handlePx = with(density) { handle.toPx() }
             Box(
-                Modifier.fillMaxWidth().height(80.dp).onSizeChanged { size = it }.pointerInput(last) {
+                Modifier.fillMaxWidth().height(handle).onSizeChanged { size = it }.pointerInput(last) {
                     awaitEachGesture {
                         val down = awaitFirstDown()
                         pressed = true
-                        fun at(x: Float) { val w = size.width.toFloat().coerceAtLeast(1f); picked = ((x / w) * last + 0.5f).toInt().coerceIn(0, last) }
+                        fun at(x: Float) { val usable = (size.width - handlePx).coerceAtLeast(1f); picked = (((x - handlePx / 2) / usable) * last + 0.5f).toInt().coerceIn(0, last) }
                         at(down.position.x)
                         while (true) {
                             val ev = awaitPointerEvent()
@@ -265,15 +268,18 @@ fun PageSlider(app: AppController, doc: LibraryEntry, current: Int, bottomInset:
                 }.semantics { contentDescription = "Page slider" },
                 contentAlignment = Alignment.CenterStart,
             ) {
-                Box(Modifier.fillMaxWidth().height(2.dp).background(Ink.Black))
+                Box(Modifier.padding(horizontal = handle / 2).fillMaxWidth().height(4.dp).background(Ink.Black))
                 val frac = if (last == 0) 0f else picked.toFloat() / last
-                val handle = 56.dp
-                Box(Modifier.padding(start = ((size.width / androidx.compose.ui.platform.LocalDensity.current.density - handle.value) * frac).dp).size(handle).clip(CircleShape).background(Ink.Black))
+                Box(Modifier.offset { androidx.compose.ui.unit.IntOffset(((size.width - handlePx) * frac).toInt(), 0) }.size(handle).clip(CircleShape).background(Ink.Black), contentAlignment = Alignment.Center) {
+                    Text("${picked + 1}", style = RmText.LabelLg, color = Ink.White)
+                }
+            }
+            Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("1", style = RmText.Caption); Text("${last + 1}", style = RmText.Caption)
             }
         }
     }
 }
-
 
 /**
  * The zoom button: a white, borderless button showing the fit icon and the zoom level ("1.5x"); a tap snaps back to the whole page.
