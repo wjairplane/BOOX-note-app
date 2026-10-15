@@ -52,12 +52,28 @@ class PageEditorTest {
         assertEquals(1, tomb.deletedLength)
         assertNull(tomb.value); assertNull(tomb.itemType)
         assertTrue(lines(PageEditor.fromBytes(ed.toBytes()).tree).none { it === target.line })
-        assertEquals(10 - erased, lines(PageEditor.fromBytes(ed.toBytes()).tree).size)
+        // Only the part under the eraser goes: the stroke is cut in two, and both halves stay (shorter than the original).
+        val after = lines(PageEditor.fromBytes(ed.toBytes()).tree).toList()
+        assertTrue(after.size > 10 - erased) // something of the touched stroke is left
+        assertTrue(after.any { it.tool == target.line.tool && it.points.size < target.line.points.size && it.points.size >= 2 })
 
         assertTrue(ed.undo())
         assertArrayEquals(original, ed.toBytes())
         assertTrue(ed.redo())
-        assertEquals(10 - erased, lines(ed.tree).size)
+        assertTrue(lines(ed.tree).count() > 10 - erased)
+    }
+
+    @Test fun eraserLeavesTheRestOfALongStroke() {
+        val ed = PageEditor.blank()
+        ed.addStroke(PenSpec(PenTool.FINELINER, thickness = 2), (0..60).map { InputPoint(100f + it * 10f, 300f, 0.6f, 0f, 0f, it * 5L) })
+        val before = lines(ed.tree).single().points.size
+        assertEquals(1, ed.eraseAlong(listOf(400f to 300f, 420f to 300f), radius = 15f))
+        val parts = lines(ed.tree).toList()
+        assertEquals(2, parts.size)
+        assertTrue(parts.all { it.points.size in 2 until before })
+        assertTrue(parts.maxOf { p -> p.points.maxOf { it.x } } > 650f && parts.minOf { p -> p.points.minOf { it.x } } < 150f)
+        // Nowhere near the stroke: nothing changes.
+        assertEquals(0, ed.eraseAlong(listOf(400f to 900f), radius = 15f))
     }
 
     @Test fun eraseAllRemovesEveryStrokeInOneUndoStep() {

@@ -78,6 +78,10 @@ class Prefs(context: Context) {
     fun toolbarFor(landscape: Boolean) = if (landscape) toolbarLandscape else toolbarPosition
     fun setToolbarFor(landscape: Boolean, v: ToolbarPosition) { if (landscape) toolbarLandscape = v else toolbarPosition = v }
 
+    private var _exact by mutableStateOf(sp.getBoolean("penExact", true))
+    /** "Pen preview: Exact": the stroke is drawn by the app with the firmware's pen renderer while writing (instead of the Onyx SDK's trail). */
+    var penExact: Boolean get() = _exact; set(v) { _exact = v; sp.edit().putBoolean("penExact", v).apply() }
+
     private var _shapes by mutableStateOf(sp.getBoolean("shapes", true))
     /** "Enable shapes": hold at the end of a stroke to turn it into a clean shape. */
     var shapesEnabled: Boolean get() = _shapes; set(v) { _shapes = v; sp.edit().putBoolean("shapes", v).apply() }

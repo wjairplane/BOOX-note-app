@@ -319,6 +319,7 @@ class PageSession(
     @Synchronized
     fun addStroke(spec: PenSpec, samples: List<PenSample>, select: Boolean = false): Boolean {
         val t = transform ?: return false
+        lastStrokeRect = null
         val added = editor.addStroke(spec, samples.map { toInput(t, it) }) ?: return false
         if (select) { selection = setOf(added.itemId); redrawAll(); return true }
         val layer = ink; val base = basePx; val shown = shownPx; val bmp = bitmap; val tf = inkTransform()
@@ -326,12 +327,71 @@ class PageSession(
         layer.drawLine(added.line, added.ox, added.oy, tf)
         if (layer.isDirty) {
             val l = layer.dirtyLeft; val tp = layer.dirtyTop; val r = layer.dirtyRight + 1; val b = layer.dirtyBottom + 1
+            lastStrokeRect = android.graphics.Rect(l, tp, r, b)
             layer.compositeInto(base, shown, l, tp, r, b)
             bmp.setPixels(shown, tp * bmp.width + l, bmp.width, l, tp, r - l, b - tp)
             layer.resetDirty()
         }
         return true
     }
+
+    // ---- the stroke being written (drawn live with the firmware pen renderer while the pen is still down) ----
+
+    private var liveInk: PixelInk? = null
+    private var liveOut: IntArray? = null
+    private var liveBounds: android.graphics.Rect? = null
+
+    /**
+     * Draw the stroke written so far ([samples], view px) over the page without adding it. Returns the view rectangle the panel must
+     * refresh: around the points from [from] on (the part that is new), or null if nothing was drawn.
+     */
+    @Synchronized
+    fun previewStroke(spec: PenSpec, samples: List<PenSample>, from: Int): android.graphics.Rect? {
+        val t = transform ?: return null
+        val bmp = bitmap ?: return null
+        val shown = shownPx ?: return null
+        val tf = inkTransform() ?: return null
+        if (samples.size < 2) return null
+        val added = editor.previewLine(spec, samples.map { toInput(t, it) }) ?: return null
+        val w = bmp.width; val h = bmp.height
+        val live = (if (liveInk?.width == w && liveInk?.height == h) liveInk else null) ?: PixelInk(w, h).also { liveInk = it }
+        val out = (if (liveOut?.size == w * h) liveOut else null) ?: IntArray(w * h).also { liveOut = it }
+        // Take back what the previous frame drew, then draw the stroke from the start (so joins and caps are exactly the firmware's).
+        liveBounds?.let { b -> live.clearRect(b.left, b.top, b.right, b.bottom) }
+        live.resetDirty()
+        live.drawLine(added.line, added.ox, added.oy, tf)
+        if (!live.isDirty) return null
+        val now = android.graphics.Rect(live.dirtyLeft, live.dirtyTop, live.dirtyRight + 1, live.dirtyBottom + 1)
+        val union = android.graphics.Rect(now).also { r -> liveBounds?.let { r.union(it) } }
+        live.compositeInto(shown, out, union.left, union.top, union.right, union.bottom)
+        bmp.setPixels(out, union.top * w + union.left, w, union.left, union.top, union.width(), union.height())
+        liveBounds = now
+        // The panel only needs the newest part: the points since the last frame, padded by the pen's width.
+        var l = Float.MAX_VALUE; var tp = Float.MAX_VALUE; var r = -Float.MAX_VALUE; var b = -Float.MAX_VALUE
+        for (i in (from - 3).coerceAtLeast(0) until samples.size) { l = minOf(l, samples[i].x); r = maxOf(r, samples[i].x); tp = minOf(tp, samples[i].y); b = maxOf(b, samples[i].y) }
+        val pad = (spec.thickness * 8f + 12f) * t.scale + 6f
+        return android.graphics.Rect((l - pad).toInt(), (tp - pad).toInt(), (r + pad).toInt() + 1, (b + pad).toInt() + 1).also { it.intersect(0, 0, w, h) }
+    }
+
+    /** Remove the live stroke from the picture (the finished stroke is added next, or the gesture was cancelled). */
+    @Synchronized
+    fun endPreview(): android.graphics.Rect? {
+        val b = liveBounds ?: return null
+        liveBounds = null
+        val bmp = bitmap ?: return null
+        val shown = shownPx ?: return null
+        liveInk?.clearRect(b.left, b.top, b.right, b.bottom)
+        liveInk?.resetDirty()
+        val w = bmp.width
+        bmp.setPixels(shown, b.top * w + b.left, w, b.left, b.top, b.width(), b.height())
+        return b
+    }
+
+    /** The view rectangle [addStroke] last changed on the bitmap (for refreshing just that part of the panel). */
+    @Volatile private var lastStrokeRect: android.graphics.Rect? = null
+
+    /** The rectangle the last [addStroke] changed (once); null after any other edit, meaning the whole page may have changed. */
+    fun takeStrokeRect(): android.graphics.Rect? = lastStrokeRect.also { lastStrokeRect = null }
 
     /** Erase strokes touched by the dragged view-pixel [samples]. Returns true if anything was erased. */
     @Synchronized

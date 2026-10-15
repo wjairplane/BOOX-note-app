@@ -366,6 +366,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 excludeRects = blockers.rects(),
                 blockers = blockers,
                 shapes = prefs.shapesEnabled,
+                exactPen = prefs.penExact,
                 onSelectBelow = { selecting = true; erasing = false; panel = false; eraserMenu = false },
                 onEdgeSwipe = { edge ->
                     panel = false; menu = false; eraserMenu = false; layersMenu = false
@@ -395,7 +396,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
 
             // "Page X of Y": a white 258 x 72 label at the bottom centre for four seconds after the page changes.
             LaunchedEffect(pageIndex, doc.pageIds.size) { pageLabelVisible = true; kotlinx.coroutines.delay(4000); pageLabelVisible = false }
-            if (pageLabelVisible && !overview && message.isEmpty()) {
+            if ((pageLabelVisible || slider) && !overview && message.isEmpty()) {
                 Box(Modifier.align(Alignment.BottomCenter).padding(bottom = if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp).size(258.dp, 72.dp).background(Ink.White), contentAlignment = Alignment.Center) {
                     Text("Page ${pageIndex + 1} of ${doc.pageIds.size}", style = RmText.Label)
                 }
@@ -425,6 +426,15 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     Box(Modifier.fillMaxSize().onSizeChanged { rootSize = it }) {
         // The page fills the screen and the toolbar floats over it.
         Box(Modifier.fillMaxSize()) { page() }
+        // Quick browse sits over the page but under the toolbar, as in the firmware.
+        if (slider) PageSlider(
+            app, doc, pageIndex, portrait = !landscape,
+            bottomExtra = (if (message.isNotEmpty()) 72.dp else 0.dp) + (if (pos == ToolbarPosition.BOTTOM && !collapsed) TOOLBAR_THICKNESS else 0.dp),
+            startInset = if (pos == ToolbarPosition.LEFT && !collapsed) TOOLBAR_THICKNESS else 0.dp,
+            endInset = if (pos == ToolbarPosition.RIGHT && !collapsed) TOOLBAR_THICKNESS else 0.dp,
+            topInset = if (pos == ToolbarPosition.TOP && !collapsed) TOOLBAR_THICKNESS else 0.dp,
+            onPick = { slider = false; goTo(it) }, onClose = { slider = false },
+        )
         Box(
             Modifier.align(when (pos) { ToolbarPosition.TOP -> Alignment.TopStart; ToolbarPosition.BOTTOM -> Alignment.BottomStart; ToolbarPosition.LEFT -> Alignment.TopStart; ToolbarPosition.RIGHT -> Alignment.TopEnd })
                 .then(if (horizontal) Modifier.fillMaxWidth() else Modifier.fillMaxHeight()),
@@ -464,8 +474,6 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
 
         if (notebookSettings) NotebookSettingsScreen(app, doc, onDismiss = { notebookSettings = false })
         if (tagsScreen) DocumentTagsScreen(app, doc, onDismiss = { tagsScreen = false })
-
-        if (slider) PageSlider(app, doc, pageIndex, if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp, if (pos == ToolbarPosition.LEFT) TOOLBAR_THICKNESS else 0.dp, if (pos == ToolbarPosition.RIGHT) TOOLBAR_THICKNESS else 0.dp, onPick = { slider = false; goTo(it) }, onClose = { slider = false })
 
         if (templatePicker) TemplatePickerScreen(doc.template, onPick = { templatePicker = false; save(session); app.setTemplate(doc, it) }, onBack = { templatePicker = false })
 
@@ -511,7 +519,7 @@ private fun PageArea(
     selecting: Boolean, selectionRect: android.graphics.RectF?, onSelectionRect: (android.graphics.RectF?) -> Unit, onSelectionAction: (String) -> Unit,
     onSurface: (PenSurface?) -> Unit, onChanged: () -> Unit, onSwipe: (Boolean) -> Unit,
     excludeRects: List<Rect>, onFingerTap: (Int) -> Unit, blockers: PenBlockers,
-    onEdgeSwipe: (FingerGestures.Edge) -> Unit, onSelectBelow: () -> Unit, shapes: Boolean,
+    onEdgeSwipe: (FingerGestures.Edge) -> Unit, onSelectBelow: () -> Unit, shapes: Boolean, exactPen: Boolean,
 ) {
     val currentOnEdge by rememberUpdatedState(onEdgeSwipe)
     val currentShapes by rememberUpdatedState(shapes)
@@ -555,10 +563,11 @@ private fun PageArea(
 
         LaunchedEffect(surface, excludeRects) { surface?.setExcludeRects(excludeRects) }
 
-        LaunchedEffect(surface, spec, drawing, session, layoutVersion, swipeEnabled, fingerDraws) {
+        LaunchedEffect(surface, spec, drawing, session, layoutVersion, swipeEnabled, fingerDraws, exactPen) {
             val view = surface ?: return@LaunchedEffect
             view.swipeEnabled = swipeEnabled
             view.fingerDraws = fingerDraws
+            view.exactMode = exactPen
             view.setTool(spec, session?.transform?.scale ?: 1f)
             view.penEnabled = drawing && session != null
         }
@@ -580,8 +589,14 @@ private fun PageArea(
                         val snapped = HoldGesture.resample(shape.points, body)
                         // The shape comes out selected, so it can be dragged, resized and rotated to fit.
                         val s = currentSession ?: return
-                        if (s.addStroke(surface?.currentSpec ?: return, snapped, select = true)) { surface?.refresh(); currentOnSelectBelow(); currentOnSelectionRect(s.selectionRect()); currentOnChanged() }
+                        if (s.addStroke(surface?.currentSpec ?: return, snapped, select = true)) { surface?.refresh(); s.takeStrokeRect(); currentOnSelectBelow(); currentOnSelectionRect(s.selectionRect()); currentOnChanged() }
                     }
+                    override fun onLiveStroke(samples: List<PenSample>, from: Int) {
+                        val s = currentSession ?: return
+                        val view = surface ?: return
+                        s.previewStroke(view.currentSpec, samples, from)?.let { view.refreshRect(it) }
+                    }
+                    override fun onLiveEnd() { currentSession?.endPreview() }
                     override fun onErase(samples: List<PenSample>) = apply(samples) { s, _ -> s.erase(samples, currentEraserRadius) }
                     override fun onSwipe(forward: Boolean) { currentOnSwipe(forward) }
                     override fun onFingerTap(fingers: Int) { currentOnFingerTap(fingers) }
@@ -612,7 +627,7 @@ private fun PageArea(
                         val s = currentSession ?: return
                         val view = surface ?: return
                         if (samples.isEmpty()) return
-                        if (edit(s, view.currentSpec)) { view.refresh(); currentOnChanged() }
+                        if (edit(s, view.currentSpec)) { if (view.exactMode) view.refreshRect(s.takeStrokeRect()) else view.refresh(); currentOnChanged() }
                     }
                 }).also { v ->
                     v.selectionFrameProvider = { currentSession?.selectionFrame() }
