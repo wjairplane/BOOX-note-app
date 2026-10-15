@@ -31,7 +31,6 @@ import app.inkbridge.Screen
 
 private sealed interface GuideView {
     data object Topics : GuideView
-    data object Gestures : GuideView
     data class Tutorial(val page: Int) : GuideView
 }
 
@@ -39,13 +38,12 @@ private sealed interface GuideView {
 fun GuidesScreen(app: AppController) {
     var view by remember { mutableStateOf<GuideView>(GuideView.Topics) }
     Column(Modifier.fillMaxSize()) {
-        val title = when (view) { GuideView.Topics -> "Guides"; GuideView.Gestures -> "Gestures"; is GuideView.Tutorial -> "Ways of working" }
+        val title = when (view) { GuideView.Topics -> "Guides"; is GuideView.Tutorial -> "Ways of working" }
         NavigationBar(title, onBack = { if (view == GuideView.Topics) app.screen = Screen.Files() else view = GuideView.Topics })
         when (val v = view) {
-            GuideView.Topics -> Topics(onGestures = { view = GuideView.Gestures }, onTutorial = { view = GuideView.Tutorial(0) })
-            GuideView.Gestures -> Gestures()
+            GuideView.Topics -> Topics(onTutorial = { view = GuideView.Tutorial(0) })
             is GuideView.Tutorial -> Box(Modifier.fillMaxSize()) {
-                Topics(onGestures = {}, onTutorial = {})
+                Topics(onTutorial = {})
                 Tutorial(v.page, onPage = { view = GuideView.Tutorial(it) }, onClose = { view = GuideView.Topics })
             }
         }
@@ -71,20 +69,6 @@ fun NavigationBar(title: String, onBack: () -> Unit) {
 private fun Illustration(@DrawableRes id: Int, width: Dp, height: Dp, modifier: Modifier = Modifier) =
     Image(painterResource(id), contentDescription = null, modifier = modifier.size(width, height), colorFilter = ColorFilter.tint(Ink.Black))
 
-/** A card (ArkControls.Card, horizontal design): 2 px border, 64 px padding, serif title, body text, a button, and the artwork. */
-@Composable
-private fun GuideCard(title: String, description: String, button: String, onClick: () -> Unit, @DrawableRes image: Int, modifier: Modifier = Modifier) {
-    Row(modifier.border(Rm.Outline, Ink.Black).padding(64.dp), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
-            Text(title, style = RmText.TitleMdAlt)
-            Text(description, style = RmText.Body)
-            EButton(button, onClick)
-        }
-        Spacer(Modifier.width(48.dp))
-        Illustration(image, 192.dp, 192.dp)
-    }
-}
-
 /** A card (ArkControls.Card, vertical design): the artwork on top, then the title, the text and a button pushed to the bottom. */
 @Composable
 private fun VerticalGuideCard(title: String, description: String, button: String, onClick: () -> Unit, @DrawableRes image: Int, modifier: Modifier = Modifier) {
@@ -98,51 +82,13 @@ private fun VerticalGuideCard(title: String, description: String, button: String
 }
 
 @Composable
-private fun Topics(onGestures: () -> Unit, onTutorial: () -> Unit) {
-    // Two columns (88 px margins, 64 px gaps): the gestures card across the width, then the tutorial in a half-width card.
+private fun Topics(onTutorial: () -> Unit) {
+    // Two columns (88 px margins, 64 px gaps): the tutorial in a half-width card.
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 88.dp, end = 88.dp, bottom = 59.dp), verticalArrangement = Arrangement.spacedBy(64.dp)) {
-        GuideCard("Gestures", "Overview of all the gestures that you can use to navigate, edit, and multitask.", "View all", onGestures, R.drawable.rm_ill_guides, Modifier.fillMaxWidth())
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(64.dp)) {
             VerticalGuideCard("Ways of working", "A four step guide on how to use your paper tablet and improve your workflow.", "Start tutorial", onTutorial, R.drawable.rm_ill_distraction_free_software_big, Modifier.weight(1f).fillMaxHeight())
             Spacer(Modifier.weight(1f))
         }
-    }
-}
-
-private data class Gesture(val title: String, val description: String, @DrawableRes val image: Int)
-
-/** The firmware's gesture groups and wording, for the gestures this app responds to. */
-private val GESTURE_GROUPS = listOf(
-    "Editing" to listOf(
-        Gesture("Undo", "Tap once with two fingers to take back your last change", R.drawable.rm_ill_undo),
-        Gesture("Redo", "Tap once with three fingers to make undone actions reappear", R.drawable.rm_ill_redo),
-        Gesture("Select item", "Press and hold with one finger to perform actions when selected", R.drawable.rm_ill_select_item),
-    ),
-    "Navigation" to listOf(
-        Gesture("Pan", "Slowly navigate inside documents with two fingers, dragging the page", R.drawable.rm_ill_pan),
-        Gesture("Zoom", "Pinch/spread two fingers to change the zoom level of pages", R.drawable.rm_ill_zoom),
-        Gesture("Flip page", "Swipe one finger horizontally to move between pages", R.drawable.rm_ill_flip_page),
-    ),
-)
-
-@Composable
-private fun Gestures() {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 88.dp)) {
-        GESTURE_GROUPS.forEachIndexed { gi, (group, gestures) ->
-            if (gi > 0) Box(Modifier.padding(vertical = 64.dp)) { Rule() }
-            Text(group, style = RmText.TitleLg, modifier = Modifier.padding(top = if (gi == 0) 64.dp else 0.dp))
-            // Three frameless vertical cards per row: the artwork, the title (28 Medium) and the description (25).
-            Row(Modifier.fillMaxWidth().padding(top = 32.dp), horizontalArrangement = Arrangement.spacedBy(64.dp)) {
-                gestures.forEach { g ->
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Illustration(g.image, 198.dp, 144.dp, Modifier.padding(bottom = 16.dp))
-                        Text(g.title, style = RmText.LabelLg)
-                        Text(g.description, style = RmText.BodySm)
-                    }
-                }
-            }
-        }
-        Spacer(Modifier.height(64.dp))
     }
 }
 
@@ -161,7 +107,7 @@ private val STEPS = listOf(
     )),
     Step("Touch gestures", R.drawable.rm_ill_touch_gestures, listOf("Browse pages and manage your files using your fingers. Find the full overview in Guides."), listOf(
         "To perform actions, press and hold the item",
-        "Swipe sideways to turn the page",
+        "Turn pages from the notebook menu or the page overview",
     )),
     Step("Writing and reading", R.drawable.rm_ill_writing_and_reading, listOf(
         "Pages of notebooks can be as long or short as you need, allowing you to focus and stay uninterrupted as you work.",

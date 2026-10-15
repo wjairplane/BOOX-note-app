@@ -98,9 +98,13 @@ private fun General(app: AppController, onStorage: () -> Unit) {
     Group("Template for new notebooks") {
         PageTemplate.entries.forEach { t -> ChoiceRow(t.label, p.defaultTemplate == t, { p.defaultTemplate = t }) }
     }
-    Column {
-        SwitchRow("Swipe to turn pages", p.swipeToTurn, { p.swipeToTurn = it }, "Swipe a finger left or right. Swiping left on the last page offers a new page.")
-        if (!app.isBoox) SwitchRow("Draw with finger", p.fingerDrawing, { p.fingerDrawing = it }, "For testing on devices without a stylus.")
+    if (!app.isBoox) SwitchRow("Draw with finger", p.fingerDrawing, { p.fingerDrawing = it }, "For testing on devices without a stylus.")
+    // Finger gestures are switched off so they can't clash with the device's own; this is the way out of the app.
+    val activity = androidx.compose.ui.platform.LocalContext.current.let { c -> generateSequence(c) { (it as? android.content.ContextWrapper)?.baseContext }.filterIsInstance<android.app.Activity>().firstOrNull() }
+    Group("Exit") {
+        Text("Close InkBridge and go back to the device's home screen. Your notebooks are saved.", style = RmText.Body)
+        Spacer(Modifier.height(8.dp))
+        EButton("Exit InkBridge", { activity?.finishAndRemoveTask() })
     }
 }
 

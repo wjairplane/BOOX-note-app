@@ -161,8 +161,6 @@ class ScreenshotTest {
         rule.onNodeWithText("Tags").performClick(); settle(); snapshot("tags_view")
         rule.onNodeWithContentDescription("Menu").performClick(); settle()
         rule.onNodeWithText("Guides").performClick(); settle(); snapshot("guides")
-        rule.onNodeWithText("View all").performClick(); settle(); snapshot("guides_gestures")
-        rule.onNodeWithContentDescription("Back").performClick(); settle()
         rule.onNodeWithText("Start tutorial").performClick(); settle(); snapshot("guides_tutorial")
         rule.runOnUiThread { app.screen = Screen.Files() }; settle()
 
