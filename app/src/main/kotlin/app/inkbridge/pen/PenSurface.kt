@@ -26,6 +26,10 @@ interface PenListener {
     fun onErase(samples: List<PenSample>)
     /** A finger swiped across the page: [forward] = towards the next page. */
     fun onSwipe(forward: Boolean) {}
+    /** A one-finger vertical swipe: scroll a screen [down] (or up) inside a zoomed page. */
+    fun onJump(down: Boolean) {}
+    /** A swipe from a screen edge: close the document, quick settings, the document drawer, quick browse. */
+    fun onEdgeSwipe(edge: FingerGestures.Edge) {}
     /** A quick tap with [fingers] (2 or 3) fingers: the tablet's undo / redo shortcuts. */
     fun onFingerTap(fingers: Int) {}
     /** A stroke made with the selection tool (a lasso, or a drag of the current selection). */
@@ -68,77 +72,47 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
     /** Let a finger draw as well; only honoured on non-Onyx devices (on a BOOX the stylus draws, the finger swipes). */
     var fingerDraws = false
 
-    private val gestures = android.view.GestureDetector(context, object : android.view.GestureDetector.SimpleOnGestureListener() {
-        override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {
-            if (!swipeEnabled || e1 == null) return false
-            val dx = e2.x - e1.x
-            val dy = e2.y - e1.y
-            // A deliberate, mostly horizontal swipe.
-            if (kotlin.math.abs(dx) > width * 0.18f && kotlin.math.abs(dx) > kotlin.math.abs(dy) * 1.6f) {
-                listener.onSwipe(forward = dx < 0)
-                return true
-            }
-            return false
-        }
-    })
-
-    // Pinch to zoom and drag with two fingers to pan. The page follows the fingers live (the bitmap is scaled and moved,
-    // drawn in a fast panel mode); when the fingers lift, the listener re-renders the page sharply at the new zoom.
+    // Finger gestures (the reMarkable's set: flip, jump, pinch / pan, undo / redo taps, edge swipes); see [FingerGestures].
     private var gestureScale = 1f
     private var gestureFocusX = 0f
     private var gestureFocusY = 0f
     private var gesturePanX = 0f
     private var gesturePanY = 0f
-    private var lastFocusX = 0f
-    private var lastFocusY = 0f
-    private var multiTouch = false
     private var lastPreviewMs = 0L
+    @Volatile private var lastPenMs = 0L
 
     /** The current zoom (1 = whole page), so the live pinch preview can stop where the real zoom would. */
     var zoomProvider: () -> Float = { 1f }
     private val zoomNow: Float get() = zoomProvider()
 
-    private val scaleDetector = android.view.ScaleGestureDetector(context, object : android.view.ScaleGestureDetector.SimpleOnScaleGestureListener() {
-        override fun onScaleBegin(d: android.view.ScaleGestureDetector): Boolean {
-            gestureScale = 1f; gesturePanX = 0f; gesturePanY = 0f
-            gestureFocusX = d.focusX; gestureFocusY = d.focusY; lastFocusX = d.focusX; lastFocusY = d.focusY
-            beginFastPreview()
-            return true
-        }
-        override fun onScale(d: android.view.ScaleGestureDetector): Boolean {
-            gestureScale = (gestureScale * d.scaleFactor).coerceIn(1f / zoomNow, MAX_ZOOM / zoomNow)
-            gesturePanX += d.focusX - lastFocusX; gesturePanY += d.focusY - lastFocusY
-            lastFocusX = d.focusX; lastFocusY = d.focusY
-            val now = android.os.SystemClock.uptimeMillis()
-            if (now - lastPreviewMs >= PREVIEW_INTERVAL_MS) { lastPreviewMs = now; drawZoomPreview() }
-            return true
-        }
-        override fun onScaleEnd(d: android.view.ScaleGestureDetector) {
-            endFastPreview()
-            if (kotlin.math.abs(gestureScale - 1f) > 0.04f || kotlin.math.hypot(gesturePanX, gesturePanY) > 24f) {
-                listener.onViewGesture(gestureScale, gestureFocusX, gestureFocusY, gesturePanX, gesturePanY)
-            } else draw()
-        }
-    })
-
-    // A quick tap with two or three fingers (undo / redo): short, and the fingers barely move.
-    private var tapStart = 0L
-    private var tapMaxFingers = 0
-    private var tapStartX = 0f
-    private var tapStartY = 0f
-    private var tapMoved = false
-    private fun trackFingerTap(e: MotionEvent) {
-        when (e.actionMasked) {
-            MotionEvent.ACTION_DOWN -> { tapStart = e.eventTime; tapMaxFingers = 1; tapStartX = e.x; tapStartY = e.y; tapMoved = false }
-            MotionEvent.ACTION_POINTER_DOWN -> tapMaxFingers = maxOf(tapMaxFingers, e.pointerCount)
-            MotionEvent.ACTION_MOVE -> if (kotlin.math.hypot(e.x - tapStartX, e.y - tapStartY) > 40f) tapMoved = true
-            MotionEvent.ACTION_UP -> {
-                if (!tapMoved && tapMaxFingers in 2..3 && e.eventTime - tapStart < 350) listener.onFingerTap(tapMaxFingers)
-                tapMaxFingers = 0
+    /** Gestures that need the finger to start near the edges are switched off with the swipes. */
+    private val fingerGestures = FingerGestures(
+        (resources.displayMetrics.xdpi.takeIf { it > 50f } ?: (160f * resources.displayMetrics.density)) / 2.54f,
+        object : FingerGestures.Host {
+            override val viewWidth: Int get() = width
+            override val viewHeight: Int get() = height
+            override fun msSincePen(): Long = android.os.SystemClock.uptimeMillis() - lastPenMs
+            override fun onTap(fingers: Int) = listener.onFingerTap(fingers)
+            override fun onPageSwipe(forward: Boolean) { if (swipeEnabled) listener.onSwipe(forward) }
+            override fun onJump(down: Boolean) = listener.onJump(down)
+            override fun onEdgeSwipe(edge: FingerGestures.Edge) = listener.onEdgeSwipe(edge)
+            override fun onViewBegin() {
+                gestureScale = 1f; gesturePanX = 0f; gesturePanY = 0f
+                beginFastPreview()
             }
-            MotionEvent.ACTION_CANCEL -> tapMaxFingers = 0
-        }
-    }
+            override fun onViewUpdate(scale: Float, focusX: Float, focusY: Float, panX: Float, panY: Float) {
+                gestureScale = scale.coerceIn(1f / zoomNow, MAX_ZOOM / zoomNow)
+                gestureFocusX = focusX; gestureFocusY = focusY; gesturePanX = panX; gesturePanY = panY
+                val now = android.os.SystemClock.uptimeMillis()
+                if (now - lastPreviewMs >= PREVIEW_INTERVAL_MS) { lastPreviewMs = now; drawZoomPreview() }
+            }
+            override fun onViewEnd(scale: Float, focusX: Float, focusY: Float, panX: Float, panY: Float) {
+                endFastPreview()
+                val f = scale.coerceIn(1f / zoomNow, MAX_ZOOM / zoomNow)
+                if (kotlin.math.abs(f - 1f) > 0.04f || kotlin.math.hypot(panX, panY) > 24f) listener.onViewGesture(f, focusX, focusY, panX, panY) else draw()
+            }
+        },
+    )
 
     private var fastPreview = false
 
@@ -347,9 +321,9 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
     }
 
     private val callback = object : RawInputCallback() {
-        override fun onBeginRawDrawing(b: Boolean, p: TouchPoint) { beginSelectionDrag(p.x, p.y) }
-        override fun onEndRawDrawing(b: Boolean, p: TouchPoint) { endSelectionDrag() }
-        override fun onRawDrawingTouchPointMoveReceived(p: TouchPoint) { moveSelectionDrag(p.x, p.y) }
+        override fun onBeginRawDrawing(b: Boolean, p: TouchPoint) { lastPenMs = android.os.SystemClock.uptimeMillis(); beginSelectionDrag(p.x, p.y) }
+        override fun onEndRawDrawing(b: Boolean, p: TouchPoint) { lastPenMs = android.os.SystemClock.uptimeMillis(); endSelectionDrag() }
+        override fun onRawDrawingTouchPointMoveReceived(p: TouchPoint) { lastPenMs = android.os.SystemClock.uptimeMillis(); moveSelectionDrag(p.x, p.y) }
         override fun onRawDrawingTouchPointListReceived(list: TouchPointList) {
             val samples = toSamples(list.points)
             if (samples.isEmpty()) return
@@ -375,14 +349,10 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         val isFinger = event.getToolType(0) == MotionEvent.TOOL_TYPE_FINGER
-        // A finger swipes (turns pages) unless this is a non-Onyx device with finger drawing switched on.
+        if (!isFinger) lastPenMs = android.os.SystemClock.uptimeMillis()
+        // A finger gestures (turns pages, pinches...) unless this is a non-Onyx device with finger drawing switched on.
         if (isFinger && !(fingerDraws && !useOnyx && penEnabled)) {
-            trackFingerTap(event)
-            scaleDetector.onTouchEvent(event)
-            if (event.pointerCount > 1 || scaleDetector.isInProgress) multiTouch = true
-            // A pinch or two-finger drag must not also count as a page-turning swipe.
-            if (!multiTouch) gestures.onTouchEvent(event)
-            if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) multiTouch = false
+            fingerGestures.onTouchEvent(event)
             return true
         }
         if (useOnyx || !penEnabled) return super.onTouchEvent(event)
@@ -405,6 +375,11 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
             }
         }
         return true
+    }
+
+    override fun onHoverEvent(event: MotionEvent): Boolean {
+        if (event.getToolType(0) == MotionEvent.TOOL_TYPE_STYLUS) lastPenMs = android.os.SystemClock.uptimeMillis()
+        return super.onHoverEvent(event)
     }
 
     private fun addTouch(x: Float, y: Float, pressure: Float, time: Long, area: Rect?) {
