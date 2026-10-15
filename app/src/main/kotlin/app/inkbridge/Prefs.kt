@@ -39,9 +39,11 @@ class Prefs(context: Context) {
     var gridSize: GridSize get() = _gridSize; set(v) { _gridSize = v; sp.edit().putString("gridSize", v.name).apply() }
     val gridView: Boolean get() = _gridSize != GridSize.LIST
 
+    private val COMMON_TEMPLATES = listOf("Blank", "P Lines medium", "P Grid medium", "P Dots S", "P Cornell", "P Margin medium", "P Week", "P Checklist")
+
     private var _recent by mutableStateOf(sp.getString("recentTemplates", null)?.split(",")?.filter { it.isNotEmpty() }?.map { PageTemplate.fromId(it) }?.distinct().orEmpty())
     /** Page templates picked for new notebooks, most recent first (the "Templates" grid of the New notebook screen). */
-    val recentTemplates: List<PageTemplate> get() = (_recent + PageTemplate.entries).distinct()
+    val recentTemplates: List<PageTemplate> get() = (_recent + COMMON_TEMPLATES.map { PageTemplate.fromId(it) } + PageTemplate.entries).distinct()
     fun addRecentTemplate(t: PageTemplate) { _recent = (listOf(t) + _recent).distinct().take(8); sp.edit().putString("recentTemplates", _recent.joinToString(",") { it.id }).apply() }
 
     private var _sort by mutableStateOf(runCatching { SortBy.valueOf(sp.getString("sort", "MODIFIED")!!) }.getOrDefault(SortBy.MODIFIED))

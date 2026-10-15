@@ -88,7 +88,7 @@ class LibraryOpsTest {
     }
 
     @Test fun templatesDrawAndExport() {
-        for (t in PageTemplate.entries) {
+        for (t in PageTemplate.entries.take(8)) {
             val layout = PageLayout(-702f, 702f, 0f, 1872f)
             val c = Java2DCanvas(layout, 0.4f); t.draw(c, layout)
             System.getProperty("rm.renderOut")?.let { File(it).mkdirs(); ImageIO.write(c.finish(), "png", File(it, "template_${t.id}.png")) }

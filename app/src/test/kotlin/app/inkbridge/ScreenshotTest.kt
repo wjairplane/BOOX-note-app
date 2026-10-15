@@ -383,4 +383,14 @@ class ScreenshotTest {
         rule.onNodeWithContentDescription("Delete").performClick(); settle(); snapshot("dialog_delete_page")
         rule.onAllNodesWithText("Cancel").onLast().performClick(); settle()
     }
+
+    /** The firmware-style template picker on its own: all templates, the filter menu open, then Planners in landscape. */
+    @Test fun templatePicker() {
+        rule.setContent { app.inkbridge.ui.RmDensity { app.inkbridge.ui.TemplatePickerScreen(PageTemplate.LINES, {}, {}) } }
+        settle(); snapshot("template_picker_all")
+        rule.onNodeWithContentDescription("Filter").performClick(); settle(); snapshot("template_picker_filter")
+        rule.onNodeWithText("Planners").performClick(); settle()
+        rule.onNodeWithText("Landscape").performClick(); settle(); snapshot("template_picker_planners_landscape")
+        rule.onNodeWithText("Landscape").performClick(); settle(); snapshot("template_picker_planners_landscape_closed")
+    }
 }
