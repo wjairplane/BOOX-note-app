@@ -174,7 +174,7 @@ private fun Modifier.drawBehind2(left: Boolean = false, bottom: Boolean = false)
 fun DocumentDrawer(app: AppController, activeId: String?, onClose: () -> Unit) {
     var tab by remember { mutableIntStateOf(0) }
     val docs = app.library.entries.filter { !it.isFolder && it.parentId != Library.TRASH && it.id != activeId }
-    val shown = (if (tab == 0) docs.sortedByDescending { it.lastModified } else docs.filter { it.pinned }.sortedByDescending { it.lastModified }).take(12)
+    val shown = (if (tab == 0) docs.sortedByDescending { maxOf(it.lastOpened, 0L) } else docs.filter { it.pinned }.sortedByDescending { it.lastModified }).take(12)
     Box(Modifier.fillMaxSize().tap(onClick = onClose)) {
         Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().background(Ink.White).tap { }) {
             Row(Modifier.fillMaxWidth()) {
@@ -201,7 +201,7 @@ fun DocumentDrawer(app: AppController, activeId: String?, onClose: () -> Unit) {
                                 Column(Modifier.width(cellW).padding(15.dp).tap { onClose(); app.screen = Screen.Notebook(e.id, 0) }.semantics { contentDescription = e.name }) {
                                     Thumb(app, e, Modifier.fillMaxWidth().aspectRatio(312f / 416f))
                                     Text(e.name, style = RmText.Label, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 8.dp))
-                                    Text("${e.pageIds.size} pages", style = RmText.Caption, maxLines = 1)
+                                    Text("Page ${(e.lastOpenedPage + 1).coerceIn(1, e.pageIds.size.coerceAtLeast(1))} of ${e.pageIds.size}", style = RmText.Caption, maxLines = 1)
                                 }
                             }
                         }
