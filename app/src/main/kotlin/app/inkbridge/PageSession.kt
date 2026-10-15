@@ -311,9 +311,10 @@ class PageSession(
 
     /** Add a stroke from view-pixel [samples]. Returns true if the page changed. */
     @Synchronized
-    fun addStroke(spec: PenSpec, samples: List<PenSample>): Boolean {
+    fun addStroke(spec: PenSpec, samples: List<PenSample>, select: Boolean = false): Boolean {
         val t = transform ?: return false
         val added = editor.addStroke(spec, samples.map { toInput(t, it) }) ?: return false
+        if (select) { selection = setOf(added.itemId); redrawAll(); return true }
         val layer = ink; val base = basePx; val shown = shownPx; val bmp = bitmap; val tf = inkTransform()
         if (layer == null || base == null || shown == null || bmp == null || tf == null) { redrawAll(); return true }
         layer.drawLine(added.line, added.ox, added.oy, tf)

@@ -195,7 +195,7 @@ fun DocumentDrawer(app: AppController, activeId: String?, onClose: () -> Unit) {
  * above the handle; lifting the finger opens that page. It closes after four seconds, or on a tap outside it.
  */
 @Composable
-fun PageSlider(app: AppController, doc: LibraryEntry, current: Int, bottomInset: androidx.compose.ui.unit.Dp, onPick: (Int) -> Unit, onClose: () -> Unit) {
+fun PageSlider(app: AppController, doc: LibraryEntry, current: Int, bottomInset: androidx.compose.ui.unit.Dp, startInset: androidx.compose.ui.unit.Dp, endInset: androidx.compose.ui.unit.Dp, onPick: (Int) -> Unit, onClose: () -> Unit) {
     val last = (doc.pageIds.size - 1).coerceAtLeast(0)
     var picked by remember { mutableIntStateOf(current.coerceIn(0, last)) }
     var pressed by remember { mutableStateOf(false) }
@@ -203,11 +203,11 @@ fun PageSlider(app: AppController, doc: LibraryEntry, current: Int, bottomInset:
     LaunchedEffect(pressed, picked) { if (!pressed) { delay(4000); onClose() } }
     Box(Modifier.fillMaxSize().tap(onClick = onClose)) {
         Column(
-            Modifier.align(Alignment.BottomCenter).padding(bottom = 50.dp + bottomInset, start = 48.dp, end = 48.dp).fillMaxWidth()
+            Modifier.align(Alignment.BottomCenter).padding(bottom = 50.dp + bottomInset, start = 48.dp + startInset, end = 48.dp + endInset).fillMaxWidth()
                 .background(Ink.White).border(Rm.Outline, Ink.Black).tap { }.padding(horizontal = 40.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(doc.name, style = RmText.LabelLg, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.height(112.dp).wrapCentre())
+            Text(doc.name, style = RmText.LabelLg, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 16.dp))
             if (pressed) {
                 Row(horizontalArrangement = Arrangement.spacedBy(24.dp), verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(bottom = 16.dp)) {
                     for (p in listOf(picked - 1, picked, picked + 1)) {
@@ -250,8 +250,6 @@ fun PageSlider(app: AppController, doc: LibraryEntry, current: Int, bottomInset:
         }
     }
 }
-
-private fun Modifier.wrapCentre(): Modifier = this
 
 
 /** The zoom button: shows the zoom level at the top centre while the page is zoomed; a tap snaps back to the whole page. */

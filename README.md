@@ -1,64 +1,55 @@
 # InkBridge
 
-A handwriting notes app for the **BOOX Note Air5 C** (colour e-ink, Wacom stylus) whose screens and pens are
-modelled on the **reMarkable 2**.
+A handwriting notes app for the **BOOX Note Air5 C** (colour e-ink, Wacom stylus) that looks and behaves like the
+**reMarkable 2** (firmware 3.27.1.0): the screens, menus, icons, fonts, templates, gestures and pens are taken from
+that firmware.
 
-**What it is:** a notebook app with a reMarkable-style *My files* screen, a *Settings* screen, and the reMarkable
-pen set (ballpoint, fineliner, marker, pencil, mechanical pencil, paintbrush, calligraphy pen, highlighter,
-eraser) with colours.
+**What it is:** notebooks and PDF annotation with a *My files* browser, the reMarkable toolbar (two quick-switch
+pens, eraser, selection tool, undo/redo, layers, page overview, notebook menu), page templates, settings and guides.
 
-**What it is not:** a viewer for reMarkable files. You create notebooks in the app; there is no import of
-reMarkable notebooks.
+**What it is not:** a sync client or a viewer for other people's reMarkable files. You create notebooks in the app.
 
-*The look follows reMarkable's current interface (firmware 3.22 and later), checked against photos of it; the older 3.12-era layout was replaced.*
+*InkBridge is an independent project, not made by, affiliated with or endorsed by reMarkable AS. The icons, fonts,
+illustrations and templates in `reference/` were extracted from the public firmware image for personal use.*
 
-*InkBridge is an independent project, not made by, affiliated with or endorsed by reMarkable AS. It copies the
-layout and behaviour of an interface, not artwork, fonts, icons or brush textures.*
+## What is in it
 
-## Status
-
-Everything below builds and the library code is unit-tested, but **the app has never been run on a device**, so
-the screens have never actually been seen rendered and the pen has never touched real hardware.
-
-| Area | State |
+| Area | Notes |
 |---|---|
-| My files: grid/list, folders, favorites, trash, rename/move/delete, sort, page thumbnails | written, untested on device |
-| Notebook: icon toolbar (top by default; top/bottom/left/right in Settings), borderless, collapsible with the ⊙ button; two writing-tool slots with colour dots, narrow three-section pen menu (9 pens, 3 thicknesses, 9 named ink colours; six highlighter colours incl. orange), eraser, undo/redo, page overview, ⋮ menu (My files, page info, add/delete page, template, refresh, export), swipe to turn pages | written; layout checked against photos of firmware 3.22+, untested on device |
-| Pens: ballpoint, fineliner, marker, pencil, mechanical pencil, paintbrush, calligraphy, highlighter, shader; 3 sizes; colours | written; widths for fineliner/ballpoint/highlighter/shader fitted to real data, the rest estimated |
-| Page templates: blank, lined, grid, dotted | done (tested on the JVM) |
-| Settings: general, display (e-ink refresh), accessibility (toolbar position), storage, about | written, untested on device |
-| Annotate PDFs: import, draw over, export flattened PDF | written, untested on device |
-| Export a page to SVG / PNG / PDF | SVG tested; PNG/PDF untested on device |
-| Pen input through the Onyx SDK | written against the SDK's real API; feel and refresh need tuning on the device |
-| EPUB, handwriting search (OCR), sync | not started |
+| My files | grid / list, folders, favorites, tags, trash, move mode, sort, search, full-screen New notebook / New folder / Rename, quick sheets, notifications |
+| Notebook editor | toolbar in any of the four positions (drag the hide button to an edge), pen foldouts, eraser (and *Erase selection*), selection tool (lasso, move, resize, rotate, cut, copy, paste), layers, page overview, zoom, PDF background, export to SVG / PNG / PDF |
+| Pens | ported from the firmware's own renderer (`PixelInk`, checked pixel by pixel against the real code run under emulation) and recorder (`FirmwareRecorder`); ballpoint, fineliner, marker, pencil, mechanical pencil, paintbrush, calligraphy pen, highlighter, shader |
+| Templates | the firmware's 65 template files (lines, grids, dots, margins, planners, music sheets, storyboards...) drawn by a small engine that evaluates the template DSL; picker with categories and orientation |
+| Gestures | the firmware's finger gestures: flip page (short and long swipe), jump, pinch and pan, two-finger tap = undo, three-finger tap = redo, five-finger tap = clear ghosting, swipe down from the top = close document, two fingers from the top = document drawer, top-right corner = quick settings, swipe up from the bottom = quick browse; hold at the end of a stroke to snap a shape, hold a horizontal line to select everything below it |
+| Device gestures | BOOX's own edge gestures can be blocked while the app is open (Settings), and the screen edges are reserved for the app's gestures |
+| Performance | pen rendering is culled and parallel, the page base layer and PDF render are cached, release builds are minified |
 
 ## Layout
 
-- `rmformat/` – pure-Kotlin library, unit-tested on the JVM: the page store (`.rm` v6 line format, internal),
-  pens and renderer, editing (strokes, erase, undo), templates, library operations (notebooks, folders, trash), export.
-- `app/` – the Android app (Jetpack Compose; plain black-on-white, no animations, for e-ink).
+- `rmformat/` – pure-Kotlin library, unit-tested on the JVM: the page store (`.rm` v6 line format), the pen renderer, editing
+  (strokes, erase, selection, layers, undo), templates, library operations, export.
+- `app/` – the Android app (Jetpack Compose; black on white, no animations, for e-ink).
+- `reference/remarkable-3.27.1.0/` – assets and QML recovered from the firmware (see its README); `tools/firmware/` – the scripts
+  used to carve and port them.
 
-Pages are stored in the open reverse-engineered reMarkable v6 line format (a Kotlin port based on
-[rmscene](https://github.com/ricklupton/rmscene) and [rmc](https://github.com/ricklupton/rmc), MIT, © Rick Lupton),
-inside the app's private folder in the tablet's file layout. That is an internal detail: the app is not meant to
-read reMarkable files, and documents it creates have not been checked against a real reMarkable.
+Pages are stored in the reverse-engineered reMarkable v6 line format (a Kotlin port based on
+[rmscene](https://github.com/ricklupton/rmscene) and [rmc](https://github.com/ricklupton/rmc), MIT, © Rick Lupton) inside the
+app's private folder, in the tablet's file layout.
 
 ## Build and test
 
 ```bash
-./gradlew :rmformat:test          # parser/renderer/library tests; PNG renders land in rmformat/build/render-snapshots
-./gradlew :app:assembleDebug      # app/build/outputs/apk/debug/app-debug.apk
+./gradlew :rmformat:test          # parser / renderer / pens / templates; PNGs land in rmformat/build/render-snapshots
 ./gradlew :app:testDebugUnitTest  # renders the real screens to PNG on the JVM (Robolectric): app/build/ui-snapshots
-./gradlew -PrmOnly :rmformat:test # skip the Android module (JVM-only, faster)
+./gradlew :app:assembleRelease    # app/build/outputs/apk/release/app-release.apk (minified, debug-signed so it can be sideloaded)
+./gradlew :app:assembleDebug      # the debug APK (much slower UI: use the release build on the tablet)
 ```
 
-Needs JDK 17+ and the Android SDK (platform 35). A GitHub Actions workflow builds the APK on every push.
+Needs JDK 17+ and the Android SDK (platform 35). GitHub Actions builds both APKs on every push.
 
 ## Notes
 
-- Colours are saved with the classic pen-colour ids, so they work wherever that format is understood.
-- The Onyx pen SDK is only published on `repo.boox.com` over plain HTTP. `settings.gradle.kts` limits that
-  repository to the SDK's own groups, but artifacts from it are not integrity-checked in transit; vendor the `.aar`
-  files into the repo if that matters to you.
-- Annotating a PDF scales each page to fit 1404x1872, centred horizontally and top-aligned (`PdfPlacement`); only
-  matters if annotated PDFs are ever exchanged with a reMarkable.
+- The Onyx pen SDK is only published on `repo.boox.com` over plain HTTP. `settings.gradle.kts` limits that repository to the SDK's
+  own groups, but artifacts from it are not integrity-checked in transit; vendor the `.aar` files into the repo if that matters.
+- The screenshots made by the tests are Robolectric renders, not photos of a device; pen feel, refresh behaviour and gesture
+  thresholds can only be tuned on the tablet.

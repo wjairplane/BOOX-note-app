@@ -56,6 +56,8 @@ interface PenListener {
 class PenSurface(context: Context, private val listener: PenListener) : SurfaceView(context), SurfaceHolder.Callback {
     private var bitmap: Bitmap? = null
 
+    internal fun listenerForTest(): PenListener = listener
+
     /** What is currently shown (a SurfaceView's content isn't part of a normal view capture, so screenshot tests draw this themselves). */
     internal val shownBitmap: Bitmap? get() = bitmap
     private var bitmapLeft = 0f

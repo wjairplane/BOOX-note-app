@@ -427,7 +427,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
             ) { InkIcons.XCircle() }
         }
 
-        if (slider) PageSlider(app, doc, pageIndex, if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp, onPick = { slider = false; goTo(it) }, onClose = { slider = false })
+        if (slider) PageSlider(app, doc, pageIndex, if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp, if (pos == ToolbarPosition.LEFT) TOOLBAR_THICKNESS else 0.dp, if (pos == ToolbarPosition.RIGHT) TOOLBAR_THICKNESS else 0.dp, onPick = { slider = false; goTo(it) }, onClose = { slider = false })
 
         if (templatePicker) TemplatePickerScreen(doc.template, onPick = { templatePicker = false; save(session); app.setTemplate(doc, it) }, onBack = { templatePicker = false })
 
@@ -542,7 +542,9 @@ private fun PageArea(
                             if (s != null && s.selectBelow(shape.points.first().second)) { surface?.refresh(); currentOnSelectBelow(); currentOnSelectionRect(s.selectionRect()); currentOnChanged(); return }
                         }
                         val snapped = HoldGesture.resample(shape.points, body)
-                        apply(snapped) { s, sp -> s.addStroke(sp, snapped) }
+                        // The shape comes out selected, so it can be dragged, resized and rotated to fit.
+                        val s = currentSession ?: return
+                        if (s.addStroke(surface?.currentSpec ?: return, snapped, select = true)) { surface?.refresh(); currentOnSelectBelow(); currentOnSelectionRect(s.selectionRect()); currentOnChanged() }
                     }
                     override fun onErase(samples: List<PenSample>) = apply(samples) { s, _ -> s.erase(samples, currentEraserRadius) }
                     override fun onSwipe(forward: Boolean) { currentOnSwipe(forward) }
