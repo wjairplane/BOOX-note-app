@@ -6,7 +6,7 @@ import app.inkbridge.rm.scene.PenId
 /**
  * The pen set, in the order of the reMarkable 2's toolbar. Each maps to the pen id written into the file.
  * (Pencil, mechanical pencil, paintbrush, calligraphy and marker have no sample data for their widths;
- * see [StrokeBuilder.widthRaw].)
+ * see [FirmwareRecorder].)
  */
 enum class PenTool(val label: String, val toolId: Int) {
     BALLPOINT("Ballpoint pen", PenId.BALLPOINT_2),

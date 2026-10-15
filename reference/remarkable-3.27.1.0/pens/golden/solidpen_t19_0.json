@@ -1,0 +1,48 @@
+{
+ "tool": 19,
+ "color": 0,
+ "startingLength": 0.0,
+ "thicknessScale": 2.0,
+ "zoom": 1.0,
+ "transform": "scale(zoom), no translation",
+ "palette_mode": 1,
+ "antialias_flag": 0,
+ "canvas": [
+  128,
+  64
+ ],
+ "points": [
+  {
+   "x": 14.816201535185863,
+   "y": 53.87422989088162,
+   "speed": 191,
+   "width_raw": 50,
+   "direction": 190,
+   "pressure": 237
+  },
+  {
+   "x": 95.0335352184464,
+   "y": 16.870817705204608,
+   "speed": 305,
+   "width_raw": 9,
+   "direction": 143,
+   "pressure": 10
+  },
+  {
+   "x": 20.161154326994264,
+   "y": 19.004326250983805,
+   "speed": 289,
+   "width_raw": 31,
+   "direction": 109,
+   "pressure": 133
+  },
+  {
+   "x": 109.9534958910391,
+   "y": 22.312277605696014,
+   "speed": 49,
+   "width_raw": 53,
+   "direction": 67,
+   "pressure": 130
+  }
+ ]
+}

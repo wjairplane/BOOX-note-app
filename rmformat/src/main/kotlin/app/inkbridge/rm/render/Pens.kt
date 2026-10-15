@@ -128,20 +128,33 @@ object PenPalette {
         PenColorId.BLACK to intArrayOf(0, 0, 0),
         PenColorId.GRAY to intArrayOf(144, 144, 144),
         PenColorId.WHITE to intArrayOf(255, 255, 255),
-        PenColorId.YELLOW to intArrayOf(251, 247, 25),
-        PenColorId.GREEN to intArrayOf(0, 255, 0),
-        PenColorId.PINK to intArrayOf(255, 192, 203),
-        PenColorId.BLUE to intArrayOf(78, 105, 201),
-        PenColorId.RED to intArrayOf(179, 62, 57),
-        PenColorId.GRAY_OVERLAP to intArrayOf(125, 125, 125),
-        PenColorId.GREEN_2 to intArrayOf(161, 216, 125),
-        PenColorId.CYAN to intArrayOf(139, 208, 229),
-        PenColorId.MAGENTA to intArrayOf(183, 130, 205),
-        PenColorId.YELLOW_2 to intArrayOf(247, 232, 81),
+        PenColorId.YELLOW to intArrayOf(254, 253, 96),
+        PenColorId.GREEN to intArrayOf(169, 250, 92),
+        PenColorId.PINK to intArrayOf(255, 85, 207),
+        PenColorId.BLUE to intArrayOf(48, 74, 224),
+        PenColorId.RED to intArrayOf(194, 49, 50),
+        PenColorId.GRAY_OVERLAP to intArrayOf(0, 0, 0),
+        PenColorId.GREEN_2 to intArrayOf(145, 218, 113),
+        PenColorId.CYAN to intArrayOf(116, 210, 232),
+        PenColorId.MAGENTA to intArrayOf(192, 127, 210),
+        PenColorId.YELLOW_2 to intArrayOf(250, 231, 25),
         // "HIGHLIGHT" shares one id; the real shade normally comes in the explicit RGBA field.
-        PenColorId.HIGHLIGHT to intArrayOf(251, 247, 25),
+        PenColorId.HIGHLIGHT to intArrayOf(254, 253, 96),
         PenColorId.ORANGE to intArrayOf(255, 195, 140),
     )
+
+    /**
+     * The highlighter's six colours. The firmware draws a highlighter in one opaque colour and darkens it against the ink under it, so
+     * these are light shades (the tablet stores such a stroke with the "highlight" colour id and this RGBA).
+     */
+    fun highlighter(colorId: Int): IntArray = when (colorId) {
+        PenColorId.BLUE -> intArrayOf(140, 190, 255, 255)
+        PenColorId.PINK -> intArrayOf(255, 170, 210, 255)
+        PenColorId.ORANGE -> intArrayOf(255, 195, 140, 255)
+        PenColorId.GREEN -> intArrayOf(169, 250, 92, 255)
+        PenColorId.GRAY -> intArrayOf(200, 200, 200, 255)
+        else -> intArrayOf(254, 253, 96, 255)
+    }
 
     /** RGBA for a pen colour id, preferring the explicit RGBA stored with the stroke. */
     fun lookup(colorId: Int, explicitRgba: IntArray?): IntArray {

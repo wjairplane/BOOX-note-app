@@ -127,6 +127,10 @@ class Emu:
                 self._rects = self.alloc(64)
                 for i, v in enumerate((0, 0, self.W - 1, self.H - 1)): self.w32(self._rects + 4 * i, v)
             self._ret(self._rects + 16)
+        elif name == "__cxa_guard_acquire":
+            self._ret(1)          # run function-local static initialisers (e.g. the SHADING_NORMAL_BLEND env lookup)
+        elif name.startswith("_Z27qEnvironmentVariableIsEmpty"):
+            self._ret(1)          # env vars (e.g. SHADING_NORMAL_BLEND) are unset on a real device
         elif name in ("_ZN7QRegionaSERKS_",):
             self._ret(R(0))
         else:
@@ -165,11 +169,12 @@ class Emu:
         self.call(0xb7f438, [self.holder, C])
         self.renderer = self.r32(self.holder)
         return self.renderer
-    def make_line(self, tool, color, points, thickness_scale=1.0, argb=0):
+    def make_line(self, tool, color, points, thickness_scale=0.0, argb=0, thickness=1.0):
         """points: list of dict(x,y,speed,width,direction,pressure) in raw file units (width raw = width*4 for u16)."""
         L = self.alloc(0x40); P = self.alloc(14 * len(points) + 16)
         for i, p in enumerate(points):
             self.uc.mem_write(P + 14 * i, struct.pack("<ffHHBB", p["x"], p["y"], p["speed"], p["width"], p["direction"], p["pressure"]))
         self.w32(L, tool); self.w32(L + 4, color); self.w32(L + 8, argb)
-        self.w32(L + 0x10, P); self.w32(L + 0x14, len(points)); self.wf(L + 0x20, thickness_scale)
+        self.w32(L + 0x10, P); self.w32(L + 0x14, len(points)); self.wd(L + 0x18, thickness)           # double thickness_scale (only used by legacy max-width / bounds code)
+        self.wf(L + 0x20, thickness_scale)     # float starting_length (NOT thickness!): initial path length of the texture phase
         return L

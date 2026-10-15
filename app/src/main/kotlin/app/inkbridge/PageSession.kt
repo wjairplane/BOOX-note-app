@@ -16,6 +16,7 @@ import app.inkbridge.rm.export.PageExport
 import app.inkbridge.rm.export.SvgCanvas
 import app.inkbridge.rm.library.PageFiles
 import app.inkbridge.rm.render.PageTemplate
+import app.inkbridge.rm.render.PixelInk
 import app.inkbridge.rm.scene.CrdtId
 import android.graphics.DashPathEffect
 import android.graphics.RectF as AndroidRectF
@@ -38,6 +39,12 @@ class PageSession(
         private set
     var bitmap: Bitmap? = null
         private set
+
+    // The strokes are drawn pixel by pixel with the firmware's pen renderer into [ink]; [basePx] is the page under them
+    // (paper, template, PDF, text), and the shown bitmap is the two together.
+    private var ink: PixelInk? = null
+    private var basePx: IntArray? = null
+    private var shownPx: IntArray? = null
 
     /** The PDF page under the ink (rendered for the current view size), or null for plain pages. */
     private var backgroundBitmap: Bitmap? = null
@@ -279,8 +286,14 @@ class PageSession(
     fun addStroke(spec: PenSpec, samples: List<PenSample>): Boolean {
         val t = transform ?: return false
         val added = editor.addStroke(spec, samples.map { toInput(t, it) }) ?: return false
-        withPageCanvas { canvas ->
-            editor.renderer.renderLine(added.line, added.ox, added.oy, AndroidPageCanvas(canvas))
+        val layer = ink; val base = basePx; val shown = shownPx; val bmp = bitmap; val tf = inkTransform()
+        if (layer == null || base == null || shown == null || bmp == null || tf == null) { redrawAll(); return true }
+        layer.drawLine(added.line, added.ox, added.oy, tf)
+        if (layer.isDirty) {
+            val l = layer.dirtyLeft; val tp = layer.dirtyTop; val r = layer.dirtyRight + 1; val b = layer.dirtyBottom + 1
+            layer.compositeInto(base, shown, l, tp, r, b)
+            bmp.setPixels(shown, tp * bmp.width + l, bmp.width, l, tp, r - l, b - tp)
+            layer.resetDirty()
         }
         return true
     }
@@ -345,7 +358,16 @@ class PageSession(
             c.translate(-layout.xMin, -layout.yMin)
             drawBackground(c)
             if (background == null && showBackground) template.draw(AndroidPageCanvas(c), layout)
-            renderer.render(AndroidPageCanvas(c))
+            renderer.render(AndroidPageCanvas(c), strokes = false)
+        }
+        // The strokes go on with the tablet's pen renderer, one device pixel per page unit.
+        run {
+            val w = full.width; val h = full.height
+            val base = IntArray(w * h).also { full.getPixels(it, 0, w, 0, 0, w, h) }
+            val layer = PixelInk(w, h).also { renderer.renderInk(it, PixelInk.Transform(1f, -layout.xMin, -layout.yMin)) }
+            val out = IntArray(w * h)
+            layer.compositeInto(base, out, 0, 0, w, h)
+            full.setPixels(out, 0, w, 0, 0, w, h)
         }
         png.outputStream().use { full.compress(Bitmap.CompressFormat.PNG, 100, it) }
         full.recycle()
@@ -374,17 +396,38 @@ class PageSession(
         tiltX = s.tiltX, tiltY = s.tiltY, timeMs = s.timeMs,
     )
 
-    private fun redrawAll() = withPageCanvas(clear = true) { canvas ->
-        val bg = backgroundBitmap
-        val p = background?.placement
-        val showBackground = editor.backgroundVisible
-        if (bg != null && p != null && showBackground) {
-            canvas.drawBitmap(bg, null, RectF(p.left, p.top, p.left + p.width, p.top + p.height), Paint(Paint.FILTER_BITMAP_FLAG))
+    private fun redrawAll() {
+        withPageCanvas(clear = true) { canvas ->
+            val bg = backgroundBitmap
+            val p = background?.placement
+            val showBackground = editor.backgroundVisible
+            if (bg != null && p != null && showBackground) {
+                canvas.drawBitmap(bg, null, RectF(p.left, p.top, p.left + p.width, p.top + p.height), Paint(Paint.FILTER_BITMAP_FLAG))
+            }
+            if (background == null && showBackground) template.draw(AndroidPageCanvas(canvas), editor.renderer.layout)
+            editor.renderer.render(AndroidPageCanvas(canvas), strokes = false)
+            if (selection.isNotEmpty() && editor.boundsOf(selection) == null) selection = emptySet()
         }
-        if (background == null && showBackground) template.draw(AndroidPageCanvas(canvas), editor.renderer.layout)
-        editor.renderer.render(AndroidPageCanvas(canvas))
-        if (selection.isNotEmpty() && editor.boundsOf(selection) == null) selection = emptySet()
-    }.also { drawSelectionFrame() }
+        val bmp = bitmap ?: return
+        val w = bmp.width; val h = bmp.height
+        val base = (if (basePx?.size == w * h) basePx else null) ?: IntArray(w * h).also { basePx = it }
+        bmp.getPixels(base, 0, w, 0, 0, w, h)
+        val layer = (if (ink?.width == w && ink?.height == h) ink else null) ?: PixelInk(w, h).also { ink = it }
+        layer.clear()
+        val tf = inkTransform() ?: return
+        editor.renderer.renderInk(layer, tf)
+        val shown = (if (shownPx?.size == w * h) shownPx else null) ?: IntArray(w * h).also { shownPx = it }
+        layer.compositeInto(base, shown, 0, 0, w, h)
+        bmp.setPixels(shown, 0, w, 0, 0, w, h)
+        layer.resetDirty()
+        drawSelectionFrame()
+    }
+
+    /** Page units to view pixels, for the pen renderer. */
+    private fun inkTransform(): PixelInk.Transform? {
+        val t = transform ?: return null
+        return PixelInk.Transform(t.scale, t.offsetX - t.layout.xMin * t.scale, t.offsetY - t.layout.yMin * t.scale)
+    }
 
     /** The selection: a solid 2 px frame with white square handles on the corners and a white circle on the middle of the top edge (as in the firmware). */
     private fun drawSelectionFrame() {
