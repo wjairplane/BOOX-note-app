@@ -3,6 +3,7 @@ package app.inkbridge.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -79,7 +80,7 @@ object Rm {
     val FoldoutMinWidth = 400.dp          // ToolbarTool.minimumFoldoutWidth: menus without their own width
     val EraserFoldoutMinWidth = 400.dp    // the eraser's 3-column grid: 3 x 112 + 2 x 32 px
     val ToolboxFoldoutWidth = 339.dp      // toolboxFoldoutMenuWidth: the notebook's document menu
-    val DropdownWidth = 360.dp            // the navigator's filter dropdown
+    val DropdownWidth = 358.dp            // the navigator's filter dropdown
 }
 
 val RmSans = FontFamily(
@@ -95,7 +96,8 @@ val RmSerif = FontFamily(
 
 /** The firmware's Style typography (rM-paper-tablet tokens): size in px, line height as a multiple of it. */
 object RmText {
-    private fun sans(size: Int, weight: FontWeight, line: Float) = TextStyle(fontFamily = RmSans, fontSize = size.sp, fontWeight = weight, lineHeight = (size * line).sp)
+    /** reMarkable Sans at [size] px, with a line height of [line] times the size. */
+    fun sans(size: Int, weight: FontWeight = FontWeight.Normal, line: Float = 1.5f) = TextStyle(fontFamily = RmSans, fontSize = size.sp, fontWeight = weight, lineHeight = (size * line).sp)
     private fun serif(size: Int, line: Float) = TextStyle(fontFamily = RmSerif, fontSize = size.sp, fontWeight = FontWeight.Normal, lineHeight = (size * line).sp)
 
     val BodyLg = sans(36, FontWeight.Normal, 1.5f)
@@ -241,14 +243,14 @@ fun ConfirmDialog(title: String, message: String, confirm: String, onDismiss: ()
             SideEffect { w.setGravity(android.view.Gravity.TOP); w.setDimAmount(0f); w.setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT) }
         }
         CompositionLocalProvider(LocalDensity provides density) {
-            Column(Modifier.fillMaxWidth().background(Ink.Black).padding(horizontal = 176.dp, vertical = 120.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(title, style = RmText.TitleMdAlt, color = Ink.White, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Column(Modifier.fillMaxWidth().background(Ink.Black).padding(horizontal = 176.dp, vertical = 120.dp), horizontalAlignment = Alignment.Start) {
+                Text(title, style = RmText.TitleLg, color = Ink.White)
                 Spacer(Modifier.height(24.dp))
-                Text(message, style = RmText.Body, color = Ink.White, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                Spacer(Modifier.height(48.dp))
+                Text(message, style = RmText.Body, color = Ink.White)
+                Spacer(Modifier.height(80.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                    Box(Modifier.width(346.dp).height(Rm.Control).background(Ink.White).border(Rm.Outline, Ink.White).tap(onClick = onDismiss).semantics { contentDescription = "Cancel" }, contentAlignment = Alignment.Center) { Text("Cancel", style = RmText.Label, color = Ink.Black) }
-                    Box(Modifier.width(346.dp).height(Rm.Control).background(Ink.Black).border(Rm.Outline, Ink.White).tap(onClick = onConfirm).semantics { contentDescription = confirm }, contentAlignment = Alignment.Center) { Text(confirm, style = RmText.Label, color = Ink.White) }
+                    Box(Modifier.width(346.dp).height(Rm.Control).background(Ink.White).border(Rm.Outline, Ink.White).tap(onClick = onDismiss).semantics { contentDescription = "Cancel" }, contentAlignment = Alignment.Center) { Text("Cancel", style = RmText.LabelLg, color = Ink.Black) }
+                    Box(Modifier.width(346.dp).height(Rm.Control).background(Ink.Black).border(Rm.Outline, Ink.White).tap(onClick = onConfirm).semantics { contentDescription = confirm }, contentAlignment = Alignment.Center) { Text(confirm, style = RmText.LabelLg, color = Ink.White) }
                 }
             }
         }
@@ -256,21 +258,27 @@ fun ConfirmDialog(title: String, message: String, confirm: String, onDismiss: ()
 }
 
 /**
- * The firmware's NotificationBar (secondary): white with a 2 px top border, 32 px side padding and 16 px vertical padding, the message
- * (28 px, tight lines), a 2 px divider and the action as an 80 px high text button.
+ * The firmware's NotificationBar: 32 px side padding and 16 px vertical padding, the message (28 px, tight lines) and, only when the
+ * notification has an [action], a 2 px divider and the action as an 80 px high text button. Without an action a tap anywhere on the bar
+ * calls [onAction] (which dismisses it). The default look is the secondary one (white, 2 px top border); [primary] makes it black with
+ * white text, as plain notifications are in the firmware (errors, progress).
  */
 @Composable
-fun NotificationBar(message: String, onAction: () -> Unit, modifier: Modifier = Modifier, action: String = "OK") {
+fun NotificationBar(message: String, onAction: () -> Unit, modifier: Modifier = Modifier, action: String? = null, primary: Boolean = false) {
+    val fg = if (primary) Ink.White else Ink.Black
     Row(
-        modifier.fillMaxWidth().heightIn(min = 80.dp).background(Ink.White)
-            .drawBehind { drawLine(Color.Black, androidx.compose.ui.geometry.Offset(0f, 1f), androidx.compose.ui.geometry.Offset(size.width, 1f), strokeWidth = 2f * density) }
+        modifier.fillMaxWidth().heightIn(min = 80.dp).background(if (primary) Ink.Black else Ink.White)
+            .then(if (primary) Modifier else Modifier.drawBehind { drawLine(Color.Black, androidx.compose.ui.geometry.Offset(0f, 1f), androidx.compose.ui.geometry.Offset(size.width, 1f), strokeWidth = 2f * density) })
+            .then(if (action == null) Modifier.tap(onClick = onAction) else Modifier)
             .padding(horizontal = 32.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(message, style = RmText.BodyLow, modifier = Modifier.weight(1f))
-        Box(Modifier.width(Rm.Outline).height(48.dp).background(Ink.Black))
-        Box(Modifier.height(Rm.Control).tap(onClick = onAction).padding(horizontal = 32.dp).semantics { contentDescription = action }, contentAlignment = Alignment.Center) { Text(action, style = RmText.LabelLg) }
+        Text(message, style = RmText.BodyLow, color = fg, modifier = Modifier.weight(1f))
+        if (action != null) {
+            Box(Modifier.width(Rm.Outline).height(48.dp).background(fg))
+            Box(Modifier.height(Rm.Control).tap(onClick = onAction).padding(horizontal = 32.dp).semantics { contentDescription = action }, contentAlignment = Alignment.Center) { Text(action, style = RmText.LabelLg, color = fg) }
+        }
     }
 }
 
@@ -421,11 +429,13 @@ fun RmFoldoutItem(label: String, onClick: () -> Unit, enabled: Boolean = true, s
 
 /** A tag chip (SelectableChip): 56 px high pill, 2 px border, inverted when [selected]; [partial] thickens the border. */
 @Composable
-fun TagPill(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, partial: Boolean = false, small: Boolean = false) {
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+fun TagPill(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, partial: Boolean = false, small: Boolean = false, onLongClick: (() -> Unit)? = null) {
     val fg = if (selected) Ink.White else Ink.Black
     Box(
         modifier.height(if (small) 40.dp else 56.dp).background(if (selected) Ink.Black else Ink.White, CircleShape)
-            .border(if (partial) 5.dp else Rm.Outline, Ink.Black, CircleShape).tap(onClick = onClick).padding(horizontal = if (small) 16.dp else 24.dp),
+            .border(if (partial) 5.dp else Rm.Outline, Ink.Black, CircleShape)
+            .then(if (onLongClick != null) Modifier.combinedClickable(indication = null, interactionSource = remember { MutableInteractionSource() }, onLongClick = onLongClick, onClick = onClick) else Modifier.tap(onClick = onClick)).padding(horizontal = if (small) 16.dp else 24.dp),
         contentAlignment = Alignment.Center,
     ) { Text(text, style = if (small) RmText.Caption else RmText.LabelSm, color = fg, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
 }

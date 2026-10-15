@@ -4,7 +4,9 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
@@ -80,13 +82,13 @@ internal fun FormNameField(label: String, initial: String, onChange: (String) ->
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     Column(Modifier.fillMaxWidth().height(120.dp)) {
-        Text(label, style = RmText.Caption, color = Ink.Grey)
+        Text(label, style = RmText.LabelLg)
         BasicTextField(
             value = value, onValueChange = { value = it; onChange(it.text) }, singleLine = true,
             textStyle = RmText.BodyLg.copy(color = Ink.Black), cursorBrush = SolidColor(Ink.Black),
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { onDone() }),
-            modifier = Modifier.weight(1f).fillMaxWidth().focusRequester(focus).wrapContentHeight(Alignment.CenterVertically),
+            modifier = Modifier.weight(1f).fillMaxWidth().focusRequester(focus).wrapContentHeight(Alignment.Bottom),
         )
         Rule()
     }
@@ -132,7 +134,7 @@ internal fun NewNotebookScreen(app: AppController, parentId: String, onDismiss: 
     FormScreen("New notebook", right = if (name.isNotBlank()) "Create" else null, onDismiss = onDismiss, onRight = create) {
         FormNameField("Name", name, { name = it }, create)
         Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
-            Text("Notebook cover", style = RmText.Label)
+            Text("Notebook cover", style = RmText.LabelLg)
             ContextualMenu(listOf("Last visited page", "First page"), if (cover == -1) 0 else 1) { cover = if (it == 0) -1 else 0 }
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -189,7 +191,7 @@ internal fun TagsSelector(app: AppController, selected: Set<String>, onChange: (
     val sorted = all.sortedBy { if (it in selected) 0 else 1 }
     Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("Tags", style = RmText.LabelLg, color = Ink.Grey, modifier = Modifier.weight(1f))
+            Text("Tags", style = RmText.LabelLg, modifier = Modifier.weight(1f))
             if (all.isNotEmpty()) ViewAll({ viewAll = true })
         }
         androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp), maxLines = 3) {
@@ -209,17 +211,60 @@ internal fun TagsSelector(app: AppController, selected: Set<String>, onChange: (
     }
 }
 
-/** The firmware's "Tags" window: Back bar, then every tag as a pill (tap toggles). */
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+/**
+ * The firmware's "Tags" window (View all tags): a Back bar, a 72 px row with "All" in serif 48 and an alphabetical sort dropdown, then the
+ * tags in three columns that fill top to bottom, one 65 px row per tag. What does not fit goes on further pages (swipe sideways); the page
+ * dots show only when there is more than one page.
+ */
 @Composable
 internal fun TagsWindow(tags: List<String>, selected: Set<String>, onToggle: (String) -> Unit, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
+    var descending by remember { mutableStateOf(false) }
+    var page by remember { mutableIntStateOf(0) }
+    val sorted = remember(tags, descending) { tags.sortedBy { it.lowercase() }.let { if (descending) it.reversed() else it } }
     Column(Modifier.fillMaxSize().background(Ink.White).pointerInput(Unit) { detectTapGestures { } }) {
         NavigationBar("Tags", onBack)
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(start = FormMarginH, end = FormMarginH, top = FormMarginV), verticalArrangement = Arrangement.spacedBy(24.dp)) {
-            Text("All", style = RmText.TitleMdAlt)
-            androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                tags.forEach { t -> TagPill(t, selected = t in selected, onClick = { onToggle(t) }) }
+        Spacer(Modifier.height(24.dp))
+        Row(Modifier.fillMaxWidth().height(72.dp).padding(start = 40.dp, end = 22.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("All", style = RmText.TitleLg, modifier = Modifier.weight(1f))
+            Dropdown(if (descending) "Alphabetical (Z-A)" else "Alphabetical (A-Z)", "Sort by") { close ->
+                SortRow(if (descending) "Alphabetical (Z-A)" else "Alphabetical (A-Z)", true, descending) { close(); descending = !descending; page = 0 }
+            }
+        }
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+            val cell = (maxWidth - 80.dp) / 3
+            val rowHeight = 65.dp
+            // The dots take 80 px at the bottom when there are several pages.
+            val fullRows = (maxHeight / rowHeight).toInt().coerceAtLeast(1)
+            val fitsOnePage = sorted.size <= fullRows * 3
+            val rowsWithDots = ((maxHeight - 80.dp) / rowHeight).toInt().coerceAtLeast(1)
+            val rows = if (fitsOnePage) fullRows else rowsWithDots
+            val pages = if (fitsOnePage) 1 else (sorted.size + rows * 3 - 1) / (rows * 3)
+            val perPage = rows * 3
+            val current = page.coerceIn(0, pages - 1)
+            Column(
+                Modifier.fillMaxSize().pointerInput(pages) {
+                    var total = 0f
+                    detectHorizontalDragGestures(onDragStart = { total = 0f }, onDragEnd = {
+                        if (total < -size.width / 6f) page = (current + 1).coerceAtMost(pages - 1) else if (total > size.width / 6f) page = (current - 1).coerceAtLeast(0)
+                    }) { _, d -> total += d }
+                },
+            ) {
+                Row(Modifier.weight(1f).fillMaxWidth().padding(start = 40.dp, end = 40.dp)) {
+                    val shown = sorted.drop(current * perPage).take(perPage)
+                    for (col in 0 until 3) {
+                        Column(Modifier.width(cell)) {
+                            shown.drop(col * rows).take(rows).forEach { t ->
+                                Box(Modifier.height(rowHeight).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+                                    TagPill(t, selected = t in selected, onClick = { onToggle(t) }, modifier = Modifier.widthIn(max = cell - 16.dp - 48.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+                if (pages > 1) Row(Modifier.fillMaxWidth().height(80.dp), horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+                    repeat(pages) { i -> Box(Modifier.size(20.dp).background(if (i == current) Ink.Black else Ink.White, CircleShape).border(Rm.Outline, Ink.Black, CircleShape)) }
+                }
             }
         }
     }
@@ -230,9 +275,9 @@ internal fun TagsWindow(tags: List<String>, selected: Set<String>, onToggle: (St
  * (shown once there is text). Used for new tags; tapping below the bar cancels. Text is limited to [maxLength] characters.
  */
 @Composable
-internal fun HeaderInputDialog(placeholder: String, confirm: String, onDismiss: () -> Unit, maxLength: Int = 20, onConfirm: (String) -> Unit) {
+internal fun HeaderInputDialog(placeholder: String, confirm: String, onDismiss: () -> Unit, maxLength: Int = 20, initial: String = "", onConfirm: (String) -> Unit) {
     val density = LocalDensity.current
-    var text by remember { mutableStateOf("") }
+    var text by remember { mutableStateOf(initial) }
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -246,7 +291,7 @@ internal fun HeaderInputDialog(placeholder: String, confirm: String, onDismiss: 
                 BasicTextField(
                     value = text, onValueChange = { text = it.take(maxLength) }, singleLine = true,
                     textStyle = RmText.BodyLg.copy(color = Ink.White), cursorBrush = SolidColor(Ink.White),
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = { onConfirm(text.trim()) }),
                     modifier = Modifier.weight(1f).focusRequester(focus),
                     decorationBox = { inner -> Box { if (text.isEmpty()) Text(placeholder, color = Ink.Rule, style = RmText.BodyLg); inner() } },
@@ -266,12 +311,11 @@ internal fun RenameScreen(app: AppController, e: LibraryEntry, onDismiss: () -> 
     FormScreen("Rename", right = if (name.isNotBlank()) "Save" else null, onDismiss = onDismiss, onRight = save) {
         FormNameField("Name", name, { name = it }, save)
         val fmt = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Details", style = RmText.Label)
-            Spacer(Modifier.height(8.dp))
-            if (e.lastModified > 0) Text("Last modified ${fmt.format(Date(e.lastModified))}", style = RmText.Caption)
-            if (e.created > 0) Text("Created ${fmt.format(Date(e.created))}", style = RmText.Caption)
-            Text("ID: ${e.id.substringBefore('-')}", style = RmText.Caption)
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text("Details", style = RmText.LabelLg)
+            if (e.lastModified > 0) Text("Last modified ${fmt.format(Date(e.lastModified))}", style = RmText.Body)
+            if (e.created > 0) Text("Created ${fmt.format(Date(e.created))}", style = RmText.Body)
+            Text("ID: ${e.id.substringBefore('-')}", style = RmText.Body)
         }
     }
 }

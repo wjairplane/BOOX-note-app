@@ -37,7 +37,10 @@ private val SearchSorts = listOf(SortBy.MODIFIED, SortBy.CREATED, SortBy.NAME)
 @Composable
 fun SearchScreen(app: AppController) {
     var query by remember { mutableStateOf("") }
-    var filter by remember { mutableStateOf(SearchFilter.ALL) }
+    // The filter starts as the list the search was opened from.
+    var filter by remember {
+        mutableStateOf(when (app.searchFrom) { Section.NOTEBOOKS -> SearchFilter.NOTEBOOKS; Section.PDFS -> SearchFilter.PDFS; Section.FAVORITES -> SearchFilter.FAVORITES; else -> SearchFilter.ALL })
+    }
     var sort by remember { mutableStateOf(SortBy.MODIFIED) }
     var reversed by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
@@ -85,8 +88,9 @@ fun SearchScreen(app: AppController) {
                 )
                 if (q.isNotEmpty()) Text("Clear", color = Ink.White, style = RmText.Label, modifier = Modifier.padding(start = 16.dp).heightIn(min = Rm.Control).tap { query = "" }.wrapContentHeight(Alignment.CenterVertically))
             }
-            if (q.length >= 2) {
-                Row(Modifier.fillMaxWidth().height(Rm.NavigationHeader).padding(start = Rm.NavigatorMargin, end = 15.dp), verticalAlignment = Alignment.CenterVertically) {
+            // The "N matches" row is always there (also with nothing typed yet): 40 px below the bar, 72 px high, no rule.
+            run {
+                Row(Modifier.fillMaxWidth().padding(top = Rm.NavigatorMargin).height(72.dp).padding(start = Rm.NavigatorMargin, end = 15.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(if (results.size == 1) "1 match" else "${results.size} matches", style = RmText.TitleLg, modifier = Modifier.weight(1f), maxLines = 1)
                     if (!moving) Dropdown(effective.label, "Filter") { close ->
                         SearchFilter.entries.forEach { f ->
@@ -113,10 +117,6 @@ fun SearchScreen(app: AppController) {
                         }
                     }
                 }
-                Rule()
-            }
-            if (q.length >= 2 && results.isEmpty()) {
-                Text("No matches for “$q”.", style = RmText.Body, color = Ink.Grey, modifier = Modifier.padding(Rm.NavigatorMargin))
             }
             LazyColumn(contentPadding = PaddingValues(start = Rm.NavigatorMargin, end = Rm.NavigatorMargin, bottom = 120.dp)) {
                 items(results, key = { it.id }) { e ->
@@ -129,6 +129,6 @@ fun SearchScreen(app: AppController) {
                 }
             }
         }
-        if (app.message.isNotEmpty()) NotificationBar(app.message, onAction = { app.message = "" }, modifier = Modifier.align(Alignment.BottomCenter))
+        if (app.message.isNotEmpty()) NotificationBar(app.message, onAction = { app.message = "" }, modifier = Modifier.align(Alignment.BottomCenter), primary = !app.messageIsSuccess)
     }
 }

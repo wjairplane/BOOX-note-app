@@ -84,6 +84,7 @@ object InkIcons {
     @Composable fun ArrowDown(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_arrow_down, modifier, tint, size)
     @Composable fun Merge(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_merge, modifier, tint, size)
     @Composable fun InformationCircle(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_information_circle, modifier, tint, size)
+    @Composable fun Power(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_power, modifier, tint, size)
     @Composable fun EraseSelection(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_erase_selection, modifier, tint, size)
     @Composable fun Cog(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_cog, modifier, tint, size)
     @Composable fun Lens(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_lens, modifier, tint, size)
