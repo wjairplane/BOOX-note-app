@@ -48,7 +48,7 @@ class PenSamplerTest {
         val l = PageEditor.fromBytes(ed.toBytes()).tree.walk().filterIsInstance<app.inkbridge.rm.scene.Line>().single()
         assertEquals(PenColorId.HIGHLIGHT, l.color)
         assertEquals(100, l.colorRgba!![3])
-        assertEquals(78, l.colorRgba!![0]) // blue's red channel
+        assertEquals(48, l.colorRgba!![0]) // blue's red channel (the firmware's blue is 304ae0)
     }
 
     @Test fun highlighterHasTheSixRealColoursIncludingOrange() {
@@ -60,10 +60,15 @@ class PenSamplerTest {
         assertEquals(listOf(255, 195, 140, 255), l.colorRgba!!.toList())
     }
 
-    @Test fun pensHaveSensibleWidthsAcrossPressure() {
-        for (tool in PenTool.PENS) for (th in 1..3) for (p in listOf(0f, 0.5f, 1f)) {
-            val w = StrokeBuilder.widthRaw(PenSpec(tool, thickness = th), p)
-            assertTrue("$tool th$th p$p width $w", w in 4..400)
+    @Test fun pensRecordTheTabletsWidthsAcrossPressureAndThickness() {
+        for (tool in PenTool.PENS) for (th in 1..3) {
+            val line = StrokeBuilder.build(PenSpec(tool, thickness = th), wave(300f, true))!!
+            for (pt in line.points) assertTrue("$tool th$th width ${pt.width}", pt.width in 2..1200)
         }
+        // The fineliner is a constant 2 px x thickness (raw 8 x thickness).
+        assertEquals(setOf(8), StrokeBuilder.build(PenSpec(PenTool.FINELINER, thickness = 1), wave(300f, true))!!.points.map { it.width }.toSet())
+        assertEquals(setOf(24), StrokeBuilder.build(PenSpec(PenTool.FINELINER, thickness = 3), wave(300f, true))!!.points.map { it.width }.toSet())
+        // The highlighter is a fixed 30 px wide whatever thickness is set.
+        assertEquals(setOf(120), StrokeBuilder.build(PenSpec(PenTool.HIGHLIGHTER, PenColorId.YELLOW, 3), wave(300f, false))!!.points.map { it.width }.toSet())
     }
 }

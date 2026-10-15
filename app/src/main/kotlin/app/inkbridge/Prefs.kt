@@ -67,6 +67,10 @@ class Prefs(context: Context) {
     private var _tbPos by mutableStateOf(runCatching { ToolbarPosition.valueOf(sp.getString("toolbar", "LEFT")!!) }.getOrDefault(ToolbarPosition.LEFT))
     var toolbarPosition: ToolbarPosition get() = _tbPos; set(v) { _tbPos = v; sp.edit().putString("toolbar", v.name).apply() }
 
+    private var _block by mutableStateOf(sp.getBoolean("blockDeviceGestures", true))
+    /** Hold off the device's own edge gestures (BOOX status bar / back swipes) while the app is open. */
+    var blockDeviceGestures: Boolean get() = _block; set(v) { _block = v; sp.edit().putBoolean("blockDeviceGestures", v).apply() }
+
     private var _swipe by mutableStateOf(sp.getBoolean("swipe", true))
     /** Swipe a finger left/right to turn pages. */
     var swipeToTurn: Boolean get() = _swipe; set(v) { _swipe = v; sp.edit().putBoolean("swipe", v).apply() }

@@ -85,8 +85,9 @@ class PageEditorTest {
         val again = PageEditor.fromBytes(ed.toBytes())
         val hl = lines(again.tree).last()
         assertEquals(PenId.HIGHLIGHTER_2, hl.tool)
-        assertEquals(PenColorId.YELLOW, hl.color)
-        assertNull(hl.colorRgba)
+        // A highlighter is stored as the tablet stores one: the "highlight" colour id with an explicit RGBA.
+        assertEquals(PenColorId.HIGHLIGHT, hl.color)
+        assertEquals(listOf(254, 253, 96, 255), hl.colorRgba!!.toList())
     }
 
     @Test fun blankPageMatchesRealDeviceStructure() {
@@ -128,7 +129,8 @@ class PageEditorTest {
         assertEquals(2, tap.points.size)
         val dense = (0..100).map { InputPoint(it * 0.05f, 0f, 0.5f, 0f, 0f, it * 2L) }
         val line = StrokeBuilder.build(PenSpec(PenTool.FINELINER), dense)!!
-        assertTrue("dense samples thinned (${line.points.size})", line.points.size < 25)
+        // The tablet records every sample the digitizer gives.
+        assertEquals(101, line.points.size)
         assertEquals(5.0f, line.points.last().x, 0.01f) // stroke end preserved
     }
 

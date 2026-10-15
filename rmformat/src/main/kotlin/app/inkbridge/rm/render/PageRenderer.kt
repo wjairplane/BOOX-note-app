@@ -64,9 +64,27 @@ class PageRenderer(private val tree: SceneTree) {
     /** Draw one stroke (e.g. the newest one onto an existing bitmap). */
     fun renderLine(line: Line, ox: Float, oy: Float, canvas: PageCanvas) = drawLine(line, ox, oy, canvas)
 
-    fun render(canvas: PageCanvas) {
+    /** Draw the page's text and strokes with the vector pens (for SVG / PDF export and thumbnails). */
+    fun render(canvas: PageCanvas) = render(canvas, strokes = true)
+
+    /** Draw the page's text and highlights; the strokes only when [strokes] (on screen they are drawn pixel by pixel by [renderInk]). */
+    fun render(canvas: PageCanvas, strokes: Boolean) {
         tree.rootText?.let { drawText(it, canvas) }
-        drawGroup(tree.root, 0f, 0f, canvas)
+        drawGroup(tree.root, 0f, 0f, canvas, strokes)
+    }
+
+    /** Draw the page's strokes with the firmware's pen renderer, bottom layer first. */
+    fun renderInk(ink: PixelInk, tf: PixelInk.Transform, paletteMode: Int = 0) = inkGroup(tree.root, 0f, 0f, ink, tf, paletteMode)
+
+    private fun inkGroup(g: Group, ox: Float, oy: Float, ink: PixelInk, tf: PixelInk.Transform, paletteMode: Int) {
+        for (c in g.childItems()) when (c) {
+            is Group -> if (c.visible.value) {
+                val (ax, ay) = anchorOffset(c)
+                inkGroup(c, ox + ax, oy + ay, ink, tf, paletteMode)
+            }
+            is Line -> ink.drawLine(c, ox, oy, tf, paletteMode)
+            is GlyphRange -> Unit
+        }
     }
 
     private fun anchorOffset(g: Group): Pair<Float, Float> {
@@ -91,13 +109,13 @@ class PageRenderer(private val tree: SceneTree) {
         }
     }
 
-    private fun drawGroup(g: Group, ox: Float, oy: Float, canvas: PageCanvas) {
+    private fun drawGroup(g: Group, ox: Float, oy: Float, canvas: PageCanvas, strokes: Boolean = true) {
         for (c in g.childItems()) when (c) {
             is Group -> if (c.visible.value) {
                 val (ax, ay) = anchorOffset(c)
-                drawGroup(c, ox + ax, oy + ay, canvas)
+                drawGroup(c, ox + ax, oy + ay, canvas, strokes)
             }
-            is Line -> drawLine(c, ox, oy, canvas)
+            is Line -> if (strokes) drawLine(c, ox, oy, canvas)
             is GlyphRange -> drawGlyph(c, ox, oy, canvas)
         }
     }

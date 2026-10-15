@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.inkbridge.AppController
+import app.inkbridge.BooxGestureGuard
 import app.inkbridge.BuildConfig
 import app.inkbridge.Screen
 import app.inkbridge.ToolbarPosition
@@ -98,9 +99,19 @@ private fun General(app: AppController, onStorage: () -> Unit) {
     Group("Template for new notebooks") {
         PageTemplate.entries.forEach { t -> ChoiceRow(t.label, p.defaultTemplate == t, { p.defaultTemplate = t }) }
     }
+    val activity = androidx.compose.ui.platform.LocalContext.current.let { c -> generateSequence(c) { (it as? android.content.ContextWrapper)?.baseContext }.filterIsInstance<android.app.Activity>().firstOrNull() }
     Column {
         SwitchRow("Swipe to turn pages", p.swipeToTurn, { p.swipeToTurn = it }, "Swipe a finger left or right. Swiping left on the last page offers a new page.")
+        SwitchRow(
+            "Block the device's edge gestures", p.blockDeviceGestures, { p.blockDeviceGestures = it; activity?.let { a -> BooxGestureGuard.update(a, it) } },
+            "Keeps the BOOX's own swipes from the screen edges (status bar, back) from firing while InkBridge is open. Touch along the very edge of the screen is ignored.",
+        )
         if (!app.isBoox) SwitchRow("Draw with finger", p.fingerDrawing, { p.fingerDrawing = it }, "For testing on devices without a stylus.")
+    }
+    Group("Exit") {
+        Text("Close InkBridge and go back to the device's home screen. Your notebooks are saved.", style = RmText.Body)
+        Spacer(Modifier.height(8.dp))
+        EButton("Exit InkBridge", { activity?.finishAndRemoveTask() })
     }
 }
 
