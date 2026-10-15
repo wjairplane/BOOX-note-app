@@ -120,39 +120,65 @@ fun BatteryIndicator(percent: Int, highlighted: Boolean = percent <= 10, modifie
 }
 
 /**
- * The quick settings panel (xochitl `00e31b12`): hugs the top-right corner with a 2 px border on its left and bottom; a 120 px battery
- * row (percentage, the five-bar icon; press and hold opens the battery settings), then a grid of 112 px icon toggles with 48 px side
- * padding. Anything outside it closes it.
+ * The quick settings panel (xochitl `00e31b12`): flush to the top-right corner, white with a 2 px border on its left and bottom edges,
+ * 48 px side margins and a 48 px spacer at the bottom. A 120 px battery row (charge as "NN %", a bolt while charging, the five-bar icon;
+ * press and hold opens the battery settings) over a divider; the Wi-Fi line (network or "No Wi-Fi" and a signal icon, 80 px high; hold
+ * opens the Wi-Fi settings); then a grid of 112 px toggles 32 px apart: Flight mode (hold opens the app's settings, as in the firmware)
+ * and a screen refresh in the place of the firmware's Screen share. A tap anywhere closes it.
  */
 @Composable
 fun QuickSettingsPanel(app: AppController, onClose: () -> Unit, onRefresh: () -> Unit) {
     val context = LocalContext.current
     val (percent, charging) = rememberBattery()
+    val connectivity = remember { context.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager }
+    val wifiOn = remember {
+        runCatching { connectivity?.getNetworkCapabilities(connectivity.activeNetwork)?.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) == true }.getOrDefault(false)
+    }
+    val airplane = remember { runCatching { Settings.Global.getInt(context.contentResolver, Settings.Global.AIRPLANE_MODE_ON, 0) == 1 }.getOrDefault(false) }
     fun open(intent: Intent) { runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
-    Box(Modifier.fillMaxSize().tap(onClick = onClose)) {
-        Column(Modifier.align(Alignment.TopEnd).width(androidx.compose.foundation.layout.IntrinsicSize.Max).background(Ink.White).tap { }.drawBehind2(left = true, bottom = true).padding(horizontal = 48.dp)) {
+    val wifiSettings = if (android.os.Build.VERSION.SDK_INT >= 29) Intent(Settings.Panel.ACTION_INTERNET_CONNECTIVITY) else Intent(Settings.ACTION_WIFI_SETTINGS)
+    Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures(onTap = { onClose() }) }) {
+        Column(Modifier.align(Alignment.TopEnd).width(352.dp).background(Ink.White).drawBehind2(left = true, bottom = true).padding(horizontal = 48.dp)) {
+            // Battery.
             Row(
                 Modifier.fillMaxWidth().height(Rm.NavigationHeader).pointerInput(Unit) {
                     detectTapGestures(onTap = { onClose() }, onLongPress = { onClose(); open(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS)) })
                 },
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End,
             ) {
-                Text(if (charging) "$percent %  +" else "$percent %", style = RmText.Label, modifier = Modifier.padding(end = 16.dp))
+                if (charging) Image(painterResource(R.drawable.rm_lightning_fill), null, Modifier.size(32.dp), colorFilter = ColorFilter.tint(Ink.Black))
+                Text("$percent %", style = RmText.Label, modifier = Modifier.padding(horizontal = 12.dp))
                 BatteryIndicator(percent)
             }
             Rule()
-            Spacer(Modifier.height(32.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(32.dp), modifier = Modifier.padding(bottom = 48.dp)) {
-                @Composable fun toggle(label: String, on: () -> Unit, icon: @Composable (Color) -> Unit) {
-                    Box(Modifier.size(Rm.ToolButton).border(Rm.Outline, Ink.Black).tap(onClick = on).semantics { contentDescription = label }, contentAlignment = Alignment.Center) { icon(Ink.Black) }
-                }
-                toggle("Wi-Fi", {
-                    onClose()
-                    open(if (android.os.Build.VERSION.SDK_INT >= 29) Intent(Settings.Panel.ACTION_INTERNET_CONNECTIVITY) else Intent(Settings.ACTION_WIFI_SETTINGS))
-                }) { Image(painterResource(R.drawable.rm_wifi_3), null, Modifier.size(Rm.Icon), colorFilter = ColorFilter.tint(it)) }
-                toggle("Refresh screen", { onClose(); onRefresh() }) { InkIcons.Refresh(tint = it) }
-                toggle("Settings", { onClose(); app.screen = Screen.Settings }) { InkIcons.Cog(tint = it) }
+            // Wi-Fi.
+            Row(
+                Modifier.fillMaxWidth().height(Rm.Control).pointerInput(Unit) {
+                    detectTapGestures(onTap = { onClose() }, onLongPress = { onClose(); open(wifiSettings) })
+                },
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(if (wifiOn) "Wi-Fi" else "No Wi-Fi", style = RmText.Label, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                Image(painterResource(if (wifiOn) R.drawable.rm_wifi_3 else R.drawable.rm_wifi_off), null, Modifier.size(Rm.Icon), colorFilter = ColorFilter.tint(Ink.Black))
             }
+            // Toggles.
+            Spacer(Modifier.height(32.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+                @Composable fun toggle(label: String, selected: Boolean, onClick: () -> Unit, onHold: (() -> Unit)? = null, icon: @Composable (Color) -> Unit) {
+                    val fg = if (selected) Ink.White else Ink.Black
+                    Box(
+                        Modifier.size(Rm.ToolButton).background(if (selected) Ink.Black else Ink.White).border(Rm.Outline, Ink.Black)
+                            .pointerInput(Unit) { detectTapGestures(onTap = { onClick() }, onLongPress = { onHold?.invoke() ?: onClick() }) }
+                            .semantics { contentDescription = label },
+                        contentAlignment = Alignment.Center,
+                    ) { icon(fg) }
+                }
+                toggle("Flight mode", airplane, onClick = { open(Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS)); onClose() }, onHold = { onClose(); app.screen = Screen.Settings }) {
+                    Image(painterResource(if (airplane) R.drawable.rm_airplane_fill else R.drawable.rm_airplane), null, Modifier.size(Rm.Icon), colorFilter = ColorFilter.tint(it))
+                }
+                toggle("Refresh screen", false, onClick = { onClose(); onRefresh() }) { InkIcons.Refresh(tint = it) }
+            }
+            Spacer(Modifier.height(48.dp))
         }
     }
 }
@@ -215,68 +241,103 @@ fun DocumentDrawer(app: AppController, activeId: String?, onClose: () -> Unit) {
 }
 
 /**
- * Quick browse: the page slider at the bottom of the document. Dragging along it chooses a page, shown as a thumbnail
- * above the handle; lifting the finger opens that page. It closes after four seconds, or on a tap outside it.
+ * Quick browse: the firmware's page slider (xochitl `00d85fe4`, placed by `00d9fd92` and `00da96df`). A 100 px strip 50 px above the
+ * bottom edge on a white band, with a pill-shaped 8 px groove, an 18 px black dot where the document was when it opened and a 35 px
+ * ringed circle on the current page. Pressing or dragging along it picks a page and shows one monochrome thumbnail above it with
+ * "Page N" under it; lifting the finger opens that page, dragging more than 200 px above the strip cancels. The document title
+ * hangs from the top. It closes 4 s after the finger lifts, or on any press outside it.
  */
 @Composable
-fun PageSlider(app: AppController, doc: LibraryEntry, current: Int, bottomInset: androidx.compose.ui.unit.Dp, startInset: androidx.compose.ui.unit.Dp, endInset: androidx.compose.ui.unit.Dp, onPick: (Int) -> Unit, onClose: () -> Unit) {
-    val last = (doc.pageIds.size - 1).coerceAtLeast(0)
-    var picked by remember { mutableIntStateOf(current.coerceIn(0, last)) }
+fun PageSlider(
+    app: AppController, doc: LibraryEntry, current: Int, portrait: Boolean,
+    bottomExtra: androidx.compose.ui.unit.Dp, startInset: androidx.compose.ui.unit.Dp, endInset: androidx.compose.ui.unit.Dp, topInset: androidx.compose.ui.unit.Dp,
+    onPick: (Int) -> Unit, onClose: () -> Unit,
+) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val n = doc.pageIds.size.coerceAtLeast(1)
+    val last = n - 1
+    val opened = remember { current.coerceIn(0, last) }
+    var value by remember { mutableIntStateOf(opened) }
+    var shown by remember { mutableIntStateOf(opened) } // where the ringed circle sits (the current page; moves after a cancelled drag)
     var pressed by remember { mutableStateOf(false) }
-    var size by remember { mutableStateOf(IntSize.Zero) }
-    LaunchedEffect(pressed, picked) { if (!pressed) { delay(4000); onClose() } }
-    Box(Modifier.fillMaxSize().tap(onClick = onClose)) {
-        Column(
-            Modifier.align(Alignment.BottomCenter).padding(bottom = 50.dp + bottomInset, start = 48.dp + startInset, end = 48.dp + endInset).fillMaxWidth()
-                .background(Ink.White).border(Rm.Outline, Ink.Black).tap { }.padding(horizontal = 40.dp, vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(doc.name, style = RmText.LabelLg, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.padding(bottom = 16.dp))
-            if (pressed) {
-                Row(horizontalArrangement = Arrangement.spacedBy(24.dp), verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(bottom = 16.dp)) {
-                    for (p in listOf(picked - 1, picked, picked + 1)) {
-                        if (p < 0 || p > last) { Spacer(Modifier.width(if (p == picked) 240.dp else 160.dp)); continue }
-                        val bmp by produceState<Bitmap?>(null, doc.id, p, doc.lastModified) {
-                            value = withContext(Dispatchers.IO) { runCatching { app.thumbnails.render(doc, p, 300) }.getOrNull() }
-                        }
-                        Box(Modifier.width(if (p == picked) 240.dp else 160.dp).aspectRatio(0.75f).border(if (p == picked) 4.dp else 2.dp, Ink.Black).background(Ink.White)) {
-                            bmp?.let { Image(it.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
-                        }
-                    }
-                }
+    var thumbnail by remember { mutableStateOf(false) }
+    var stripWidth by remember { mutableStateOf(0) }
+    LaunchedEffect(pressed) { if (!pressed) { delay(4000); onClose() } }
+
+    fun pageAt(xPx: Float): Int {
+        val inset = with(density) { 80.dp.toPx() }
+        val track = (stripWidth - 2 * inset).coerceAtLeast(1f)
+        var page = (((xPx - inset) / track) * last).let { Math.round(it) }.coerceIn(0, last)
+        // Beyond 50 pages the previous location and the current page act as magnets (a page within pageCount / 40 snaps to them).
+        if (last > 49 && page != 0 && page != last) {
+            val threshold = n / 40
+            if (threshold > 1) for (target in listOf(opened, shown)) if (kotlin.math.abs(page - target) < threshold) { page = target; break }
+        }
+        return page
+    }
+
+    val bottom = 50.dp + bottomExtra
+    Box(
+        Modifier.fillMaxSize().pointerInput(Unit) {
+            // A press anywhere else closes the slider (and still reaches whatever is underneath).
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                val h = size.height.toFloat()
+                val sliderTop = h - with(density) { (bottom + 100.dp).toPx() }
+                val bandTop = sliderTop - with(density) { 100.dp.toPx() }
+                if (down.position.y < bandTop || down.position.y < 0f) onClose()
             }
-            // The track: a line with a round handle that carries the page number and follows the finger; first and last page at its ends.
-            val density = androidx.compose.ui.platform.LocalDensity.current
-            val handle = 72.dp
-            val handlePx = with(density) { handle.toPx() }
-            Box(
-                Modifier.fillMaxWidth().height(handle).onSizeChanged { size = it }.pointerInput(last) {
+        },
+    ) {
+        // The white band under the slider and its labels, and the title at the top.
+        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(bottom + 200.dp).background(Ink.White))
+        Box(Modifier.align(Alignment.TopCenter).padding(top = topInset).fillMaxWidth().height(Rm.ToolButton).background(Ink.White), contentAlignment = Alignment.Center) {
+            Text(doc.name, style = RmText.LabelLg, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 112.dp))
+        }
+
+        if (pressed && thumbnail) {
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.align(Alignment.BottomCenter).padding(start = startInset, end = endInset).fillMaxWidth().fillMaxHeight()) {
+                val height = minOf(if (portrait) 820.dp else 615.dp, maxHeight - 400.dp)
+                val bmp by produceState<Bitmap?>(null, doc.id, value, doc.lastModified) {
+                    this.value = withContext(Dispatchers.IO) { runCatching { app.thumbnails.render(doc, value, 640) }.getOrNull() }
+                }
+                Box(Modifier.align(Alignment.BottomCenter).padding(bottom = bottom + 200.dp).height(height).aspectRatio(0.75f).background(Ink.White).border(2.dp, Ink.Black).padding(2.dp)) {
+                    bmp?.let { Image(it.asImageBitmap(), null, contentScale = ContentScale.Crop, colorFilter = ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0f) }), modifier = Modifier.fillMaxSize()) }
+                }
+                Text("Page ${value + 1}", style = RmText.LabelLg, textAlign = TextAlign.Center, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = bottom + 100.dp).width(120.dp))
+            }
+        }
+
+        // The strip: 100 px high, with 80 px of margin each side before the track.
+        Box(
+            Modifier.align(Alignment.BottomCenter).padding(bottom = bottom, start = startInset, end = endInset).fillMaxWidth().height(100.dp)
+                .onSizeChanged { stripWidth = it.width }
+                .pointerInput(last, stripWidth) {
                     awaitEachGesture {
                         val down = awaitFirstDown()
-                        pressed = true
-                        fun at(x: Float) { val usable = (size.width - handlePx).coerceAtLeast(1f); picked = (((x - handlePx / 2) / usable) * last + 0.5f).toInt().coerceIn(0, last) }
-                        at(down.position.x)
+                        pressed = true; thumbnail = true; value = pageAt(down.position.x)
+                        var cancelled = false
                         while (true) {
-                            val ev = awaitPointerEvent()
-                            val c = ev.changes.firstOrNull() ?: break
-                            at(c.position.x); c.consume()
-                            if (!c.pressed) break
+                            val change = awaitPointerEvent().changes.firstOrNull() ?: break
+                            cancelled = change.position.y < -with(density) { 200.dp.toPx() }
+                            thumbnail = !cancelled
+                            if (!cancelled) value = pageAt(change.position.x)
+                            change.consume()
+                            if (!change.pressed) break
                         }
-                        pressed = false
-                        onPick(picked)
+                        if (!cancelled) { shown = value; pressed = false; thumbnail = false; onPick(value) } else { pressed = false; thumbnail = false }
                     }
                 }.semantics { contentDescription = "Page slider" },
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                Box(Modifier.padding(horizontal = handle / 2).fillMaxWidth().height(4.dp).background(Ink.Black))
-                val frac = if (last == 0) 0f else picked.toFloat() / last
-                Box(Modifier.offset { androidx.compose.ui.unit.IntOffset(((size.width - handlePx) * frac).toInt(), 0) }.size(handle).clip(CircleShape).background(Ink.Black), contentAlignment = Alignment.Center) {
-                    Text("${picked + 1}", style = RmText.LabelLg, color = Ink.White)
-                }
-            }
-            Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("1", style = RmText.Caption); Text("${last + 1}", style = RmText.Caption)
-            }
+        ) {
+            val inset = with(density) { 80.dp.toPx() }
+            val track = (stripWidth - 2 * inset).coerceAtLeast(1f)
+            // The groove: a black pill 8 px high, 10 px longer than the track at each end.
+            Box(Modifier.align(Alignment.CenterStart).offset { androidx.compose.ui.unit.IntOffset((inset - with(density) { 10.dp.toPx() }).toInt(), 0) }.width(with(density) { (track / this.density + 20f).dp }).height(8.dp).clip(CircleShape).background(Ink.Black))
+            fun xOf(page: Int) = (inset + (if (last == 0) 0f else page.toFloat() / last * track)).toInt()
+            // Where the document was when the slider opened: an 18 px dot.
+            Box(Modifier.align(Alignment.CenterStart).offset { androidx.compose.ui.unit.IntOffset(xOf(opened) - with(density) { 9.dp.roundToPx() }, 0) }.size(18.dp).clip(CircleShape).background(Ink.Black))
+            // The current page (hidden while dragging): a 35 px white circle with a 2 px ring.
+            if (!pressed) Box(Modifier.align(Alignment.CenterStart).offset { androidx.compose.ui.unit.IntOffset(xOf(shown) - with(density) { 17.5.dp.roundToPx() }, 0) }.size(35.dp).clip(CircleShape).background(Ink.White).border(2.dp, Ink.Black, CircleShape))
         }
     }
 }

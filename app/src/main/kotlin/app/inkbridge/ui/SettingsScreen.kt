@@ -146,6 +146,11 @@ private fun Display(app: AppController) {
         Spacer(Modifier.height(8.dp))
         SegmentedRow(options.map { it.second }, options.indexOfFirst { it.first == p.refreshEveryStrokes }.coerceAtLeast(0), { p.refreshEveryStrokes = options[it].first })
     }
+    Group("Pen preview") {
+        Text("Exact draws the stroke while you write with the reMarkable pen renderer, so it looks the same before and after you lift the pen, and it is always under the toolbar and menus. Fast lets the tablet's own pen layer draw a quicker, plainer trail.", style = RmText.Body)
+        Spacer(Modifier.height(8.dp))
+        SegmentedRow(listOf("Exact", "Fast"), if (p.penExact) 0 else 1, { p.penExact = it == 0 })
+    }
 }
 
 @Composable

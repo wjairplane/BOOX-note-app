@@ -22,7 +22,7 @@ USED = [
     "tag", "duplicate", "copy", "cut", "paste", "notebook", "folder", "quick_sheet", "trashcan_delete", "question_circle", "chevron_left", "chevron_right", "chevron_up",
     "share", "x_circle", "rotate", "page_add", "template", "export", "import", "checkmark", "sliders_horizontal",
     "document", "display", "accessibility", "question_circle", "x_medium", "arrow_up", "arrow_down", "merge", "information_circle", "power", "erase_selection", "cog", "lens", "erase_all", "selection_tool", "fit_to_width", "fit_to_height", "fit_custom", "restore", "compass", "filter", "eye", "eye_closed", "layers", "plus_circle", "text_edit",
-    "chevron_small_right", "chevron_small_up", "ascend", "descend", "grid_large", "grid", "grid_small", "list", "folder_inverted", "tag_inverted", "move_here", "send", "ebook", "page_funnel", "note", "cloud", "three_dots_vertical", "wifi_3", "wifi_off", "arrows_counter_clockwise",
+    "chevron_small_right", "chevron_small_up", "ascend", "descend", "grid_large", "grid", "grid_small", "list", "folder_inverted", "tag_inverted", "move_here", "send", "ebook", "page_funnel", "note", "cloud", "three_dots_vertical", "wifi_3", "wifi_off", "arrows_counter_clockwise", "airplane", "airplane_fill", "lightning_fill", "wifi_0", "wifi_1", "wifi_2", "screen_share",
 ]
 
 ILLUSTRATIONS = os.path.join(ROOT, "reference/remarkable-3.27.1.0/illustrations")

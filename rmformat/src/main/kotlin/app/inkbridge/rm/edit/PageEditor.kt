@@ -46,6 +46,14 @@ class PageEditor private constructor(initial: List<Block>) {
      * Add a stroke drawn at page-space [input] points. Returns the new stroke, or null if the tool
      * isn't a pen or there was no input.
      */
+    /** The stroke [addStroke] would add for [input], without adding it (for drawing the stroke live while the pen is still down). */
+    fun previewLine(spec: PenSpec, input: List<InputPoint>): AddedStroke? {
+        val layer = activeLayer() ?: return null
+        val (ox, oy) = renderer.offsetOf(layer)
+        val line = StrokeBuilder.build(spec, input, ox, oy) ?: return null
+        return AddedStroke(line, ox, oy, CrdtId(0, 0))
+    }
+
     fun addStroke(spec: PenSpec, input: List<InputPoint>): AddedStroke? {
         val layer = activeLayer() ?: throw IllegalStateException("Page has no layer to draw on")
         val (ox, oy) = renderer.offsetOf(layer)

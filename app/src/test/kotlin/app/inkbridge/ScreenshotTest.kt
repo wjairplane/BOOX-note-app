@@ -403,6 +403,9 @@ class ScreenshotTest {
         // Quick browse (the page slider): driven through the surface's edge swipe.
         val surface = findSurface(rule.activity.window.decorView)!!
         rule.runOnUiThread { surface.listenerForTest().onEdgeSwipe(FingerGestures.Edge.QUICK_BROWSE) }; settle(); snapshot("page_slider")
+        // Dragging along it: the monochrome thumbnail and "Page N" appear above the strip.
+        rule.onNodeWithContentDescription("Page slider").performTouchInput { down(androidx.compose.ui.geometry.Offset(width * 0.8f, height / 2f)) }; settle(); snapshot("page_slider_dragging")
+        rule.onNodeWithContentDescription("Page slider").performTouchInput { up() }; settle()
     }
 
     /** The firmware-style template picker on its own: all templates, the filter menu open, then Planners in landscape. */

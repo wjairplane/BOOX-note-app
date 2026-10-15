@@ -190,4 +190,28 @@ class PageSessionTest {
         assertTrue(s.mergeLayerDown(first)); assertEquals(listOf("Notes"), s.layers().map { it.label })
         assertTrue(s.backgroundVisible()); s.setBackgroundVisible(false); assertFalse(s.backgroundVisible())
     }
+
+    @Test fun liveStrokeLooksLikeTheFinishedStrokeAndLeavesNoTrace() {
+        val s = session()
+        val bmp = s.bitmap!!
+        val before = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        val stroke = path(s, -200f, 600f, -150f, 620f, -90f, 640f, -30f, 650f, 40f, 640f, 120f, 610f)
+        val spec = PenSpec(PenTool.BALLPOINT)
+        // Written in two frames, as the pen moves.
+        val first = s.previewStroke(spec, stroke.take(3), 0)
+        val rect = s.previewStroke(spec, stroke, 3)
+        assertNotNull(first); assertNotNull(rect)
+        val live = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        assertTrue(live.indices.any { live[it] != before[it] })
+
+        // The pen lifts: the live stroke comes off, the stroke is added, and the picture matches what was shown (apart from the end cap).
+        s.endPreview()
+        val cleared = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        assertArrayEquals(before, cleared)
+        assertTrue(s.addStroke(spec, stroke))
+        assertNotNull(s.takeStrokeRect()); assertNull(s.takeStrokeRect())
+        val done = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        val different = live.indices.count { live[it] != done[it] }
+        assertTrue("live and final differ in $different px", different < 40)
+    }
 }
