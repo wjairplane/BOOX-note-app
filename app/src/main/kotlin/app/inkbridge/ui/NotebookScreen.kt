@@ -2,6 +2,9 @@ package app.inkbridge.ui
 
 import android.graphics.Bitmap
 import android.graphics.Rect
+import app.inkbridge.pen.FingerGestures
+import app.inkbridge.pen.HoldGesture
+import app.inkbridge.rm.edit.ShapeSnap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -125,7 +128,8 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     var surface by remember { mutableStateOf<PenSurface?>(null) }
     var strokes by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf("") }
-    val foldoutOpen = panel || (eraserMenu && erasing) || layersMenu || menu
+    var slider by remember { mutableStateOf(false) }
+    val foldoutOpen = panel || (eraserMenu && erasing) || layersMenu || menu || slider || app.overlay != null
 
     val slot = prefs.slot(activeSlot)
     val spec = if (selecting) PenSpec(PenTool.SELECTION) else if (erasing) PenSpec(if (eraseArea) PenTool.ERASE_AREA else PenTool.ERASER) else PenSpec(slot.tool, slot.colorId, slot.thickness)
@@ -146,6 +150,9 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
         revision++
     }
     DisposableEffect(session) { val s = session; onDispose { save(s) } }
+    DisposableEffect(surface) { app.onRefresh = { surface?.fullRefresh() }; onDispose { app.onRefresh = null } }
+
+    fun closeDoc() { save(session); app.screen = Screen.Files(folderId = doc.parentId.takeIf { it != "trash" } ?: "") }
 
     fun leaveSelection() {
         if (!selecting) return
@@ -331,19 +338,38 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                     if (every > 0 && strokes % every == 0) surface?.fullRefresh()
                 },
                 onSwipe = { forward ->
-                    if ((session?.zoom ?: 1f) > 1.01f) return@PageArea // zoomed in: two fingers pan, a swipe doesn't turn the page
                     // Past the last page the first swipe only offers a new page; a second swipe (or a tap on the button) adds it.
                     if (forward) { if (pageIndex < doc.pageIds.lastIndex) goTo(pageIndex + 1) else if (canDraw) { if (newPagePrompt) newPageAfterCurrent() else { newPagePrompt = true; pageLabelVisible = true } } }
                     else goTo(pageIndex - 1)
                 },
                 excludeRects = blockers.rects(),
                 blockers = blockers,
+                onSelectBelow = { selecting = true; erasing = false; panel = false; eraserMenu = false },
+                onEdgeSwipe = { edge ->
+                    panel = false; menu = false; eraserMenu = false; layersMenu = false
+                    when (edge) {
+                        FingerGestures.Edge.CLOSE -> closeDoc()
+                        FingerGestures.Edge.QUICK_SETTINGS -> app.overlay = Overlay.QUICK_SETTINGS
+                        FingerGestures.Edge.DRAWER -> app.overlay = Overlay.DRAWER
+                        FingerGestures.Edge.QUICK_BROWSE -> if (doc.pageIds.size > 1) { save(session); slider = true; pageLabelVisible = false }
+                    }
+                },
                 onFingerTap = { fingers ->
                     // Two fingers tapping undo, three redo (the tablet's shortcuts).
                     if (fingers == 2 && session?.undo() == true) { selectionRect = null; surface?.refresh(); revision++ }
                     else if (fingers == 3 && session?.redo() == true) { selectionRect = null; surface?.refresh(); revision++ }
                 },
             )
+
+            // The zoom button: while zoomed, a tap snaps back to the whole page.
+            @Suppress("UNUSED_EXPRESSION") revision
+            val zoomNow = session?.zoom ?: 1f
+            if (zoomNow > 1.01f && !overview) {
+                ZoomButton(zoomNow, {
+                    val s = session ?: return@ZoomButton
+                    scope.launch(Dispatchers.Default) { s.fitPage(); withContext(Dispatchers.Main) { surface?.let { v -> pushView(v, s); v.setTool(v.currentSpec, s.transform?.scale ?: 1f) }; selectionRect = s.selectionRect(); revision++ } }
+                }, Modifier.align(if (pos == ToolbarPosition.TOP) Alignment.BottomCenter else Alignment.TopCenter).padding(top = if (pos == ToolbarPosition.TOP) 0.dp else 24.dp, bottom = if (pos == ToolbarPosition.TOP) 120.dp else 0.dp).blocksPen(blockers, "zoom"))
+            }
 
             // "Page X of Y": a white 258 x 72 label at the bottom centre for four seconds after the page changes.
             LaunchedEffect(pageIndex, doc.pageIds.size) { pageLabelVisible = true; kotlinx.coroutines.delay(4000); pageLabelVisible = false }
@@ -395,11 +421,13 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 Modifier.align(if (pos == ToolbarPosition.RIGHT) Alignment.TopStart else Alignment.TopEnd).size(TOOLBAR_THICKNESS)
                     .blocksPen(blockers, "close")
                     .background(if (pos == ToolbarPosition.TOP) Ink.White else Color.Transparent)
-                    .tap { save(session); app.screen = Screen.Files(folderId = doc.parentId.takeIf { it != "trash" } ?: "") }
+                    .tap { closeDoc() }
                     .semantics { contentDescription = "Close notebook" },
                 contentAlignment = Alignment.Center,
             ) { InkIcons.XCircle() }
         }
+
+        if (slider) PageSlider(app, doc, pageIndex, if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp, onPick = { slider = false; goTo(it) }, onClose = { slider = false })
 
         if (templatePicker) TemplatePickerScreen(doc.template, onPick = { templatePicker = false; save(session); app.setTemplate(doc, it) }, onBack = { templatePicker = false })
 
@@ -448,7 +476,10 @@ private fun PageArea(
     selecting: Boolean, selectionRect: android.graphics.RectF?, onSelectionRect: (android.graphics.RectF?) -> Unit, onSelectionAction: (String) -> Unit,
     onSurface: (PenSurface?) -> Unit, onChanged: () -> Unit, onSwipe: (Boolean) -> Unit,
     excludeRects: List<Rect>, onFingerTap: (Int) -> Unit, blockers: PenBlockers,
+    onEdgeSwipe: (FingerGestures.Edge) -> Unit, onSelectBelow: () -> Unit,
 ) {
+    val currentOnEdge by rememberUpdatedState(onEdgeSwipe)
+    val currentOnSelectBelow by rememberUpdatedState(onSelectBelow)
     val scope = rememberCoroutineScope()
     val currentOnSelectionRect by rememberUpdatedState(onSelectionRect)
     var controlsHidden by remember { mutableStateOf(false) }
@@ -500,10 +531,30 @@ private fun PageArea(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
                 PenSurface(ctx, object : PenListener {
-                    override fun onStroke(samples: List<PenSample>) = apply(samples) { s, sp -> s.addStroke(sp, samples) }
+                    override fun onStroke(samples: List<PenSample>) {
+                        val spec = surface?.currentSpec
+                        val body = if (spec != null && spec.tool != PenTool.ERASER) HoldGesture.body(samples) else null
+                        val shape = body?.let { ShapeSnap.detect(it.map { p -> p.x to p.y }) }
+                        if (shape == null) { apply(samples) { s, sp -> s.addStroke(sp, samples) }; return }
+                        if (ShapeSnap.isHorizontalLine(shape)) {
+                            // A horizontal line held still selects everything below it.
+                            val s = currentSession
+                            if (s != null && s.selectBelow(shape.points.first().second)) { surface?.refresh(); currentOnSelectBelow(); currentOnSelectionRect(s.selectionRect()); currentOnChanged(); return }
+                        }
+                        val snapped = HoldGesture.resample(shape.points, body)
+                        apply(snapped) { s, sp -> s.addStroke(sp, snapped) }
+                    }
                     override fun onErase(samples: List<PenSample>) = apply(samples) { s, _ -> s.erase(samples, currentEraserRadius) }
                     override fun onSwipe(forward: Boolean) { currentOnSwipe(forward) }
                     override fun onFingerTap(fingers: Int) { currentOnFingerTap(fingers) }
+                    override fun onEdgeSwipe(edge: FingerGestures.Edge) { currentOnEdge(edge) }
+                    override fun onJump(down: Boolean) {
+                        val s = currentSession ?: return
+                        val view = surface ?: return
+                        scope.launch(Dispatchers.Default) {
+                            if (s.jump(down)) withContext(Dispatchers.Main) { pushView(view, s); view.setTool(view.currentSpec, s.transform?.scale ?: 1f); currentOnSelectionRect(s.selectionRect()); currentOnChanged() }
+                        }
+                    }
                     override fun onSelectionGesture(active: Boolean) { controlsHidden = active }
                     override fun onEraseArea(samples: List<PenSample>) = apply(samples) { s, _ -> s.eraseInside(samples) }
                     override fun onLasso(samples: List<PenSample>) {

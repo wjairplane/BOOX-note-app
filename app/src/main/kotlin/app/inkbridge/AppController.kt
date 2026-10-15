@@ -31,6 +31,10 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
     var library by mutableStateOf(Library(emptyList()))
         private set
     var screen by mutableStateOf<Screen>(Screen.Files())
+    /** The panel floating over the current screen (quick settings, the document drawer), opened by an edge swipe. */
+    /** Set by the open notebook so "Refresh screen" in quick settings can clear its pen layer too. */
+    var onRefresh: (() -> Unit)? = null
+    var overlay by mutableStateOf<app.inkbridge.ui.Overlay?>(null)
     /** The bottom notification bar's text ("3 items were moved to Trash", errors, progress); empty = no bar. */
     var message by mutableStateOf("")
 

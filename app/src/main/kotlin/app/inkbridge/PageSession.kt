@@ -112,6 +112,17 @@ class PageSession(
         applyView(next)
     }
 
+    /** The "jump" gesture: scroll a screen up or down inside a zoomed page. False when the page can't move that way. */
+    @Synchronized
+    fun jump(down: Boolean): Boolean {
+        val t = transform ?: return false
+        if (t.zoom <= 1.01f) return false
+        val next = t.pannedBy(0f, if (down) -t.viewHeight * 0.85f else t.viewHeight * 0.85f)
+        if (next.offsetY == t.offsetY) return false
+        applyView(next)
+        return true
+    }
+
     @Synchronized fun fitPage() { val t = transform ?: return; applyView(PageTransform(t.layout, t.viewWidth, t.viewHeight)) }
     @Synchronized fun fitWidth() { val t = transform ?: return; applyView(t.fitWidth()) }
     @Synchronized fun fitHeight() { val t = transform ?: return; applyView(t.fitHeight()) }
@@ -248,6 +259,18 @@ class PageSession(
     @Synchronized
     fun pasteClipboard(): Boolean {
         val ids = editor.pasteStrokes(StrokeClipboard.lines, 40f, 40f)
+        if (ids.isEmpty()) return false
+        selection = ids
+        redrawAll()
+        return true
+    }
+
+    /** "Select below": select everything on the page that lies under the view-pixel line at [y]. */
+    @Synchronized
+    fun selectBelow(y: Float): Boolean {
+        val t = transform ?: return false
+        val py = t.toPageY(y); val l = t.layout
+        val ids = editor.selectInside(listOf(l.xMin to py, l.xMax to py, l.xMax to l.yMax, l.xMin to l.yMax))
         if (ids.isEmpty()) return false
         selection = ids
         redrawAll()

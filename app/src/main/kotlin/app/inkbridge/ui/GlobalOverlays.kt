@@ -41,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -153,9 +154,6 @@ private fun Modifier.drawBehind2(left: Boolean = false, bottom: Boolean = false)
     },
 )
 
-private fun Modifier.drawBehind(block: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit): Modifier =
-    this.then(androidx.compose.ui.draw.drawBehind(block))
-
 /**
  * The document drawer: a sheet hanging from the top edge with Recent and Favorites tabs and a row of document thumbnails.
  * Tapping one opens it; tapping below the sheet closes it.
@@ -199,10 +197,10 @@ fun DocumentDrawer(app: AppController, activeId: String?, onClose: () -> Unit) {
 @Composable
 fun PageSlider(app: AppController, doc: LibraryEntry, current: Int, bottomInset: androidx.compose.ui.unit.Dp, onPick: (Int) -> Unit, onClose: () -> Unit) {
     val last = (doc.pageIds.size - 1).coerceAtLeast(0)
-    var value by remember { mutableIntStateOf(current.coerceIn(0, last)) }
+    var picked by remember { mutableIntStateOf(current.coerceIn(0, last)) }
     var pressed by remember { mutableStateOf(false) }
     var size by remember { mutableStateOf(IntSize.Zero) }
-    LaunchedEffect(pressed, value) { if (!pressed) { delay(4000); onClose() } }
+    LaunchedEffect(pressed, picked) { if (!pressed) { delay(4000); onClose() } }
     Box(Modifier.fillMaxSize().tap(onClick = onClose)) {
         Column(
             Modifier.align(Alignment.BottomCenter).padding(bottom = 50.dp + bottomInset, start = 48.dp, end = 48.dp).fillMaxWidth()
@@ -212,40 +210,40 @@ fun PageSlider(app: AppController, doc: LibraryEntry, current: Int, bottomInset:
             Text(doc.name, style = RmText.LabelLg, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.height(112.dp).wrapCentre())
             if (pressed) {
                 Row(horizontalArrangement = Arrangement.spacedBy(24.dp), verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(bottom = 16.dp)) {
-                    for (p in listOf(value - 1, value, value + 1)) {
-                        if (p < 0 || p > last) { Spacer(Modifier.width(if (p == value) 240.dp else 160.dp)); continue }
+                    for (p in listOf(picked - 1, picked, picked + 1)) {
+                        if (p < 0 || p > last) { Spacer(Modifier.width(if (p == picked) 240.dp else 160.dp)); continue }
                         val bmp by produceState<Bitmap?>(null, doc.id, p, doc.lastModified) {
                             value = withContext(Dispatchers.IO) { runCatching { app.thumbnails.render(doc, p, 300) }.getOrNull() }
                         }
-                        Box(Modifier.width(if (p == this@Column.let { value }) 240.dp else 160.dp).aspectRatio(0.75f).border(if (p == value) 4.dp else 2.dp, Ink.Black).background(Ink.White)) {
+                        Box(Modifier.width(if (p == picked) 240.dp else 160.dp).aspectRatio(0.75f).border(if (p == picked) 4.dp else 2.dp, Ink.Black).background(Ink.White)) {
                             bmp?.let { Image(it.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
                         }
                     }
                 }
             }
-            Text("${value + 1} of ${last + 1}", style = RmText.Label, modifier = Modifier.padding(bottom = 8.dp))
+            Text("${picked + 1} of ${last + 1}", style = RmText.Label, modifier = Modifier.padding(bottom = 8.dp))
             // The track: a 2 px line with a round handle that follows the finger.
             Box(
                 Modifier.fillMaxWidth().height(80.dp).onSizeChanged { size = it }.pointerInput(last) {
                     awaitEachGesture {
                         val down = awaitFirstDown()
                         pressed = true
-                        fun at(x: Float) { val w = size.width.toFloat().coerceAtLeast(1f); value = ((x / w) * last + 0.5f).toInt().coerceIn(0, last) }
+                        fun at(x: Float) { val w = size.width.toFloat().coerceAtLeast(1f); picked = ((x / w) * last + 0.5f).toInt().coerceIn(0, last) }
                         at(down.position.x)
                         while (true) {
-                            val ev = awaitPointerEventOrNull() ?: break
+                            val ev = awaitPointerEvent()
                             val c = ev.changes.firstOrNull() ?: break
                             at(c.position.x); c.consume()
                             if (!c.pressed) break
                         }
                         pressed = false
-                        onPick(value)
+                        onPick(picked)
                     }
                 }.semantics { contentDescription = "Page slider" },
                 contentAlignment = Alignment.CenterStart,
             ) {
                 Box(Modifier.fillMaxWidth().height(2.dp).background(Ink.Black))
-                val frac = if (last == 0) 0f else value.toFloat() / last
+                val frac = if (last == 0) 0f else picked.toFloat() / last
                 val handle = 56.dp
                 Box(Modifier.padding(start = ((size.width / androidx.compose.ui.platform.LocalDensity.current.density - handle.value) * frac).dp).size(handle).clip(CircleShape).background(Ink.Black))
             }
@@ -255,8 +253,6 @@ fun PageSlider(app: AppController, doc: LibraryEntry, current: Int, bottomInset:
 
 private fun Modifier.wrapCentre(): Modifier = this
 
-private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.awaitPointerEventOrNull() =
-    runCatching { awaitPointerEvent() }.getOrNull()
 
 /** The zoom button: shows the zoom level at the top centre while the page is zoomed; a tap snaps back to the whole page. */
 @Composable

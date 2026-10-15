@@ -27,7 +27,7 @@ USED = [
 
 ILLUSTRATIONS = os.path.join(ROOT, "reference/remarkable-3.27.1.0/illustrations")
 # Guides artwork: converted as rm_ill_<name>.xml
-USED_ILLUSTRATIONS = ["undo", "redo", "guides", "select_item", "flip_page", "zoom", "pan", "touch_gestures", "document_types", "writing_and_reading", "distraction_free_software_big"]
+USED_ILLUSTRATIONS = ["undo", "redo", "guides", "select_item", "flip_page", "zoom", "pan", "touch_gestures", "scroll", "jump", "close_document", "open_drawer", "quick_settings", "quick_browse", "draw_shapes", "select_below", "document_types", "writing_and_reading", "distraction_free_software_big"]
 
 def convert(name, src=SRC, prefix="rm_"):
     s = open(os.path.join(src, name + ".svg"), encoding="utf8").read()
