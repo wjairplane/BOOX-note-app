@@ -80,9 +80,14 @@ fun TemplatePickerScreen(selected: PageTemplate, onPick: (PageTemplate) -> Unit,
 
     Column(Modifier.fillMaxSize().background(Ink.White).pointerInput(Unit) { detectTapGestures { } }) {
         NavigationBar("Choose template", onBack)
-        Box(Modifier.fillMaxWidth().height(Rm.Control + Rm.Outline)) {
+        // The tab bar (TabControl): one "Default" tab at the left, the filter dropdown inside it at the right (15 px margin), a 2 px line below.
+        Box(Modifier.fillMaxWidth().height(Rm.ToolButton)) {
+            Column(Modifier.align(Alignment.BottomStart).padding(start = Rm.NavigatorMargin).width(200.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Default", style = RmText.LabelLgStrong, modifier = Modifier.padding(vertical = 20.dp))
+                Box(Modifier.fillMaxWidth().height(6.dp).background(Ink.Black))
+            }
             Box(Modifier.align(Alignment.BottomCenter)) { Rule() }
-            Box(Modifier.align(Alignment.CenterEnd).padding(end = Rm.NavigatorMargin)) {
+            Box(Modifier.align(Alignment.CenterEnd).padding(end = 15.dp)) {
                 Row(
                     Modifier.width(Rm.DropdownWidth).height(Rm.Control).border(if (open) Rm.Outline else 0.dp, Ink.Black).tap { open = !open }.padding(horizontal = 16.dp).semantics { contentDescription = "Filter" },
                     verticalAlignment = Alignment.CenterVertically,
@@ -101,10 +106,13 @@ fun TemplatePickerScreen(selected: PageTemplate, onPick: (PageTemplate) -> Unit,
                 }
             }
         }
+        // The grid sits 59 px below the tabs with 44 px at the sides: cells 340 px high, as many columns as fit 340 px (4 x 329 px on the 1404 px screen), no gaps.
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            val columns = kotlin.math.ceil(maxWidth.value / 340f).toInt().coerceAtLeast(1)
-            LazyVerticalGrid(GridCells.Fixed(columns), contentPadding = PaddingValues(horizontal = 40.dp, vertical = 32.dp), horizontalArrangement = Arrangement.spacedBy(32.dp), verticalArrangement = Arrangement.spacedBy(32.dp)) {
-                items(items, key = { it.id }) { t -> TemplateCard(t, t == selected, { onPick(t) }, Modifier.heightIn(min = 276.dp)) }
+            val columns = kotlin.math.ceil((maxWidth.value - 88f) / 340f).toInt().coerceAtLeast(1)
+            LazyVerticalGrid(GridCells.Fixed(columns), contentPadding = PaddingValues(start = 44.dp, end = 44.dp, top = 59.dp, bottom = 59.dp)) {
+                items(items, key = { it.id }) { t ->
+                    Box(Modifier.fillMaxWidth().height(340.dp), contentAlignment = Alignment.TopCenter) { TemplateCard(t, t == selected, { onPick(t) }, Modifier.width(200.dp)) }
+                }
             }
         }
     }

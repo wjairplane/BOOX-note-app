@@ -28,6 +28,12 @@ data class LibraryEntry(
     val created: Long = lastModified,
     /** Which page is the notebook's cover: -1 = the last visited page (default), 0 = the first page (`coverPageNumber`). */
     val coverPage: Int = -1,
+    /** The page the document was on when it was last closed (`lastOpenedPage`), 0-based. */
+    val lastOpenedPage: Int = 0,
+    /** When the document was last opened (`lastOpened`, ms since the epoch); 0 = never. */
+    val lastOpened: Long = 0L,
+    /** Total size of the entry's files in bytes (pages and PDF source); 0 for folders and entries parsed without a directory. */
+    val sizeBytes: Long = 0L,
 ) {
     val isFolder get() = type == EntryType.FOLDER
 }
@@ -79,7 +85,7 @@ object LibraryScanner {
         for (meta in metas.sortedBy { it.name }) {
             try {
                 parseEntry(meta.name.removeSuffix(".metadata"), meta.readText(), File(dir, meta.name.removeSuffix(".metadata") + ".content").takeIf { it.isFile }?.readText())
-                    ?.let { entries += it }
+                    ?.let { entries += it.copy(sizeBytes = if (it.isFolder) 0L else sizeOf(dir, it.id)) }
             } catch (e: Exception) {
                 onProblem(meta, e)
             }
@@ -110,8 +116,16 @@ object LibraryScanner {
             }.distinct(),
             created = m.str("createdTime")?.toLongOrNull() ?: content?.str("createdTime")?.toLongOrNull() ?: m.str("lastModified")?.toLongOrNull() ?: 0L,
             coverPage = content?.get("coverPageNumber")?.let { (it as? JsonPrimitive)?.intOrNull } ?: -1,
+            lastOpenedPage = (content?.get("lastOpenedPage") as? JsonPrimitive)?.intOrNull
+                ?: (m["lastOpenedPage"] as? JsonPrimitive)?.intOrNull ?: 0,
+            lastOpened = m.str("lastOpened")?.toLongOrNull() ?: 0L,
         )
     }
+
+    /** Bytes used by a document's page files plus its `.pdf`/`.epub` source. */
+    private fun sizeOf(dir: File, id: String): Long =
+        File(dir, id).listFiles().orEmpty().filter { it.isFile }.sumOf { it.length() } +
+            File(dir, "$id.pdf").length() + File(dir, "$id.epub").length()
 
     /** Newer firmware lists pages under `cPages.pages[]` (with per-page `deleted` markers); older uses `pages[]`. */
     private fun pageIds(content: JsonObject): List<String> {

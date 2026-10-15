@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -50,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import app.inkbridge.AppController
 import app.inkbridge.GridSize
 import app.inkbridge.Prefs
+import app.inkbridge.R
 import app.inkbridge.Screen
 import app.inkbridge.Section
 import app.inkbridge.SortBy
@@ -82,7 +84,11 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
     var picked by remember(s) { mutableStateOf(setOf<String>()) }
     var tagMode by remember(s) { mutableStateOf(false) }
     var tagFilter by remember(s) { mutableStateOf(setOf<String>()) }
-    var tagTab by remember(s) { mutableStateOf(0) } // 0 = All, 1 = Documents
+    var tagTab by remember(s) { mutableStateOf(0) } // 0 = All, 1 = Pages, 2 = Documents
+    // Press and hold on a tag pill selects it for editing (the header then offers Rename and Delete).
+    var tagEdit by remember(s) { mutableStateOf(setOf<String>()) }
+    var tagRename by remember { mutableStateOf<String?>(null) }
+    var tagDelete by remember { mutableStateOf(false) }
     LaunchedEffect(s, lib) { app.pendingSelect?.let { id -> if (lib[id] != null) { picked = setOf(id); app.pendingSelect = null } } }
     // The notification bar goes away by itself.
     LaunchedEffect(app.message) { if (app.message.isNotEmpty()) { delay(NOTIFICATION_MS); app.message = "" } }
@@ -91,7 +97,10 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
         if (uri != null) app.importPdf(uri, s.folderId)
     }
 
-    val entries = remember(lib, s, prefs.sortBy, prefs.sortReversed, tagFilter, tagTab) { visibleEntries(lib, s, prefs.sortBy, prefs.sortReversed, tagFilter, tagTab == 1) }
+    val entries = remember(lib, s, prefs.sortBy, prefs.sortReversed, tagFilter, tagTab) {
+        // Page tags aren't supported, so the Pages tab is always empty.
+        if (s.section == Section.TAGS && tagTab == 1) emptyList() else visibleEntries(lib, s, prefs.sortBy, prefs.sortReversed, tagFilter, tagTab == 2)
+    }
     val movingItems = app.moving?.mapNotNull { lib[it] }
     val isMoving = movingItems != null
     val inFolder = s.section == Section.MY_FILES && s.folderId.isNotEmpty()
@@ -102,6 +111,8 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
             val selection = entries.filter { it.id in picked }
             if (movingItems != null) {
                 MovingBar(app, s, movingItems, onNewFolder = { dialog = Dialogs.NewFolder }, onCancel = { picked = movingItems.map { it.id }.toSet(); app.moving = null })
+            } else if (tagEdit.isNotEmpty() && s.section == Section.TAGS) {
+                TagEditBar(tagEdit, onCancel = { tagEdit = emptySet() }, onRename = { tagRename = tagEdit.first() }, onDelete = { tagDelete = true })
             } else if (selection.isNotEmpty()) {
                 if (tagMode) TagBar(app, selection, onBack = { tagMode = false })
                 else ActionBar(
@@ -117,7 +128,8 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
                 Box(Modifier.fillMaxWidth().height(Rm.NavigationHeader).padding(horizontal = 8.dp)) {
                     IconBtn("Menu", { menuOpen = true }, Modifier.align(Alignment.CenterStart), size = Rm.ToolButton) { InkIcons.Menu(tint = it) }
                     Text("InkBridge", style = RmText.Wordmark, modifier = Modifier.align(Alignment.Center))
-                    BatteryIndicator(Modifier.align(Alignment.CenterEnd).padding(end = 32.dp))
+                    val (battery, _) = rememberBattery()
+                    BatteryIndicator(battery, highlighted = battery <= 10, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 48.dp).semantics { contentDescription = "Battery $battery%" })
                 }
             }
             // --- ExplorerHeader (120 px): breadcrumbs and the sort dropdown ---
@@ -125,7 +137,14 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
                 Breadcrumbs(app, lib, s, Modifier.weight(1f))
                 if (entries.isNotEmpty()) SortDropdown(prefs, trash = s.section == Section.TRASH)
             }
-            if (s.section == Section.TAGS) TagsFilter(lib, tagFilter, tagTab, onTab = { tagTab = it }, onToggle = { t -> tagFilter = if (t in tagFilter) tagFilter - t else tagFilter + t })
+            if (s.section == Section.TAGS) TagsFilter(
+                lib, if (tagEdit.isNotEmpty()) tagEdit else tagFilter, tagTab, onTab = { tagTab = it },
+                onToggle = { t ->
+                    if (tagEdit.isNotEmpty()) tagEdit = if (t in tagEdit) tagEdit - t else tagEdit + t
+                    else tagFilter = if (t in tagFilter) tagFilter - t else tagFilter + t
+                },
+                onLongPress = { t -> if (picked.isEmpty() && !isMoving) tagEdit = tagEdit + t },
+            )
 
             // --- content ---
             val folders = entries.filter { it.isFolder }
@@ -145,7 +164,7 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
             ) {
                 if (entries.isEmpty()) {
                     val (title, body) = emptyText(s, tagFilter.isNotEmpty())
-                    EmptyState(title, body)
+                    EmptyState(title, body, emptyArt(s, tagFilter.isNotEmpty()))
                 } else if (prefs.gridView) {
                     // Cells are a third, a quarter or a sixth of the 1404 px screen less the 18 px margins (4 columns: 342 px cells).
                     LazyVerticalGrid(
@@ -180,7 +199,7 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
                     if (s.section == Section.TRASH) {
                         Box(Modifier.size(Rm.ToolButton).tap { dialog = Dialogs.EmptyTrash }.semantics { contentDescription = "Empty trash" }, contentAlignment = Alignment.Center) { InkIcons.TrashDelete() }
                     } else {
-                        Box(Modifier.size(Rm.ToolButton).tap { createOpen = false; app.screen = Screen.Search }.semantics { contentDescription = "Search" }, contentAlignment = Alignment.Center) { InkIcons.Search() }
+                        Box(Modifier.size(Rm.ToolButton).tap { createOpen = false; app.searchFrom = s.section; app.screen = Screen.Search }.semantics { contentDescription = "Search" }, contentAlignment = Alignment.Center) { InkIcons.Search() }
                         if (showCreate) {
                             // Tap opens the create card; press and hold makes a quick sheet at once.
                             Box(
@@ -208,9 +227,24 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
             }
         }
 
-        if (app.message.isNotEmpty()) NotificationBar(app.message, onAction = { app.message = "" }, modifier = Modifier.align(Alignment.BottomCenter))
+        if (app.message.isNotEmpty()) NotificationBar(app.message, onAction = { app.message = "" }, modifier = Modifier.align(Alignment.BottomCenter), primary = !app.messageIsSuccess)
 
         if (menuOpen) Sidebar(app, s, onClose = { menuOpen = false }, onImport = { pdfPicker.launch(arrayOf("application/pdf")) })
+    }
+
+    tagRename?.let { old ->
+        HeaderInputDialog("Enter tag name", "Save", onDismiss = { tagRename = null }, initial = old) { name ->
+            app.renameTag(old, name)
+            tagFilter = tagFilter.map { if (it == old) name else it }.toSet()
+            tagEdit = emptySet(); tagRename = null
+        }
+    }
+    if (tagDelete) {
+        val n = tagEdit.size
+        ConfirmDialog(
+            "Delete $n ${if (n == 1) "tag" else "tags"}?", "If you delete this tag, it'll be removed from all tagged content.", "Delete",
+            { tagDelete = false },
+        ) { app.deleteTags(tagEdit); tagFilter = tagFilter - tagEdit; tagEdit = emptySet(); tagDelete = false }
     }
 
     when (val d = dialog) {
@@ -270,7 +304,7 @@ internal fun MiddleText(text: String, style: TextStyle, color: Color, modifier: 
     }
 }
 
-private fun visibleEntries(lib: Library, s: Screen.Files, sort: SortBy, reversed: Boolean, tags: Set<String>, documentsOnly: Boolean): List<LibraryEntry> {
+internal fun visibleEntries(lib: Library, s: Screen.Files, sort: SortBy, reversed: Boolean, tags: Set<String>, documentsOnly: Boolean): List<LibraryEntry> {
     val base = when (s.section) {
         Section.MY_FILES -> lib.children(s.folderId)
         // "Filter by": every notebook (or PDF) outside the trash, whichever folder it is in.
@@ -286,7 +320,9 @@ private fun visibleEntries(lib: Library, s: Screen.Files, sort: SortBy, reversed
     val byName = compareBy<LibraryEntry> { it.name.lowercase() }
     val order: Comparator<LibraryEntry> = when (sort) {
         SortBy.MODIFIED -> compareByDescending<LibraryEntry> { it.lastModified }.then(byName)
+        SortBy.LAST_OPENED -> compareByDescending<LibraryEntry> { it.lastOpened }.then(byName)
         SortBy.CREATED -> compareByDescending<LibraryEntry> { it.created }.then(byName)
+        SortBy.SIZE -> compareByDescending<LibraryEntry> { it.sizeBytes }.then(byName)
         SortBy.PAGES -> compareByDescending<LibraryEntry> { it.pageIds.size }.then(byName)
         SortBy.NAME -> byName
     }
@@ -295,8 +331,14 @@ private fun visibleEntries(lib: Library, s: Screen.Files, sort: SortBy, reversed
 
 // ---- header ----
 
-private val CrumbDeep = RmText.TitleMdAlt
-private val CrumbLast = RmText.TitleMdAlt.copy(fontWeight = FontWeight.Bold)
+// The first crumb is serif 48 (bold only while it is the current one); the later ones are Title.Medium: sans 28, regular, and bold for the current one.
+private val CrumbFirst = RmText.TitleLg
+private val CrumbFirstCurrent = RmText.TitleLg.copy(fontWeight = FontWeight.Bold)
+private val CrumbDeep = RmText.sans(28, FontWeight.Normal, 1.5f)
+private val CrumbLast = RmText.sans(28, FontWeight.Bold, 1.5f)
+
+/** A crumb is at most a third of the 1026 px content grid wide (navigatorContentGridItemWidth) and shortened in the middle. */
+private val CrumbMaxWidth = 342.dp
 
 /** ExplorerBreadcrumb: "My files > A > B", every crumb taps through to that folder; the last one is bold. */
 @Composable
@@ -317,43 +359,15 @@ private fun Breadcrumbs(app: AppController, lib: Library, s: Screen.Files, modif
         shown.forEachIndexed { i, c ->
             if (i > 0) InkIcons.ChevronSmallRight()
             val last = i == shown.lastIndex
-            val style = if (i == 0) RmText.TitleLg else if (last) CrumbLast else CrumbDeep
+            val style = if (i == 0) (if (last) CrumbFirstCurrent else CrumbFirst) else if (last) CrumbLast else CrumbDeep
             if (c == null) Text("…", style = CrumbDeep)
             else {
-                val m = if (last) Modifier.weight(1f, fill = false) else Modifier
-                Text(
-                    c.first, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    modifier = m.then(if (c.second != null && !last) Modifier.tap { app.screen = Screen.Files(Section.MY_FILES, c.second!!) } else Modifier),
+                MiddleText(
+                    c.first, style, Ink.Black,
+                    Modifier.widthIn(max = CrumbMaxWidth).then(if (c.second != null && !last) Modifier.tap { app.screen = Screen.Files(Section.MY_FILES, c.second!!) } else Modifier),
                 )
             }
         }
-    }
-}
-
-/** The header's battery gauge (MinimalBatteryIndicator): a 2 px outlined body of four 4 x 12 px segments with a 2 x 8 px notch. */
-@Composable
-internal fun BatteryIndicator(modifier: Modifier = Modifier) {
-    val ctx = LocalContext.current
-    var level by remember { mutableIntStateOf(100) }
-    DisposableEffect(ctx) {
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(c: Context?, i: Intent?) {
-                val l = i?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
-                val scale = i?.getIntExtra(BatteryManager.EXTRA_SCALE, 100) ?: 100
-                if (l >= 0 && scale > 0) level = l * 100 / scale
-            }
-        }
-        val sticky = runCatching { ctx.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) }.getOrNull()
-        sticky?.let { receiver.onReceive(ctx, it) }
-        onDispose { runCatching { ctx.unregisterReceiver(receiver) } }
-    }
-    val filled = ((level + 24) / 25).coerceIn(0, 4)
-    Row(modifier.semantics { contentDescription = "Battery $level%" }, verticalAlignment = Alignment.CenterVertically) {
-        if (level <= 10) Text("$level%", style = RmText.Caption, modifier = Modifier.padding(end = 8.dp))
-        Row(Modifier.border(Rm.Outline, Ink.Black).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-            repeat(4) { Box(Modifier.size(width = 4.dp, height = 12.dp).background(if (it < filled) Ink.Black else Ink.White)) }
-        }
-        Box(Modifier.size(width = 2.dp, height = 8.dp).background(Ink.Black))
     }
 }
 
@@ -375,13 +389,14 @@ internal fun Dropdown(label: String, header: String, modifier: Modifier = Modifi
 
 internal val DropdownWidth = 358.dp
 
-/** A sort row: 80 px, the chosen one inverted and carrying the ascending/descending arrow. */
+/** A sort row: 80 px, a 48 px icon slot (kept even when empty) at x = 20, then the label at x = 84; the chosen one is inverted and shows the ascending/descending arrow. */
 @Composable
 internal fun SortRow(label: String, selected: Boolean, descending: Boolean, onClick: () -> Unit) {
     val fg = if (selected) Ink.White else Ink.Black
     Row(Modifier.fillMaxWidth().height(Rm.Control).background(if (selected) Ink.Black else Ink.White).tap(onClick = onClick).padding(start = 20.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(Rm.Icon), contentAlignment = Alignment.Center) { if (selected) { if (descending) InkIcons.Descend(tint = fg) else InkIcons.Ascend(tint = fg) } }
+        Spacer(Modifier.width(16.dp))
         Text(label, style = RmText.Label, color = fg, modifier = Modifier.weight(1f))
-        if (selected) { if (descending) InkIcons.Descend(tint = fg) else InkIcons.Ascend(tint = fg) }
     }
 }
 
@@ -406,7 +421,7 @@ private fun SortDropdown(prefs: Prefs, trash: Boolean) {
         // The grid-size block: the chosen size's name, then four icon-only buttons.
         Rule()
         Row(Modifier.fillMaxWidth().height(72.dp).padding(start = 20.dp), verticalAlignment = Alignment.CenterVertically) { Text(prefs.gridSize.label, style = RmText.Label) }
-        Row(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().padding(start = 9.dp, end = 9.dp, bottom = 9.dp)) {
             GridSize.entries.forEach { g ->
                 val on = prefs.gridSize == g
                 val fg = if (on) Ink.White else Ink.Black
@@ -431,11 +446,21 @@ private fun emptyText(s: Screen.Files, filtered: Boolean): Pair<String, String> 
         else "Make your mark" to "Fill this with notebooks and folders. When you're in a rush, **press and hold** the plus icon to create a new quick sheet."
     Section.FAVORITES -> "Collect your best content" to "**Press and hold** any page, document, or folder, and add it to your favorites. They will appear right here."
     Section.NOTEBOOKS -> "Fill this with content" to "You can create notebooks and they will appear here."
-    Section.PDFS -> "Create a reading list" to "You can import documents as PDF files through the desktop or mobile app, and on my.remarkable.com."
+    Section.PDFS -> "Create a reading list" to "You can import documents as PDF files. Use Import files in the menu to add PDF files."
     Section.TRASH -> "Clear out the clutter" to "Items you delete from My files will be shown here. You can restore or permanently delete them."
     Section.TAGS ->
         if (filtered) "Try a different combination" to "You can sort your pages with combination of tags. Select one that matches what you're looking for."
         else "Label your work" to "You can add tags to documents and pages to categorize your content. They will appear right here."
+}
+
+/** The firmware's empty-state artwork (carved from xochitl's `empty_states` resources, here in grey as on the grey screen); the Trash and Folder ones aren't in that table. */
+private fun emptyArt(s: Screen.Files, filtered: Boolean): Int? = when (s.section) {
+    Section.MY_FILES -> if (s.folderId.isEmpty()) R.drawable.empty_myfiles else null
+    Section.FAVORITES -> R.drawable.empty_favorites
+    Section.NOTEBOOKS -> R.drawable.empty_notebooks
+    Section.PDFS -> R.drawable.empty_pdf
+    Section.TAGS -> R.drawable.empty_tags
+    Section.TRASH -> null
 }
 
 /** Text with **bold** phrases. */
@@ -443,13 +468,16 @@ private fun styled(text: String): AnnotatedString = buildAnnotatedString {
     text.split("**").forEachIndexed { i, part -> if (i % 2 == 1) withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(part) } else append(part) }
 }
 
-/** The empty view: a 716 px column 20 % down, a centred serif title and a centred sentence. (The firmware's illustration is a bitmap not shipped here.) */
+/** The empty view: a 716 px column 20 % down with the artwork, 64 px of space, then a centred serif title and a centred sentence 16 px apart. */
 @Composable
-private fun EmptyState(title: String, body: String) {
+private fun EmptyState(title: String, body: String, art: Int?) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        Column(Modifier.align(Alignment.TopCenter).padding(top = maxHeight * 0.2f).width(716.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(24.dp)) {
-            Text(title, style = RmText.TitleLg, textAlign = TextAlign.Center)
-            Text(styled(body), style = RmText.Body, textAlign = TextAlign.Center)
+        Column(Modifier.align(Alignment.TopCenter).padding(top = maxHeight * 0.2f).width(716.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(64.dp)) {
+            if (art != null) Image(painterResource(art), contentDescription = null)
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(title, style = RmText.TitleLg, textAlign = TextAlign.Center)
+                Text(styled(body), style = RmText.Body, textAlign = TextAlign.Center)
+            }
         }
     }
 }
@@ -478,11 +506,23 @@ private fun NotebookCell(app: AppController, e: LibraryEntry, selected: Boolean,
             MiddleText(e.name, RmText.Label, fg, Modifier.weight(1f, fill = false))
             if (e.pinned) InkIcons.StarInverted(tint = fg, size = Rm.IconSmall, modifier = Modifier.padding(start = 8.dp))
         }
-        if (!small) Text(pagesText(e), style = RmText.Caption, color = fg, maxLines = 1)
+        if (!small) Text(pageCaption(e), style = RmText.Caption, color = fg, maxLines = 1)
     }
 }
 
-private fun pagesText(e: LibraryEntry) = "${e.pageIds.size} page${if (e.pageIds.size == 1) "" else "s"}"
+/** The page a notebook was last on, kept inside its page range. */
+private fun lastPage(e: LibraryEntry) = e.lastOpenedPage.coerceIn(0, (e.pageIds.size - 1).coerceAtLeast(0))
+
+/** The caption under a notebook or PDF: "Page N of M" (N = the page it was last closed on). */
+internal fun pageCaption(e: LibraryEntry) = "Page ${lastPage(e) + 1} of ${e.pageIds.size}"
+
+/** A file size as the firmware writes it ("0 B", "845 kB", "3.2 MB"). */
+internal fun formatSize(bytes: Long): String = when {
+    bytes < 1000 -> "$bytes B"
+    bytes < 1_000_000 -> "${bytes / 1000} kB"
+    bytes < 1_000_000_000 -> String.format(java.util.Locale.US, "%.1f MB", bytes / 1e6)
+    else -> String.format(java.util.Locale.US, "%.2f GB", bytes / 1e9)
+}
 
 /** A folder cell: 75 px high, a 15 px margin and 10 px spacing; the icon says whether it has content, then name, favourite and tag marks. */
 @OptIn(ExperimentalFoundationApi::class)
@@ -542,7 +582,7 @@ internal fun NotebookRow(app: AppController, e: LibraryEntry, selected: Boolean,
             Thumb(app, e, Modifier.width(96.dp).height(128.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    MiddleText(e.name, RmText.Label, fg, Modifier.weight(1f, fill = false))
+                    Text(e.name, style = RmText.Label, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                     if (e.pinned) InkIcons.StarInverted(tint = fg, size = 30.dp, modifier = Modifier.padding(start = 8.dp))
                 }
                 if (e.tags.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -550,7 +590,10 @@ internal fun NotebookRow(app: AppController, e: LibraryEntry, selected: Boolean,
                     if (e.tags.size > 3) TagPill("+${e.tags.size - 3}", selected = false, onClick = {}, small = true)
                 }
                 if (path != null) Text(path, style = RmText.Caption, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(pagesText(e), style = RmText.Caption, color = fg, maxLines = 1)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(40.dp, Alignment.End)) {
+                    Text(formatSize(e.sizeBytes), style = RmText.Caption, color = fg, maxLines = 1)
+                    Text(pageCaption(e), style = RmText.Caption, color = fg, maxLines = 1)
+                }
             }
         }
         Hairline(fg)
@@ -614,6 +657,17 @@ private fun ActionBar(
     }
 }
 
+/** The Tags view's edit bar (a long press on a tag): Cancel, then Rename (exactly one tag chosen) and Delete. */
+@Composable
+private fun TagEditBar(chosen: Set<String>, onCancel: () -> Unit, onRename: () -> Unit, onDelete: () -> Unit) {
+    Row(Modifier.fillMaxWidth().height(Rm.NavigationHeader).background(Ink.Black).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+        BarCancel(onCancel)
+        Spacer(Modifier.weight(1f))
+        if (chosen.size == 1) BarButton("Rename", onRename) { InkIcons.Rename(tint = it) }
+        BarButton("Delete", onDelete) { InkIcons.Trash(tint = it) }
+    }
+}
+
 /** The tag bar (entryTagActionBar): a centred "Tag item" title, a selected Back button, and the tag popup hanging from the bar. */
 @Composable
 private fun TagBar(app: AppController, selection: List<LibraryEntry>, onBack: () -> Unit) {
@@ -653,7 +707,7 @@ private fun MovingBar(app: AppController, s: Screen.Files, items: List<LibraryEn
                 BarButton("More", { moreOpen = !moreOpen }, selected = moreOpen) { InkIcons.ThreeDots(tint = it) }
                 RmMenu(moreOpen, { moreOpen = false }, MenuSide.BELOW_END, Rm.ToolboxFoldoutWidth) {
                     RmFoldoutItem("New folder", { moreOpen = false; onNewFolder() }) { InkIcons.FolderOutline(tint = it) }
-                    RmFoldoutItem("Search", { moreOpen = false; app.screen = Screen.Search }) { InkIcons.Lens(tint = it) }
+                    RmFoldoutItem("Search", { moreOpen = false; app.searchFrom = Section.MY_FILES; app.screen = Screen.Search }) { InkIcons.Lens(tint = it) }
                 }
             }
         }
@@ -710,12 +764,12 @@ private fun TagPopup(app: AppController, selection: List<LibraryEntry>, show: Bo
 /** The tag row of the Tags view: All / Documents tabs, then one row of tag chips (tap to filter). */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun TagsFilter(lib: Library, selected: Set<String>, tab: Int, onTab: (Int) -> Unit, onToggle: (String) -> Unit) {
+private fun TagsFilter(lib: Library, selected: Set<String>, tab: Int, onTab: (Int) -> Unit, onToggle: (String) -> Unit, onLongPress: (String) -> Unit) {
     val tags = remember(lib) { knownTags(lib) }
     var all by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth().padding(horizontal = Rm.NavigatorMargin)) {
         Row {
-            listOf("All" to 200.dp, "Documents" to 270.dp).forEachIndexed { i, (label, w) ->
+            listOf("All" to 200.dp, "Pages" to 230.dp, "Documents" to 270.dp).forEachIndexed { i, (label, w) ->
                 Column(Modifier.width(w).tap { onTab(i) }, horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(label, style = if (tab == i) RmText.LabelLgStrong else RmText.LabelLg, modifier = Modifier.padding(vertical = 20.dp))
                     Box(Modifier.fillMaxWidth().height(if (tab == i) 6.dp else Rm.Outline).background(Ink.Black))
@@ -727,7 +781,7 @@ private fun TagsFilter(lib: Library, selected: Set<String>, tab: Int, onTab: (In
             horizontalArrangement = Arrangement.spacedBy(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp), maxLines = 1,
             overflow = androidx.compose.foundation.layout.FlowRowOverflow.expandIndicator { ViewAll({ all = true }) },
         ) {
-            tags.forEach { t -> TagPill(t, selected = t in selected, onClick = { onToggle(t) }) }
+            tags.forEach { t -> TagPill(t, selected = t in selected, onClick = { onToggle(t) }, onLongClick = { onLongPress(t) }) }
         }
         Spacer(Modifier.height(24.dp))
     }
@@ -738,7 +792,7 @@ private fun TagsFilter(lib: Library, selected: Set<String>, tab: Int, onTab: (In
 private const val THUMB_ASPECT = 312f / 416f
 
 /**
- * A notebook's first page. Notebooks get a dark spine on the left, PDFs a folded top-right corner
+ * A notebook's cover page. Notebooks get a black spine line on the left, PDFs a folded top-right corner
  * (the same cues the tablet uses to tell document types apart at a glance).
  */
 @Composable
@@ -748,8 +802,10 @@ internal fun Thumb(app: AppController, e: LibraryEntry, modifier: Modifier) {
         Box(modifier.border(Rm.Outline, Ink.Black, shape).background(Ink.White, shape), contentAlignment = Alignment.Center) { InkIcons.Folder() }
         return
     }
-    val bmp by produceState<Bitmap?>(null, e.id, e.lastModified, e.pageIds.firstOrNull(), e.template) {
-        value = withContext(Dispatchers.IO) { runCatching { app.thumbnails.render(e, 0, 320) }.getOrNull() }
+    // The cover is the first page, or (the default) the page the notebook was last closed on.
+    val page = if (e.coverPage == 0) 0 else lastPage(e)
+    val bmp by produceState<Bitmap?>(null, e.id, e.lastModified, page, e.pageIds.getOrNull(page), e.template) {
+        value = withContext(Dispatchers.IO) { runCatching { app.thumbnails.render(e, page, 320) }.getOrNull() }
     }
     Box(modifier.clip(shape).border(Rm.Outline, Ink.Black, shape).background(Ink.White)) {
         bmp?.let { Image(it.asImageBitmap(), contentDescription = e.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
@@ -761,7 +817,8 @@ internal fun Thumb(app: AppController, e: LibraryEntry, modifier: Modifier) {
                 drawLine(Color.Black, Offset(0f, 0f), Offset(w, w), strokeWidth = 4f)
             }
         } else {
-            Box(Modifier.align(Alignment.CenterStart).fillMaxHeight().width(18.dp).background(Color(0xFF3A3A3A)))
+            // The cover's spine: a 2 px black line (the firmware's covers are strictly black and white).
+            Box(Modifier.align(Alignment.CenterStart).padding(start = 14.dp).fillMaxHeight().width(Rm.Outline).background(Color.Black))
         }
     }
 }
@@ -772,10 +829,14 @@ internal fun Thumb(app: AppController, e: LibraryEntry, modifier: Modifier) {
 private fun Sidebar(app: AppController, s: Screen.Files, onClose: () -> Unit, onImport: () -> Unit) {
     var filterOpen by remember { mutableStateOf(false) }
     val active = s.section.takeIf { it == Section.NOTEBOOKS || it == Section.PDFS }
-    @Composable fun item(label: String, selected: Boolean, onClick: () -> Unit, strong: Boolean = false, icon: @Composable (Color) -> Unit) {
+    @Composable fun item(label: String, selected: Boolean, onClick: () -> Unit, caption: String? = null, icon: @Composable (Color) -> Unit) {
         val fg = if (selected) Ink.White else Ink.Black
         Row(Modifier.fillMaxWidth().height(Rm.SidebarItem).background(if (selected) Ink.Black else Ink.White).tap(onClick = onClick).padding(start = 32.dp, end = 96.dp), verticalAlignment = Alignment.CenterVertically) {
-            icon(fg); Spacer(Modifier.width(16.dp)); Text(label, style = if (strong) RmText.LabelLgStrong else RmText.LabelLg, color = fg, maxLines = 1)
+            icon(fg); Spacer(Modifier.width(16.dp))
+            Column {
+                Text(label, style = RmText.LabelLg, color = fg, maxLines = 1)
+                if (caption != null) Text(caption, style = RmText.Caption, color = fg, maxLines = 1)
+            }
         }
     }
     Box(Modifier.fillMaxSize()) {
@@ -789,12 +850,12 @@ private fun Sidebar(app: AppController, s: Screen.Files, onClose: () -> Unit, on
                 }
                 item("Favorites", s.section == Section.FAVORITES, { app.screen = Screen.Files(Section.FAVORITES); onClose() }) { InkIcons.StarOutline(tint = it) }
                 item("Tags", s.section == Section.TAGS, { app.screen = Screen.Files(Section.TAGS); onClose() }) { InkIcons.Tag(tint = it) }
-                item("Import files", false, { onClose(); onImport() }) { InkIcons.Cloud(tint = it) }
+                item("Import files", false, { onClose(); onImport() }, caption = "From this device") { InkIcons.Cloud(tint = it) }
                 Spacer(Modifier.weight(1f))
                 item("Trash", s.section == Section.TRASH, { app.screen = Screen.Files(Section.TRASH); onClose() }) { InkIcons.Trash(tint = it) }
                 Rule()
-                item("Guides", false, { app.screen = Screen.Guides; onClose() }, strong = true) { InkIcons.Compass(tint = it) }
-                item("Settings", false, { app.screen = Screen.Settings; onClose() }, strong = true) { InkIcons.Settings(tint = it) }
+                item("Guides", false, { app.screen = Screen.Guides; onClose() }) { InkIcons.Compass(tint = it) }
+                item("Settings", false, { app.screen = Screen.Settings; onClose() }) { InkIcons.Settings(tint = it) }
             }
             // Tap outside to close (no scrim: it would smear on e-ink).
             Box(Modifier.weight(1f).fillMaxHeight().tap(onClick = onClose))

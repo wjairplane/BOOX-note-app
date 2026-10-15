@@ -79,6 +79,12 @@ object LibraryOps {
     /** Remember which page is the notebook's cover (-1 = last visited, 0 = first). */
     fun setCoverPage(dir: File, id: String, coverPage: Int) = editContent(dir, id) { it + ("coverPageNumber" to JsonPrimitive(coverPage)) }
 
+    /** Remember the page a document was closed on and when (`lastOpenedPage`, `lastOpened`); doesn't change `lastModified`. */
+    fun setLastOpened(dir: File, id: String, page: Int, now: Long = now()) {
+        editContent(dir, id) { it + ("lastOpenedPage" to JsonPrimitive(page.coerceAtLeast(0))) }
+        editMetadata(dir, id) { it + ("lastOpened" to JsonPrimitive(now.toString())) + ("lastOpenedPage" to JsonPrimitive(page.coerceAtLeast(0))) }
+    }
+
     /** Record that the document changed (bumps `lastModified`). */
     fun touch(dir: File, id: String, now: Long = now()) = editMetadata(dir, id) { it + ("lastModified" to JsonPrimitive(now.toString())) }
 

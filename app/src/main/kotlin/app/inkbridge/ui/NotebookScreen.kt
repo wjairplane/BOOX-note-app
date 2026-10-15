@@ -156,6 +156,8 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
         revision++
     }
     DisposableEffect(session) { val s = session; onDispose { save(s) } }
+    // Closing the notebook (or switching to another one) remembers the page it was on, for the cover thumbnail and "Page N of M".
+    DisposableEffect(doc.id) { onDispose { app.markOpened(doc.id, pageIndex) } }
     DisposableEffect(surface) { app.onRefresh = { surface?.fullRefresh() }; onDispose { app.onRefresh = null } }
 
     fun closeDoc() { save(session); app.screen = Screen.Files(folderId = doc.parentId.takeIf { it != "trash" } ?: "") }
@@ -409,9 +411,12 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
 
             // The notification bar: along the bottom edge, beside the toolbar when that is on the left, right or bottom.
             if (message.isNotEmpty()) {
+                val clipboardHint = message.startsWith("Copied to clipboard")
                 NotificationBar(
-                    message, { if (message.startsWith("Copied to clipboard")) StrokeClipboard.lines = emptyList(); message = "" },
-                    Modifier.align(Alignment.BottomCenter).padding(start = if (pos == ToolbarPosition.LEFT) TOOLBAR_THICKNESS else 0.dp, end = if (pos == ToolbarPosition.RIGHT) TOOLBAR_THICKNESS else 0.dp, bottom = if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp).blocksPen(blockers, "notification"),
+                    message, { if (clipboardHint) StrokeClipboard.lines = emptyList(); message = "" },
+                    action = if (clipboardHint) "OK" else null,
+                    primary = !clipboardHint && !(message.startsWith("Exported ") || message.startsWith("Saved ")),
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(start = if (pos == ToolbarPosition.LEFT) TOOLBAR_THICKNESS else 0.dp, end = if (pos == ToolbarPosition.RIGHT) TOOLBAR_THICKNESS else 0.dp, bottom = if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp).blocksPen(blockers, "notification"),
                 )
             }
         }

@@ -2,7 +2,9 @@ package app.inkbridge.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -21,7 +23,6 @@ import app.inkbridge.BuildConfig
 import app.inkbridge.Screen
 import app.inkbridge.ToolbarPosition
 import app.inkbridge.rm.render.PageTemplate
-import java.io.File
 
 private enum class Category(val title: String, val page: String) {
     GENERAL("General", "General settings"), DISPLAY("Display", "Display settings"), ACCESSIBILITY("Accessibility", "Accessibility settings"), HELP("Help", "Help")
@@ -36,29 +37,35 @@ fun SettingsScreen(app: AppController) {
     var category by remember { mutableStateOf(Category.GENERAL) }
     var sub by remember { mutableStateOf<String?>(null) }
     val deeper = sub
+    // The system Back from a deeper page returns to the page it came from.
+    BackHandler(enabled = deeper != null) { sub = if (deeper == "Copyrights and licenses") "About" else null }
     if (deeper != null) {
         Column(Modifier.fillMaxSize().background(Ink.White)) {
-            NavigationBar(deeper, onBack = { sub = null })
+            NavigationBar(deeper, onBack = { sub = if (deeper == "Copyrights and licenses") "About" else null })
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 132.dp, vertical = 64.dp), verticalArrangement = Arrangement.spacedBy(64.dp)) {
                 Text(deeper, style = RmText.TitleLg)
-                if (deeper == "Storage") Storage(app) else About()
+                when (deeper) {
+                    "Storage" -> Storage(app)
+                    "Copyrights and licenses" -> Licenses()
+                    else -> About(onLicenses = { sub = "Copyrights and licenses" })
+                }
             }
         }
         return
     }
     Row(Modifier.fillMaxSize().background(Ink.White)) {
-        // The sidebar: 112 px rows with a 2 px divider under each, and one divider along its right edge.
+        // The sidebar: 112 px rows with a 2 px divider under Back only, and one divider along its right edge.
         Row(Modifier.fillMaxHeight()) {
             Column(Modifier.width(IntrinsicSize.Max)) {
-                @Composable fun item(label: String, selected: Boolean, onClick: () -> Unit, icon: @Composable (Color) -> Unit) {
+                @Composable fun item(label: String, selected: Boolean, onClick: () -> Unit, divider: Boolean = false, icon: @Composable (Color) -> Unit) {
                     val fg = if (selected) Ink.White else Ink.Black
                     Row(
                         Modifier.fillMaxWidth().height(Rm.ToolButton).background(if (selected) Ink.Black else Ink.White).tap(onClick = onClick).semantics { contentDescription = label }.padding(start = 32.dp, end = 96.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp),
                     ) { icon(fg); Text(label, style = RmText.LabelLg, color = fg, maxLines = 1) }
-                    Rule()
+                    if (divider) Rule()
                 }
-                item("Back", false, { app.screen = Screen.Files() }) { InkIcons.ChevronLeft(tint = it) }
+                item("Back", false, { app.screen = Screen.Files() }, divider = true) { InkIcons.ChevronLeft(tint = it) }
                 Category.entries.forEach { c ->
                     item(c.title, c == category, { category = c }) { tint ->
                         when (c) {
@@ -86,18 +93,17 @@ fun SettingsScreen(app: AppController) {
 
 @Composable
 private fun Group(title: String, content: @Composable ColumnScope.() -> Unit) =
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(title, style = RmText.LabelLgStrong); content() }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(title, style = RmText.LabelLg); content() }
 
 @Composable
 private fun General(app: AppController, onStorage: () -> Unit) {
     val p = app.prefs
-    val size by produceState(0L, app.library) { value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { dirSize(app.store.dir) } }
+    val (battery, _) = rememberBattery()
+    val disk = rememberDiskSpace(app)
     CellList {
         CellRow("Software", "Version ${BuildConfig.VERSION_NAME}")
-        CellRow("Storage", formatBytes(size), onStorage, divider = false)
-    }
-    Group("Template for new notebooks") {
-        (listOf(p.defaultTemplate) + p.recentTemplates.take(8)).distinct().forEach { t -> ChoiceRow(t.label, p.defaultTemplate == t, { p.defaultTemplate = t }) }
+        CellRow("Battery", "$battery %")
+        CellRow("Storage", "${formatGb(disk.used)} GB of ${formatGb(disk.total)} GB", onStorage, divider = false)
     }
     val activity = androidx.compose.ui.platform.LocalContext.current.let { c -> generateSequence(c) { (it as? android.content.ContextWrapper)?.baseContext }.filterIsInstance<android.app.Activity>().firstOrNull() }
     Column {
@@ -108,11 +114,11 @@ private fun General(app: AppController, onStorage: () -> Unit) {
         )
         if (!app.isBoox) SwitchRow("Draw with finger", p.fingerDrawing, { p.fingerDrawing = it }, "For testing on devices without a stylus.")
     }
-    Group("Exit") {
-        Text("Close InkBridge and go back to the device's home screen. Your notebooks are saved.", style = RmText.Body)
-        Spacer(Modifier.height(8.dp))
-        EButton("Exit InkBridge", { activity?.finishAndRemoveTask() })
-    }
+    // Where the firmware has Restart / Turn off: one secondary button (80 px, icon and label).
+    Row(
+        Modifier.fillMaxWidth().height(Rm.Control).border(Rm.Outline, Ink.Black).tap { activity?.finishAndRemoveTask() }.semantics { contentDescription = "Exit InkBridge" },
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+    ) { InkIcons.Power(); Text("Exit InkBridge", style = RmText.LabelLg) }
 }
 
 @Composable
@@ -147,47 +153,62 @@ private fun Help(onAbout: () -> Unit) {
     CellList { CellRow("About", null, onAbout, divider = false) }
 }
 
+/** Total and used bytes of the storage the library lives on (the Storage cell and page). */
+private class DiskSpace(val total: Long, val used: Long)
+
 @Composable
-private fun Storage(app: AppController) {
-    var confirm by remember { mutableStateOf(false) }
-    val lib = app.library
-    val size by produceState(0L, lib) { value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { dirSize(app.store.dir) } }
-    val notebooks = lib.entries.count { !it.isFolder && it.parentId != "trash" }
-    Group("Library") {
-        Text("$notebooks notebook${if (notebooks == 1) "" else "s"}, ${formatBytes(size)}", style = RmText.Body)
-        Text(app.store.dir.absolutePath, style = RmText.BodySm)
+private fun rememberDiskSpace(app: AppController): DiskSpace {
+    val dir = app.store.dir
+    // Re-read when the library changes (notes take space).
+    return remember(app.library) {
+        runCatching {
+            val st = android.os.StatFs(dir.path)
+            DiskSpace(st.blockCountLong * st.blockSizeLong, (st.blockCountLong - st.availableBlocksLong) * st.blockSizeLong)
+        }.getOrDefault(DiskSpace(0L, 0L))
     }
-    Group("Trash") {
-        Text("${lib.trash.size} item${if (lib.trash.size == 1) "" else "s"} in the trash", style = RmText.Body)
-        Spacer(Modifier.height(8.dp))
-        EButton("Empty trash", { confirm = true }, enabled = lib.trash.isNotEmpty())
-    }
-    if (confirm) ConfirmDialog("Delete permanently?", "If you delete the items, you won't be able to get them back.", "Delete", { confirm = false }) { app.emptyTrash(); confirm = false }
 }
 
 @Composable
-private fun About() {
+private fun Storage(app: AppController) {
+    val disk = rememberDiskSpace(app)
+    val fraction = if (disk.total > 0) (disk.used.toFloat() / disk.total).coerceIn(0f, 1f) else 0f
+    Group("Disk space") {
+        // ProgressBar (large): 40 px high, a 2 px border, fully rounded, black fill.
+        Box(Modifier.fillMaxWidth().height(40.dp).border(Rm.Outline, Ink.Black, CircleShape).padding(5.dp)) {
+            Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().background(Ink.Black, CircleShape))
+        }
+    }
+    Text("${formatGb(disk.used)} GB of ${formatGb(disk.total)} GB used", style = RmText.LabelLg)
+    if (fraction >= 0.9f) {
+        Row(Modifier.fillMaxWidth().background(Ink.Black).padding(24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            InkIcons.InformationCircle(tint = Ink.White)
+            Text("Disk is almost full", style = RmText.Body, color = Ink.White)
+        }
+    }
+}
+
+@Composable
+private fun About(onLicenses: () -> Unit) {
+    CellList {
+        CellRow("Version", BuildConfig.VERSION_NAME)
+        CellRow("Copyrights and licenses", null, onLicenses, divider = false)
+    }
     Group("InkBridge") {
-        Text("Version ${BuildConfig.VERSION_NAME}", style = RmText.Body)
-        Spacer(Modifier.height(8.dp))
         Text("A handwriting notes app for BOOX e-ink tablets, with a notebook-style files screen and a pen set modelled on the reMarkable 2.", style = RmText.Body)
     }
     Group("Not affiliated") {
         Text("InkBridge is an independent project. It is not made by, affiliated with or endorsed by reMarkable AS. “reMarkable” is a trademark of its owner.", style = RmText.Body)
     }
-    Group("Open-source credits") {
-        Text(
-            "Page storage follows the open reverse-engineered v6 line format, ported from rmscene and rmc (MIT, © Rick Lupton). " +
-                "Pen input uses Onyx's pen SDK.",
-            style = RmText.Body,
-        )
-    }
 }
 
-private fun dirSize(d: File): Long = d.walkTopDown().filter { it.isFile }.sumOf { it.length() }
-
-private fun formatBytes(b: Long): String = when {
-    b < 1024 -> "$b B"
-    b < 1024 * 1024 -> "${b / 1024} KB"
-    else -> String.format("%.1f MB", b / 1048576.0)
+@Composable
+private fun Licenses() {
+    Text(
+        "Page storage follows the open reverse-engineered v6 line format, ported from rmscene and rmc (MIT, © Rick Lupton). " +
+            "Pen input uses Onyx's pen SDK.",
+        style = RmText.Body,
+    )
 }
+
+/** Decimal gigabytes with two decimals, as the firmware's storage line ("1.43 GB of 6.60 GB"). */
+private fun formatGb(bytes: Long): String = String.format(java.util.Locale.US, "%.2f", bytes / 1e9)

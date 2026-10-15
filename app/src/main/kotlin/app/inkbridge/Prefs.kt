@@ -8,8 +8,10 @@ import app.inkbridge.rm.edit.PenTool
 import app.inkbridge.rm.render.PageTemplate
 import app.inkbridge.rm.scene.PenColorId
 
-/** The file browser's sort keys (the firmware's list, minus the ones this app has no data for: Last opened, File size). */
-enum class SortBy(val label: String) { MODIFIED("Last modified"), CREATED("Date created"), NAME("Alphabetical"), PAGES("Page count") }
+/** The file browser's sort keys, in the firmware's order. */
+enum class SortBy(val label: String) {
+    MODIFIED("Last modified"), LAST_OPENED("Last opened"), CREATED("Date created"), NAME("Alphabetical"), SIZE("File size"), PAGES("Page count"),
+}
 
 /** The grid-size row of the sort dropdown: how many columns the file grid has (or the list). */
 enum class GridSize(val label: String, val columns: Int) { LARGE("Large grid", 3), MEDIUM("Medium grid", 4), SMALL("Small grid", 6), LIST("List", 1) }

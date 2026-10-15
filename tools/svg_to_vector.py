@@ -21,7 +21,7 @@ USED = [
     "my_files", "star", "star_inverted", "trashcan", "text_edit", "move", "arrow_counter_clockwise",
     "tag", "duplicate", "copy", "cut", "paste", "notebook", "folder", "quick_sheet", "trashcan_delete", "question_circle", "chevron_left", "chevron_right", "chevron_up",
     "share", "x_circle", "rotate", "page_add", "template", "export", "import", "checkmark", "sliders_horizontal",
-    "document", "display", "accessibility", "question_circle", "x_medium", "arrow_up", "arrow_down", "merge", "information_circle", "erase_selection", "cog", "lens", "erase_all", "selection_tool", "fit_to_width", "fit_to_height", "fit_custom", "restore", "compass", "filter", "eye", "eye_closed", "layers", "plus_circle", "text_edit",
+    "document", "display", "accessibility", "question_circle", "x_medium", "arrow_up", "arrow_down", "merge", "information_circle", "power", "erase_selection", "cog", "lens", "erase_all", "selection_tool", "fit_to_width", "fit_to_height", "fit_custom", "restore", "compass", "filter", "eye", "eye_closed", "layers", "plus_circle", "text_edit",
     "chevron_small_right", "chevron_small_up", "ascend", "descend", "grid_large", "grid", "grid_small", "list", "folder_inverted", "tag_inverted", "move_here", "send", "ebook", "page_funnel", "note", "cloud", "three_dots_vertical", "wifi_3", "wifi_off", "arrows_counter_clockwise",
 ]
 
