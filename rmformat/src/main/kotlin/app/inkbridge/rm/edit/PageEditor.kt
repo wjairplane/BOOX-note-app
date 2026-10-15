@@ -40,7 +40,7 @@ class PageEditor private constructor(initial: List<Block>) {
     // ---- adding strokes ----
 
     /** A stroke just added, with the page-space offset of its layer (needed to draw it incrementally). */
-    class AddedStroke(val line: Line, val ox: Float, val oy: Float)
+    class AddedStroke(val line: Line, val ox: Float, val oy: Float, val itemId: CrdtId)
 
     /**
      * Add a stroke drawn at page-space [input] points. Returns the new stroke, or null if the tool
@@ -65,7 +65,7 @@ class PageEditor private constructor(initial: List<Block>) {
         ).also { it.minVersion = 2; it.currentVersion = 2 }
 
         commit(blocks + block)
-        return AddedStroke(line, ox, oy)
+        return AddedStroke(line, ox, oy, id)
     }
 
     // ---- erasing ----

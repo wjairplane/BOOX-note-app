@@ -111,7 +111,7 @@ private fun Topics(onGestures: () -> Unit, onTutorial: () -> Unit) {
 
 private data class Gesture(val title: String, val description: String, @DrawableRes val image: Int)
 
-/** The firmware's gesture groups and wording, for the gestures this app responds to. */
+/** The firmware's gesture groups and wording (the typed-text gestures are left out: there is no typed text). */
 private val GESTURE_GROUPS = listOf(
     "Editing" to listOf(
         Gesture("Undo", "Tap once with two fingers to take back your last change", R.drawable.rm_ill_undo),
@@ -119,9 +119,21 @@ private val GESTURE_GROUPS = listOf(
         Gesture("Select item", "Press and hold with one finger to perform actions when selected", R.drawable.rm_ill_select_item),
     ),
     "Navigation" to listOf(
+        Gesture("Scroll", "Navigate pages and overviews with one finger, up, down, and to the sides", R.drawable.rm_ill_scroll),
         Gesture("Pan", "Slowly navigate inside documents with two fingers, dragging the page", R.drawable.rm_ill_pan),
         Gesture("Zoom", "Pinch/spread two fingers to change the zoom level of pages", R.drawable.rm_ill_zoom),
+        Gesture("Jump", "Swipe one finger vertically to quickly scroll in longer pages", R.drawable.rm_ill_jump),
         Gesture("Flip page", "Swipe one finger horizontally to move between pages", R.drawable.rm_ill_flip_page),
+    ),
+    "Shortcuts" to listOf(
+        Gesture("Close document", "Swipe down from the top edge to Return to My files", R.drawable.rm_ill_close_document),
+        Gesture("Open drawer", "Swipe two fingers from the top edge to view recent and favorited files", R.drawable.rm_ill_open_drawer),
+        Gesture("Open quick settings", "Swipe down from the top-right corner to see battery level, Wi-Fi, and more", R.drawable.rm_ill_quick_settings),
+        Gesture("Quick browse", "Swipe up from the bottom edge to get a scrollable preview of your pages", R.drawable.rm_ill_quick_browse),
+    ),
+    "Marker" to listOf(
+        Gesture("Draw shapes", "Hold at end of stroke to fix the shape. Drag and rotate it to adjust", R.drawable.rm_ill_draw_shapes),
+        Gesture("Select below", "Draw a horizontal line and hold to select handwriting beneath the line", R.drawable.rm_ill_select_below),
     ),
 )
 

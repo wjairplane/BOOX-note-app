@@ -24,6 +24,12 @@ jobs:
         run: ./gradlew :app:testDebugUnitTest
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug
+      - name: Build release APK (minified, signed with the debug key so it can be sideloaded)
+        run: ./gradlew :app:assembleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: inkbridge-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
       - uses: actions/upload-artifact@v4
         with:
           name: inkbridge-debug-apk

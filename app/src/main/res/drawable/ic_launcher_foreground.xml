@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A pen nib writing a line: white on the black launcher background. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M62,28 L80,46 L50,76 L32,78 L34,60 Z" />
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M64,24 L70,18 Q72,16 74,18 L88,32 Q90,34 88,36 L82,42 Z" />
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M30,84 L78,84 L78,88 L30,88 Z" />
+</vector>

@@ -36,6 +36,7 @@ class PixelInk(val width: Int, val height: Int) {
     fun clear() { px.fill(0); resetDirty() }
     fun resetDirty() { dirtyLeft = width; dirtyTop = height; dirtyRight = -1; dirtyBottom = -1 }
 
+    @Synchronized
     private fun touch(l: Int, t: Int, r: Int, b: Int) {
         dirtyLeft = min(dirtyLeft, l); dirtyTop = min(dirtyTop, t); dirtyRight = max(dirtyRight, r); dirtyBottom = max(dirtyBottom, b)
     }
@@ -57,10 +58,51 @@ class PixelInk(val width: Int, val height: Int) {
 
     /** Composite the ink over [base] (opaque ARGB, same size) into [out] for the given rectangle (inclusive-exclusive). */
     fun compositeInto(base: IntArray, out: IntArray, left: Int, top: Int, right: Int, bottom: Int) {
-        for (y in max(top, 0) until min(bottom, height)) {
+        val y0 = max(top, 0); val y1 = min(bottom, height)
+        val x0 = max(left, 0); val x1 = min(right, width)
+        if ((y1 - y0).toLong() * (x1 - x0) < 200_000L) { compositeRows(base, out, y0, y1, x0, x1); return }
+        runBands(y0, y1) { a, b -> compositeRows(base, out, a, b, x0, x1) }
+    }
+
+    private fun compositeRows(base: IntArray, out: IntArray, y0: Int, y1: Int, x0: Int, x1: Int) {
+        for (y in y0 until y1) {
             val row = y * width
-            for (x in max(left, 0) until min(right, width)) out[row + x] = over(px[row + x], base[row + x])
+            for (i in row + x0 until row + x1) { val s = px[i]; out[i] = if (s == 0) base[i] else over(s, base[i]) }
         }
+    }
+
+    /** A stroke with the layer offset its points are relative to. */
+    class Placed(val line: Line, val ox: Float, val oy: Float)
+
+    /**
+     * Draw all of [items] in order. The page is cut into horizontal bands that are drawn at the same time (each band sees every
+     * stroke in order, so the result is the same as drawing them one after the other); strokes outside the view are skipped.
+     */
+    fun drawLines(items: List<Placed>, tf: Transform, paletteMode: Int = 0) {
+        if (items.size < 24) { for (it in items) drawLine(it.line, it.ox, it.oy, tf, paletteMode); return }
+        val prepared = arrayOfNulls<Prepared>(items.size)
+        runChunks(items.size) { a, b -> for (i in a until b) prepared[i] = prepare(items[i].line, items[i].ox, items[i].oy, tf, paletteMode, 0, height) }
+        val list = prepared.filterNotNull()
+        runBands(0, height) { a, b -> for (p in list) fill(p, a, b) }
+    }
+
+    private fun runChunks(count: Int, work: (Int, Int) -> Unit) {
+        val n = min(WORKERS, max(1, count / 16))
+        if (n <= 1) { work(0, count); return }
+        val step = (count + n - 1) / n
+        val futures = (0 until n).mapNotNull { k -> val a = k * step; val b = min(count, a + step); if (a >= b) null else POOL.submit { work(a, b) } }
+        for (f in futures) try { f.get() } catch (e: java.util.concurrent.ExecutionException) { throw e.cause ?: e }
+    }
+
+    private fun runBands(y0: Int, y1: Int, work: (Int, Int) -> Unit) {
+        val n = min(WORKERS, max(1, (y1 - y0) / 64))
+        if (n <= 1) { work(y0, y1); return }
+        val step = (y1 - y0 + n - 1) / n
+        val futures = (0 until n).mapNotNull { k ->
+            val a = y0 + k * step; val b = min(y1, a + step)
+            if (a >= b) null else POOL.submit { work(a, b) }
+        }
+        for (f in futures) try { f.get() } catch (e: java.util.concurrent.ExecutionException) { throw e.cause ?: e }
     }
 
     // ---- colour ----
@@ -234,10 +276,19 @@ class PixelInk(val width: Int, val height: Int) {
      * Draw [line] (whose points are relative to a layer at ([ox], [oy]) in page units) with page units mapped to device pixels by [tf].
      * [paletteMode] is 0 for colour, 1 for the grayscale tablet. Strokes made with eraser tools are not drawn.
      */
-    fun drawLine(line: Line, ox: Float, oy: Float, tf: Transform, paletteMode: Int = 0) {
+    fun drawLine(line: Line, ox: Float, oy: Float, tf: Transform, paletteMode: Int = 0, clipTop: Int = 0, clipBottom: Int = height) {
+        val prep = prepare(line, ox, oy, tf, paletteMode, clipTop, clipBottom) ?: return
+        fill(prep, clipTop, clipBottom)
+    }
+
+    /** A stroke turned into device-space quads, ready to be filled (the same for every band). */
+    private class Prepared(val tool: Int, val geom: Geometry, val color: Int, val darken: Boolean, val zoom: Double, val originX: Double, val originY: Double, val bx0: Double, val by0: Double, val bx1: Double, val by1: Double)
+
+    private fun prepare(line: Line, ox: Float, oy: Float, tf: Transform, paletteMode: Int, clipTop: Int, clipBottom: Int): Prepared? {
         val tool = line.tool
-        if (tool == PenId.ERASER || tool == PenId.ERASER_AREA || tool == 22 || tool == 10 || tool == 11 || tool == 9) return
-        if (line.points.size < 2) return
+        if (tool == PenId.ERASER || tool == PenId.ERASER_AREA || tool == 22 || tool == 10 || tool == 11 || tool == 9) return null
+        if (line.points.size < 2) return null
+        if (!mayTouch(line, ox, oy, tf, clipTop, clipBottom)) return null
         val zoom = tf.scale.toDouble()
         val color = colorOf(line, paletteMode)
         val darken = line.color != PenColorId.GRAY_OVERLAP
@@ -284,20 +335,27 @@ class PixelInk(val width: Int, val height: Int) {
             }
         }
         geom.finish()
-        if (geom.quads.isEmpty()) return
+        if (geom.quads.isEmpty()) return null
 
         // Bounds of what will be touched.
         var bx0 = Double.MAX_VALUE; var by0 = Double.MAX_VALUE; var bx1 = -Double.MAX_VALUE; var by1 = -Double.MAX_VALUE
-        for (q in geom.quads) for (v in arrayOf(q.a, q.b, q.c, q.d)) {
-            bx0 = min(bx0, v.x); bx1 = max(bx1, v.x); by0 = min(by0, v.y); by1 = max(by1, v.y)
+        for (q in geom.quads) {
+            bx0 = min(bx0, min(min(q.a.x, q.b.x), min(q.c.x, q.d.x))); bx1 = max(bx1, max(max(q.a.x, q.b.x), max(q.c.x, q.d.x)))
+            by0 = min(by0, min(min(q.a.y, q.b.y), min(q.c.y, q.d.y))); by1 = max(by1, max(max(q.a.y, q.b.y), max(q.c.y, q.d.y)))
         }
-        val minX = max(floor(bx0).toInt() - 1, 0); val maxX = min(ceil(bx1).toInt() + 1, width - 1)
-        val minY = max(floor(by0).toInt() - 1, 0); val maxY = min(ceil(by1).toInt() + 1, height - 1)
+        return Prepared(tool, geom, color, darken, zoom, tf.tx.toDouble(), tf.ty.toDouble(), bx0, by0, bx1, by1)
+    }
+
+    /** Fill a prepared stroke into the rows [clipTop, clipBottom). */
+    private fun fill(prep: Prepared, clipTop: Int, clipBottom: Int) {
+        val tool = prep.tool; val geom = prep.geom; val zoom = prep.zoom; val color = prep.color; val darken = prep.darken
+        val minX = max(floor(prep.bx0).toInt() - 1, 0); val maxX = min(ceil(prep.bx1).toInt() + 1, width - 1)
+        val minY = max(floor(prep.by0).toInt() - 1, max(clipTop, 0)); val maxY = min(ceil(prep.by1).toInt() + 1, min(clipBottom, height) - 1)
         if (minX > maxX || minY > maxY) return
         val mw = maxX - minX + 1
         val mask = BooleanArray(mw * (maxY - minY + 1))
 
-        val originX = tf.tx.toDouble(); val originY = tf.ty.toDouble() // where page (0, 0) lands: the pencil grain is pinned to the page
+        val originX = prep.originX; val originY = prep.originY // where page (0, 0) lands: the pencil grain is pinned to the page
         for (q in geom.quads) {
             for (half in 0..1) {
                 val t0: Vtx; val t1: Vtx; val t2: Vtx
@@ -348,6 +406,18 @@ class PixelInk(val width: Int, val height: Int) {
             }
         }
         touch(minX, minY, maxX + 1, maxY + 1)
+    }
+
+    /** A cheap test on the points' bounds (with room for the stroke's width) so strokes outside the view or the band cost nothing. */
+    private fun mayTouch(line: Line, ox: Float, oy: Float, tf: Transform, clipTop: Int, clipBottom: Int): Boolean {
+        var x0 = Float.MAX_VALUE; var x1 = -Float.MAX_VALUE; var y0 = Float.MAX_VALUE; var y1 = -Float.MAX_VALUE; var w = 0
+        for (p in line.points) {
+            val x = tf.scale * (p.x + ox) + tf.tx; val y = tf.scale * (p.y + oy) + tf.ty
+            if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y
+            if (p.width > w) w = p.width
+        }
+        val m = w / 4f * tf.scale * 1.6f + 4f // widths grow at most by the paintbrush's factor, plus the caps
+        return x1 + m >= 0f && x0 - m <= width && y1 + m >= max(clipTop, 0) && y0 - m <= min(clipBottom, height)
     }
 
     // ---- the pens' fills ----
@@ -420,6 +490,11 @@ class PixelInk(val width: Int, val height: Int) {
     }
 
     companion object {
+        private val WORKERS = Runtime.getRuntime().availableProcessors().coerceIn(1, 8)
+        private val POOL: java.util.concurrent.ExecutorService = java.util.concurrent.Executors.newFixedThreadPool(WORKERS) { r ->
+            Thread(r, "pixel-ink").apply { isDaemon = true; priority = Thread.NORM_PRIORITY }
+        }
+
         /** The firmware's colour table (xochitl 0xccc010), ids as in the .rm file. */
         val PALETTE: Map<Int, Int> = mapOf(
             PenColorId.BLACK to 0xff000000.toInt(),

@@ -31,14 +31,27 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
     var library by mutableStateOf(Library(emptyList()))
         private set
     var screen by mutableStateOf<Screen>(Screen.Files())
+    /** The panel floating over the current screen (quick settings, the document drawer), opened by an edge swipe. */
+    /** Set by the open notebook so "Refresh screen" in quick settings can clear its pen layer too. */
+    var onRefresh: (() -> Unit)? = null
+    var overlay by mutableStateOf<app.inkbridge.ui.Overlay?>(null)
     /** The bottom notification bar's text ("3 items were moved to Trash", errors, progress); empty = no bar. */
     var message by mutableStateOf("")
+
+    /** True when [message] reports a success (a white bar); errors and progress texts get the firmware's default black bar. */
+    var messageIsSuccess by mutableStateOf(false)
+
+    /** Serialises the read-modify-write edits of the metadata files (closing a page and saving it both write them). */
+    private val fileLock = Any()
 
     /** Ids of the items being moved while the file browser is in its Move mode (null = not moving). */
     var moving by mutableStateOf<List<String>?>(null)
 
     /** An item to select when the file browser next opens (search results reveal an item in its folder). */
     var pendingSelect by mutableStateOf<String?>(null)
+
+    /** The list the search was opened from; its filter is the search's first one ("Notebooks", "Favorites", ...). */
+    var searchFrom: Section = Section.MY_FILES
 
     val thumbnails = Thumbnails(store)
 
@@ -52,7 +65,7 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
 
     private fun publish(lib: Library) = onMain { library = lib }
 
-    private fun say(text: String) = onMain { message = text }
+    private fun say(text: String, success: Boolean = false) = onMain { message = text; messageIsSuccess = success }
 
     fun reload() {
         scope.launch(Dispatchers.IO) { publish(store.load()) }
@@ -62,9 +75,9 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
     private fun io(failure: String, onDone: (() -> Unit)? = null, notice: String? = null, block: () -> Unit) {
         scope.launch(Dispatchers.IO) {
             try {
-                block()
+                synchronized(fileLock) { block() }
                 publish(store.load())
-                notice?.let { say(it) }
+                notice?.let { say(it, success = true) }
                 onDone?.let { done -> onMain { done() } }
             } catch (e: Exception) {
                 say("$failure: ${e.message ?: e.javaClass.simpleName}")
@@ -136,12 +149,27 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
                         files += session.export(outDir, "${safe}_p${i + 1}").size
                     }
                 }
-                say("Exported $files files to ${outDir.absolutePath}")
+                say("Exported $files files to ${outDir.absolutePath}", success = true)
             } catch (e: Exception) { say("Export failed: ${e.message}") }
         }
     }
 
     fun setTags(e: LibraryEntry, tags: List<String>) = io("Couldn't change the tags") { LibraryOps.setTags(store.dir, e.id, tags) }
+
+    /** Rename a tag on every item that carries it (merging with an existing tag of that name). */
+    fun renameTag(old: String, new: String) {
+        val name = new.trim()
+        if (name.isEmpty() || name == old) return
+        io("Couldn't rename the tag") {
+            for (e in store.load().entries.filter { old in it.tags }) LibraryOps.setTags(store.dir, e.id, e.tags.map { if (it == old) name else it })
+        }
+    }
+
+    /** Remove tags from every item that carries them. */
+    fun deleteTags(names: Set<String>) =
+        io("Couldn't delete the tags", notice = if (names.size == 1) "1 tag was deleted" else "${names.size} tags were deleted") {
+            for (e in store.load().entries.filter { it.tags.any { t -> t in names } }) LibraryOps.setTags(store.dir, e.id, e.tags.filter { it !in names })
+        }
 
     fun newFolder(name: String, parentId: String, tags: List<String> = emptyList(), onCreated: ((String) -> Unit)? = null) {
         var id = ""
@@ -150,6 +178,8 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
             if (tags.isNotEmpty()) LibraryOps.setTags(store.dir, id, tags)
         }
     }
+
+    fun setCoverPage(e: LibraryEntry, cover: Int) = io("Couldn't change the cover") { LibraryOps.setCoverPage(store.dir, e.id, cover) }
 
     fun rename(e: LibraryEntry, name: String) = io("Couldn't rename") { LibraryOps.rename(store.dir, e.id, name) }
 
@@ -186,15 +216,20 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
         io("Couldn't delete the page") { if (LibraryOps.deletePage(store.dir, e, index)) { publish(store.load()); onMain { onDone() } } }
 
     /** Mark a notebook as edited (bumps its modified time so it sorts to the top). */
-    fun touch(e: LibraryEntry) { scope.launch(Dispatchers.IO) { runCatching { LibraryOps.touch(store.dir, e.id); publish(store.load()) } } }
+    fun touch(e: LibraryEntry) { scope.launch(Dispatchers.IO) { runCatching { synchronized(fileLock) { LibraryOps.touch(store.dir, e.id) }; publish(store.load()) } } }
+
+    /** Remember the page a document was closed on and when: it drives the cover thumbnail, the "Page N of M" caption and the Last opened sort. */
+    fun markOpened(docId: String, page: Int) {
+        scope.launch(Dispatchers.IO) { runCatching { synchronized(fileLock) { LibraryOps.setLastOpened(store.dir, docId, page) }; publish(store.load()) } }
+    }
 
     fun importPdf(uri: Uri, parentId: String) {
-        message = "Importing PDF…"
+        message = "Importing PDF…"; messageIsSuccess = false
         scope.launch(Dispatchers.IO) {
             try {
                 val entry = store.importPdf(uri, parentId)
                 publish(store.load())
-                say("Imported “${entry.name}” (${entry.pageIds.size} pages)")
+                say("Imported “${entry.name}” (${entry.pageIds.size} pages)", success = true)
             } catch (e: Exception) {
                 say("PDF import failed: ${e.message}")
             }

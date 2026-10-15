@@ -62,6 +62,9 @@ class PageSession(
     private var zoomLevel = 1f
     private var renderedBackgroundWidth = 0
 
+    /** [basePx] holds the paper, template, PDF and text for the current view; only a change of view or background invalidates it, not strokes. */
+    private var baseValid = false
+
     /** The zoom level (1 = the whole page fits the view). */
     val zoom: Float @Synchronized get() = zoomLevel
 
@@ -85,11 +88,13 @@ class PageSession(
         // Not recycled when replaced: the surface may still be showing the previous bitmap; the GC frees it.
         if (newBitmap || bitmap == null) bitmap = Bitmap.createBitmap(viewW, viewH, Bitmap.Config.ARGB_8888)
         // A PDF page is rendered at the on-screen size, but never wider than 2600 px (zoomed far in it is scaled up instead).
+        // The render is kept while the zoom moves a little (it is scaled to fit); a new one is made when it would look soft or wasteful.
         val wanted = background?.let { (it.placement.width * t.scale).coerceAtMost(2600f).roundToInt() } ?: 0
-        if (background != null && (backgroundBitmap == null || wanted != renderedBackgroundWidth)) {
+        if (background != null && (backgroundBitmap == null || wanted > renderedBackgroundWidth * 1.05f || wanted < renderedBackgroundWidth * 0.55f)) {
             backgroundBitmap = background.render(wanted)
             renderedBackgroundWidth = wanted
         }
+        baseValid = false
         redrawAll()
     }
 
@@ -104,18 +109,35 @@ class PageSession(
         val t = transform ?: return
         val next = t.zoomedAround(t.zoom * factor, fx, fy).pannedBy(dx, dy)
         customView = Triple(next.zoom, next.offsetX, next.offsetY)
+        fitMode = null
         applyView(next)
     }
 
-    @Synchronized fun fitPage() { val t = transform ?: return; applyView(PageTransform(t.layout, t.viewWidth, t.viewHeight)) }
-    @Synchronized fun fitWidth() { val t = transform ?: return; applyView(t.fitWidth()) }
-    @Synchronized fun fitHeight() { val t = transform ?: return; applyView(t.fitHeight()) }
+    /** The "jump" gesture: scroll a screen up or down inside a zoomed page. False when the page can't move that way. */
+    @Synchronized
+    fun jump(down: Boolean): Boolean {
+        val t = transform ?: return false
+        if (t.zoom <= 1.01f) return false
+        val next = t.pannedBy(0f, if (down) -t.viewHeight * 0.85f else t.viewHeight * 0.85f)
+        if (next.offsetY == t.offsetY) return false
+        applyView(next)
+        return true
+    }
+
+    /** Which "Adjust view" mode the view is in: "width", "height", "custom", or null after a pinch or a reset. */
+    @Volatile var fitMode: String? = null
+        private set
+
+    @Synchronized fun fitPage() { val t = transform ?: return; fitMode = null; applyView(PageTransform(t.layout, t.viewWidth, t.viewHeight)) }
+    @Synchronized fun fitWidth() { val t = transform ?: return; fitMode = "width"; applyView(t.fitWidth()) }
+    @Synchronized fun fitHeight() { val t = transform ?: return; fitMode = "height"; applyView(t.fitHeight()) }
 
     /** Go back to the zoom and pan the user last chose by pinching. */
     @Synchronized
     fun fitCustom() {
         val (z, x, y) = customView ?: return
         val t = transform ?: return
+        fitMode = "custom"
         applyView(PageTransform(t.layout, t.viewWidth, t.viewHeight, z, x, y))
     }
 
@@ -249,6 +271,18 @@ class PageSession(
         return true
     }
 
+    /** "Select below": select everything on the page that lies under the view-pixel line at [y]. */
+    @Synchronized
+    fun selectBelow(y: Float): Boolean {
+        val t = transform ?: return false
+        val py = t.toPageY(y); val l = t.layout
+        val ids = editor.selectInside(listOf(l.xMin to py, l.xMax to py, l.xMax to l.yMax, l.xMin to l.yMax))
+        if (ids.isEmpty()) return false
+        selection = ids
+        redrawAll()
+        return true
+    }
+
     /** The "Erase selection" tool: erase the strokes a lasso encloses. */
     @Synchronized
     fun eraseInside(samples: List<PenSample>): Boolean {
@@ -278,14 +312,15 @@ class PageSession(
     @Synchronized fun moveLayer(id: CrdtId, up: Boolean): Boolean = editor.moveLayer(id, up).also { if (it) redrawAll() }
     @Synchronized fun mergeLayerDown(id: CrdtId): Boolean = editor.mergeLayerDown(id).also { if (it) { selection = emptySet(); redrawAll() } }
     @Synchronized fun backgroundVisible(): Boolean = editor.backgroundVisible
-    @Synchronized fun setBackgroundVisible(v: Boolean) { editor.setBackgroundVisible(v); redrawAll() }
+    @Synchronized fun setBackgroundVisible(v: Boolean) { editor.setBackgroundVisible(v); baseValid = false; redrawAll() }
     @Synchronized fun deleteLayer(id: CrdtId): Boolean = editor.deleteLayer(id).also { if (it) { selection = emptySet(); redrawAll() } }
 
     /** Add a stroke from view-pixel [samples]. Returns true if the page changed. */
     @Synchronized
-    fun addStroke(spec: PenSpec, samples: List<PenSample>): Boolean {
+    fun addStroke(spec: PenSpec, samples: List<PenSample>, select: Boolean = false): Boolean {
         val t = transform ?: return false
         val added = editor.addStroke(spec, samples.map { toInput(t, it) }) ?: return false
+        if (select) { selection = setOf(added.itemId); redrawAll(); return true }
         val layer = ink; val base = basePx; val shown = shownPx; val bmp = bitmap; val tf = inkTransform()
         if (layer == null || base == null || shown == null || bmp == null || tf == null) { redrawAll(); return true }
         layer.drawLine(added.line, added.ox, added.oy, tf)
@@ -397,21 +432,24 @@ class PageSession(
     )
 
     private fun redrawAll() {
-        withPageCanvas(clear = true) { canvas ->
-            val bg = backgroundBitmap
-            val p = background?.placement
-            val showBackground = editor.backgroundVisible
-            if (bg != null && p != null && showBackground) {
-                canvas.drawBitmap(bg, null, RectF(p.left, p.top, p.left + p.width, p.top + p.height), Paint(Paint.FILTER_BITMAP_FLAG))
-            }
-            if (background == null && showBackground) template.draw(AndroidPageCanvas(canvas), editor.renderer.layout)
-            editor.renderer.render(AndroidPageCanvas(canvas), strokes = false)
-            if (selection.isNotEmpty() && editor.boundsOf(selection) == null) selection = emptySet()
-        }
         val bmp = bitmap ?: return
         val w = bmp.width; val h = bmp.height
-        val base = (if (basePx?.size == w * h) basePx else null) ?: IntArray(w * h).also { basePx = it }
-        bmp.getPixels(base, 0, w, 0, 0, w, h)
+        val base = (if (basePx?.size == w * h) basePx else null) ?: IntArray(w * h).also { basePx = it; baseValid = false }
+        if (!baseValid) {
+            withPageCanvas(clear = true) { canvas ->
+                val bg = backgroundBitmap
+                val p = background?.placement
+                val showBackground = editor.backgroundVisible
+                if (bg != null && p != null && showBackground) {
+                    canvas.drawBitmap(bg, null, RectF(p.left, p.top, p.left + p.width, p.top + p.height), Paint(Paint.FILTER_BITMAP_FLAG))
+                }
+                if (background == null && showBackground) template.draw(AndroidPageCanvas(canvas), editor.renderer.layout)
+                editor.renderer.render(AndroidPageCanvas(canvas), strokes = false)
+            }
+            bmp.getPixels(base, 0, w, 0, 0, w, h)
+            baseValid = true
+        }
+        if (selection.isNotEmpty() && editor.boundsOf(selection) == null) selection = emptySet()
         val layer = (if (ink?.width == w && ink?.height == h) ink else null) ?: PixelInk(w, h).also { ink = it }
         layer.clear()
         val tf = inkTransform() ?: return

@@ -20,6 +20,7 @@ import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import app.inkbridge.pen.FingerGestures
 import app.inkbridge.pen.PenSurface
 import app.inkbridge.rm.edit.InputPoint
 import app.inkbridge.rm.edit.SelectionGesture
@@ -30,6 +31,7 @@ import app.inkbridge.rm.library.LibraryOps
 import app.inkbridge.rm.library.PageFiles
 import app.inkbridge.rm.render.PageTemplate
 import app.inkbridge.ui.InkBridgeApp
+import app.inkbridge.ui.Overlay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.junit.Rule
@@ -382,5 +384,29 @@ class ScreenshotTest {
         rule.onNodeWithContentDescription("Page 1").performTouchInput { longClick() }; settle(); snapshot("overview_selection")
         rule.onNodeWithContentDescription("Delete").performClick(); settle(); snapshot("dialog_delete_page")
         rule.onAllNodesWithText("Cancel").onLast().performClick(); settle()
+    }
+
+    /** The panels the edge-swipe gestures open: quick settings, the document drawer, quick browse, and the zoom button. */
+    @Test fun overlays() {
+        val app = launch()
+        val nb = app.library.entries.first { it.name == "Meeting notes" }
+        rule.runOnUiThread { app.prefs.toolbarPosition = ToolbarPosition.LEFT; app.addPage(nb, 0) {} }; settle(); settle()
+        rule.runOnUiThread { app.screen = Screen.Notebook(nb.id, 0) }; settle()
+        rule.runOnUiThread { app.overlay = Overlay.QUICK_SETTINGS }; settle(); snapshot("quick_settings")
+        rule.runOnUiThread { app.overlay = Overlay.DRAWER }; settle(); snapshot("document_drawer")
+        rule.runOnUiThread { app.overlay = null }; settle()
+        // Quick browse (the page slider): driven through the surface's edge swipe.
+        val surface = findSurface(rule.activity.window.decorView)!!
+        rule.runOnUiThread { surface.listenerForTest().onEdgeSwipe(FingerGestures.Edge.QUICK_BROWSE) }; settle(); snapshot("page_slider")
+    }
+
+    /** The firmware-style template picker on its own: all templates, the filter menu open, then Planners in landscape. */
+    @Test fun templatePicker() {
+        rule.setContent { app.inkbridge.ui.RmDensity { app.inkbridge.ui.TemplatePickerScreen(PageTemplate.LINES, {}, {}) } }
+        settle(); snapshot("template_picker_all")
+        rule.onNodeWithContentDescription("Filter").performClick(); settle(); snapshot("template_picker_filter")
+        rule.onNodeWithText("Planners").performClick(); settle()
+        rule.onNodeWithText("Landscape").performClick(); settle(); snapshot("template_picker_planners_landscape")
+        rule.onNodeWithText("Landscape").performClick(); settle(); snapshot("template_picker_planners_landscape_closed")
     }
 }

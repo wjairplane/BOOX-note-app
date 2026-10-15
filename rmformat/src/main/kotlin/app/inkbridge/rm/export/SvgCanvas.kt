@@ -29,6 +29,17 @@ class SvgCanvas(private val layout: PageLayout) : PageCanvas {
         body.append("/>\n")
     }
 
+    override fun fillPolygon(xy: FloatArray, pointCount: Int, argb: Int) {
+        body.append("<polygon fill=\"").append(color(argb)).append('"')
+        opacity(argb)?.let { body.append(" fill-opacity=\"").append(it).append('"') }
+        body.append(" points=\"")
+        for (i in 0 until pointCount) {
+            if (i > 0) body.append(' ')
+            body.append(num(xy[i * 2])).append(',').append(num(xy[i * 2 + 1]))
+        }
+        body.append("\"/>\n")
+    }
+
     override fun text(s: String, x: Float, y: Float, size: Float, bold: Boolean, italic: Boolean, argb: Int) {
         body.append("<text x=\"").append(num(x)).append("\" y=\"").append(num(y))
             .append("\" font-family=\"sans-serif\" font-size=\"").append(num(size)).append('"')

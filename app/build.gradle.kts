@@ -12,8 +12,8 @@ android {
         applicationId = "app.inkbridge"
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "1.0.0"
 
         // The Note Air5 C is 64-bit ARM; the Onyx SDK only ships ARM native libraries anyway.
         ndk {
@@ -34,7 +34,12 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // Compose is much faster in a release build, which matters on an e-ink panel. The APK is signed with the debug key so it
+            // can be sideloaded straight away (use your own keystore to publish it anywhere).
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 

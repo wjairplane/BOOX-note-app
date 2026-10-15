@@ -8,8 +8,10 @@ import app.inkbridge.rm.edit.PenTool
 import app.inkbridge.rm.render.PageTemplate
 import app.inkbridge.rm.scene.PenColorId
 
-/** The file browser's sort keys (the firmware's list, minus the ones this app has no data for: Last opened, File size). */
-enum class SortBy(val label: String) { MODIFIED("Last modified"), CREATED("Date created"), NAME("Alphabetical"), PAGES("Page count") }
+/** The file browser's sort keys, in the firmware's order. */
+enum class SortBy(val label: String) {
+    MODIFIED("Last modified"), LAST_OPENED("Last opened"), CREATED("Date created"), NAME("Alphabetical"), SIZE("File size"), PAGES("Page count"),
+}
 
 /** The grid-size row of the sort dropdown: how many columns the file grid has (or the list). */
 enum class GridSize(val label: String, val columns: Int) { LARGE("Large grid", 3), MEDIUM("Medium grid", 4), SMALL("Small grid", 6), LIST("List", 1) }
@@ -39,9 +41,11 @@ class Prefs(context: Context) {
     var gridSize: GridSize get() = _gridSize; set(v) { _gridSize = v; sp.edit().putString("gridSize", v.name).apply() }
     val gridView: Boolean get() = _gridSize != GridSize.LIST
 
+    private val COMMON_TEMPLATES = listOf("Blank", "P Lines medium", "P Grid medium", "P Dots S", "P Cornell", "P Margin medium", "P Week", "P Checklist")
+
     private var _recent by mutableStateOf(sp.getString("recentTemplates", null)?.split(",")?.filter { it.isNotEmpty() }?.map { PageTemplate.fromId(it) }?.distinct().orEmpty())
     /** Page templates picked for new notebooks, most recent first (the "Templates" grid of the New notebook screen). */
-    val recentTemplates: List<PageTemplate> get() = (_recent + PageTemplate.entries).distinct()
+    val recentTemplates: List<PageTemplate> get() = (_recent + COMMON_TEMPLATES.map { PageTemplate.fromId(it) } + PageTemplate.entries).distinct()
     fun addRecentTemplate(t: PageTemplate) { _recent = (listOf(t) + _recent).distinct().take(8); sp.edit().putString("recentTemplates", _recent.joinToString(",") { it.id }).apply() }
 
     private var _sort by mutableStateOf(runCatching { SortBy.valueOf(sp.getString("sort", "MODIFIED")!!) }.getOrDefault(SortBy.MODIFIED))
@@ -65,7 +69,18 @@ class Prefs(context: Context) {
     }
 
     private var _tbPos by mutableStateOf(runCatching { ToolbarPosition.valueOf(sp.getString("toolbar", "LEFT")!!) }.getOrDefault(ToolbarPosition.LEFT))
+    /** The toolbar's edge in portrait (the firmware keeps one per orientation). */
     var toolbarPosition: ToolbarPosition get() = _tbPos; set(v) { _tbPos = v; sp.edit().putString("toolbar", v.name).apply() }
+
+    private var _tbLandscape by mutableStateOf(runCatching { ToolbarPosition.valueOf(sp.getString("toolbarLandscape", "LEFT")!!) }.getOrDefault(ToolbarPosition.LEFT))
+    var toolbarLandscape: ToolbarPosition get() = _tbLandscape; set(v) { _tbLandscape = v; sp.edit().putString("toolbarLandscape", v.name).apply() }
+
+    fun toolbarFor(landscape: Boolean) = if (landscape) toolbarLandscape else toolbarPosition
+    fun setToolbarFor(landscape: Boolean, v: ToolbarPosition) { if (landscape) toolbarLandscape = v else toolbarPosition = v }
+
+    private var _shapes by mutableStateOf(sp.getBoolean("shapes", true))
+    /** "Enable shapes": hold at the end of a stroke to turn it into a clean shape. */
+    var shapesEnabled: Boolean get() = _shapes; set(v) { _shapes = v; sp.edit().putBoolean("shapes", v).apply() }
 
     private var _block by mutableStateOf(sp.getBoolean("blockDeviceGestures", true))
     /** Hold off the device's own edge gestures (BOOX status bar / back swipes) while the app is open. */

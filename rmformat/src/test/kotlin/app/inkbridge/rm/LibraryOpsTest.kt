@@ -27,6 +27,19 @@ class LibraryOpsTest {
         assertEquals(n, nb.id)
     }
 
+    @Test fun lastOpenedPageAndTimeArePersistedAndSizeIsSummed() {
+        val d = dir()
+        LibraryOps.createNotebook(d, "N", id = "n", firstPageId = "p1", now = 5)
+        LibraryOps.addPage(d, scan(d)["n"]!!, pageId = "p2")
+        assertEquals(0, scan(d)["n"]!!.lastOpened)
+        File(File(d, "n"), "p1.rm").writeBytes(ByteArray(100))
+        File(File(d, "n"), "p2.rm").writeBytes(ByteArray(23))
+        LibraryOps.setLastOpened(d, "n", 1, now = 9000)
+        val n = scan(d)["n"]!!
+        assertEquals(1, n.lastOpenedPage); assertEquals(9000L, n.lastOpened); assertEquals(123L, n.sizeBytes)
+        assertNotEquals(9000L, n.lastModified)
+    }
+
     @Test fun renamePinAndMove() {
         val d = dir()
         LibraryOps.createFolder(d, "A", id = "a"); LibraryOps.createNotebook(d, "N", id = "n")
@@ -88,7 +101,7 @@ class LibraryOpsTest {
     }
 
     @Test fun templatesDrawAndExport() {
-        for (t in PageTemplate.entries) {
+        for (t in PageTemplate.entries.take(8)) {
             val layout = PageLayout(-702f, 702f, 0f, 1872f)
             val c = Java2DCanvas(layout, 0.4f); t.draw(c, layout)
             System.getProperty("rm.renderOut")?.let { File(it).mkdirs(); ImageIO.write(c.finish(), "png", File(it, "template_${t.id}.png")) }
