@@ -24,12 +24,18 @@ data class PenSample(val x: Float, val y: Float, val pressure: Float, val tiltX:
 interface PenListener {
     fun onStroke(samples: List<PenSample>)
     fun onErase(samples: List<PenSample>)
+    /** A finger swiped across the page: [forward] = towards the next page. */
+    fun onSwipe(forward: Boolean) {}
+    /** A quick tap with [fingers] (2 or 3) fingers: the tablet's undo / redo shortcuts. */
+    fun onFingerTap(fingers: Int) {}
     /** A stroke made with the selection tool (a lasso, or a drag of the current selection). */
     fun onLasso(samples: List<PenSample>) {}
     /** A stroke made with "Erase selection": erase what the lasso encloses. */
     fun onEraseArea(samples: List<PenSample>) {}
     /** The selection is being dragged, resized or rotated ([active]) or the gesture ended. */
     fun onSelectionGesture(active: Boolean) {}
+    /** A pinch / two-finger drag ended: zoom by [factor] around ([focusX], [focusY]), then pan by ([panX], [panY]) view pixels. */
+    fun onViewGesture(factor: Float, focusX: Float, focusY: Float, panX: Float, panY: Float) {}
 }
 
 /**
@@ -56,10 +62,110 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
     var penEnabled = false
         set(value) { field = value; applyEnabled() }
 
-    /** Let a finger draw as well; only honoured on non-Onyx devices (on a BOOX only the stylus draws). */
+    /** Finger swipes left/right turn pages (reported through [PenListener.onSwipe]). */
+    var swipeEnabled = true
+
+    /** Let a finger draw as well; only honoured on non-Onyx devices (on a BOOX the stylus draws, the finger swipes). */
     var fingerDraws = false
 
+    private val gestures = android.view.GestureDetector(context, object : android.view.GestureDetector.SimpleOnGestureListener() {
+        override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {
+            if (!swipeEnabled || e1 == null) return false
+            val dx = e2.x - e1.x
+            val dy = e2.y - e1.y
+            // A deliberate, mostly horizontal swipe.
+            if (kotlin.math.abs(dx) > width * 0.18f && kotlin.math.abs(dx) > kotlin.math.abs(dy) * 1.6f) {
+                listener.onSwipe(forward = dx < 0)
+                return true
+            }
+            return false
+        }
+    })
+
+    // Pinch to zoom and drag with two fingers to pan. The page follows the fingers live (the bitmap is scaled and moved,
+    // drawn in a fast panel mode); when the fingers lift, the listener re-renders the page sharply at the new zoom.
+    private var gestureScale = 1f
+    private var gestureFocusX = 0f
+    private var gestureFocusY = 0f
+    private var gesturePanX = 0f
+    private var gesturePanY = 0f
+    private var lastFocusX = 0f
+    private var lastFocusY = 0f
+    private var multiTouch = false
     private var lastPreviewMs = 0L
+
+    /** The current zoom (1 = whole page), so the live pinch preview can stop where the real zoom would. */
+    var zoomProvider: () -> Float = { 1f }
+    private val zoomNow: Float get() = zoomProvider()
+
+    private val scaleDetector = android.view.ScaleGestureDetector(context, object : android.view.ScaleGestureDetector.SimpleOnScaleGestureListener() {
+        override fun onScaleBegin(d: android.view.ScaleGestureDetector): Boolean {
+            gestureScale = 1f; gesturePanX = 0f; gesturePanY = 0f
+            gestureFocusX = d.focusX; gestureFocusY = d.focusY; lastFocusX = d.focusX; lastFocusY = d.focusY
+            beginFastPreview()
+            return true
+        }
+        override fun onScale(d: android.view.ScaleGestureDetector): Boolean {
+            gestureScale = (gestureScale * d.scaleFactor).coerceIn(1f / zoomNow, MAX_ZOOM / zoomNow)
+            gesturePanX += d.focusX - lastFocusX; gesturePanY += d.focusY - lastFocusY
+            lastFocusX = d.focusX; lastFocusY = d.focusY
+            val now = android.os.SystemClock.uptimeMillis()
+            if (now - lastPreviewMs >= PREVIEW_INTERVAL_MS) { lastPreviewMs = now; drawZoomPreview() }
+            return true
+        }
+        override fun onScaleEnd(d: android.view.ScaleGestureDetector) {
+            endFastPreview()
+            if (kotlin.math.abs(gestureScale - 1f) > 0.04f || kotlin.math.hypot(gesturePanX, gesturePanY) > 24f) {
+                listener.onViewGesture(gestureScale, gestureFocusX, gestureFocusY, gesturePanX, gesturePanY)
+            } else draw()
+        }
+    })
+
+    // A quick tap with two or three fingers (undo / redo): short, and the fingers barely move.
+    private var tapStart = 0L
+    private var tapMaxFingers = 0
+    private var tapStartX = 0f
+    private var tapStartY = 0f
+    private var tapMoved = false
+    private fun trackFingerTap(e: MotionEvent) {
+        when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN -> { tapStart = e.eventTime; tapMaxFingers = 1; tapStartX = e.x; tapStartY = e.y; tapMoved = false }
+            MotionEvent.ACTION_POINTER_DOWN -> tapMaxFingers = maxOf(tapMaxFingers, e.pointerCount)
+            MotionEvent.ACTION_MOVE -> if (kotlin.math.hypot(e.x - tapStartX, e.y - tapStartY) > 40f) tapMoved = true
+            MotionEvent.ACTION_UP -> {
+                if (!tapMoved && tapMaxFingers in 2..3 && e.eventTime - tapStart < 350) listener.onFingerTap(tapMaxFingers)
+                tapMaxFingers = 0
+            }
+            MotionEvent.ACTION_CANCEL -> tapMaxFingers = 0
+        }
+    }
+
+    private var fastPreview = false
+
+    /** Switch the panel to a fast, low-fidelity update mode and park the pen layer while something is being previewed. */
+    private fun beginFastPreview() {
+        if (fastPreview) return
+        fastPreview = true
+        runCatching { EpdController.setViewDefaultUpdateMode(this, com.onyx.android.sdk.api.device.epd.UpdateMode.DU) }
+        touchHelper?.let { runCatching { it.setRawDrawingEnabled(false) } }
+    }
+
+    private fun endFastPreview() {
+        if (!fastPreview) return
+        fastPreview = false
+        runCatching { EpdController.resetViewUpdateMode(this) }
+        applyEnabled()
+    }
+
+    private fun drawZoomPreview() {
+        val bmp = bitmap ?: return
+        val m = android.graphics.Matrix().apply {
+            postTranslate(bitmapLeft, 0f)
+            postScale(gestureScale, gestureScale, gestureFocusX, gestureFocusY)
+            postTranslate(gesturePanX, gesturePanY)
+        }
+        drawPreviewCanvas { it.drawBitmap(bmp, m, null) }
+    }
 
     // Selection drag preview: the frame follows the pen (move / resize / rotate) while the strokes stay put until the pen lifts.
     private var dragHit: SelectionGesture.Hit? = null
@@ -255,9 +361,16 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         val isFinger = event.getToolType(0) == MotionEvent.TOOL_TYPE_FINGER
-        // Finger gestures are off: the app only reacts to the pen (a finger draws only on a non-BOOX test device), so the
-        // system's and the BOOX's own touch gestures are left alone.
-        if (isFinger && !(fingerDraws && !useOnyx && penEnabled)) return false
+        // A finger swipes (turns pages) unless this is a non-Onyx device with finger drawing switched on.
+        if (isFinger && !(fingerDraws && !useOnyx && penEnabled)) {
+            trackFingerTap(event)
+            scaleDetector.onTouchEvent(event)
+            if (event.pointerCount > 1 || scaleDetector.isInProgress) multiTouch = true
+            // A pinch or two-finger drag must not also count as a page-turning swipe.
+            if (!multiTouch) gestures.onTouchEvent(event)
+            if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) multiTouch = false
+            return true
+        }
         if (useOnyx || !penEnabled) return super.onTouchEvent(event)
         val area = pageArea
         when (event.actionMasked) {
@@ -324,6 +437,7 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
     fun onResume() { applyEnabled() }
 
     private companion object {
+        const val MAX_ZOOM = 4f
         const val PREVIEW_INTERVAL_MS = 45L
     }
 }

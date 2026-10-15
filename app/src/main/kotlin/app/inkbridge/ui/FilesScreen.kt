@@ -135,7 +135,13 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
             // Starting a selection while moving is not possible: long-press just opens nothing.
             val longPress: (LibraryEntry) -> Unit = { e -> if (!isMoving) toggle(e) }
             Box(
-                Modifier.weight(1f).fillMaxWidth(),
+                Modifier.weight(1f).fillMaxWidth().then(
+                    if (goUp != null) Modifier.pointerInput(s) {
+                        // A swipe to the right goes up one folder (there is no Up button).
+                        var total = 0f
+                        detectHorizontalDragGestures(onDragStart = { total = 0f }, onDragEnd = { if (total > size.width / 5f) goUp() }) { _, d -> total += d }
+                    } else Modifier,
+                ),
             ) {
                 if (entries.isEmpty()) {
                     val (title, body) = emptyText(s, tagFilter.isNotEmpty())
