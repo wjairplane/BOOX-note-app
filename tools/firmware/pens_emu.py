@@ -36,7 +36,7 @@ class Emu:
         self.zero = self.alloc(256)
         uc.hook_add(UC_HOOK_CODE, self._plt_hook, begin=0x4b080, end=0x4b080 + 0x8ffc)
         uc.hook_add(UC_HOOK_CODE, self._fn_hook, begin=0xb6618c, end=0xb6618c + 4)
-        uc.hook_add(UC_HOOK_CODE, self._color_hook, begin=0x14cea0, end=0x14cea0 + 4)
+        self._color_h = uc.hook_add(UC_HOOK_CODE, self._color_hook, begin=0x14cea0, end=0x14cea0 + 4)
         self.color_fn = lambda tool, color, argb: argb
         self.trace_plt = False
         self.unknown = set()
@@ -147,6 +147,10 @@ class Emu:
         uc.emu_start(addr, RET, count=maxins)
         return uc.reg_read(UC_ARM_REG_R0)
 
+    def use_real_palette(self, mode):
+        """Run the firmware's own colour function (0x14cea0) instead of the stub; mode = word at renderer+0x18 (1 = grayscale conversion)."""
+        self.uc.hook_del(self._color_h); self.palette_mode = mode
+        self.w32(self.renderer + 0x18, mode)
     def make_renderer(self, scale=1.0, xform=None, flag_extra=0):
         """Build the render context ("config") like 0xb66218 does and run the StrokeRenderer ctor (0xb7f438)."""
         C = self.alloc(0x100)
