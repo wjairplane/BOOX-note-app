@@ -17,4 +17,20 @@ interface PageCanvas {
 
     /** Draw a single line of text with its baseline at [y]. */
     fun text(s: String, x: Float, y: Float, size: Float, bold: Boolean, italic: Boolean, argb: Int)
+
+    /**
+     * Fill the polygon through the first [pointCount] (x, y) pairs of [xy]. Implementations without a path fill
+     * fall back to the bounding box, which is exact for the axis-aligned boxes templates fill.
+     */
+    fun fillPolygon(xy: FloatArray, pointCount: Int, argb: Int) {
+        if (pointCount < 1) return
+        var x0 = xy[0]; var x1 = xy[0]; var y0 = xy[1]; var y1 = xy[1]
+        for (i in 1 until pointCount) {
+            x0 = minOf(x0, xy[i * 2]); x1 = maxOf(x1, xy[i * 2]); y0 = minOf(y0, xy[i * 2 + 1]); y1 = maxOf(y1, xy[i * 2 + 1])
+        }
+        fillRect(x0, y0, x1 - x0, y1 - y0, argb)
+    }
+
+    /** Width of [s] set with the font [text] uses; the default is a rough average for sans text. */
+    fun measureText(s: String, size: Float, bold: Boolean = false): Float = s.length * size * 0.52f
 }

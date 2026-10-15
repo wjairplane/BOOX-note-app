@@ -42,5 +42,17 @@ class Java2DCanvas(private val layout: PageLayout, scale: Float = 0.5f) : PageCa
         g.drawString(s, x, y)
     }
 
+    override fun fillPolygon(xy: FloatArray, pointCount: Int, argb: Int) {
+        val path = Path2D.Float()
+        path.moveTo(xy[0], xy[1])
+        for (i in 1 until pointCount) path.lineTo(xy[i * 2], xy[i * 2 + 1])
+        path.closePath()
+        g.color = Color(argb, true)
+        g.fill(path)
+    }
+
+    override fun measureText(s: String, size: Float, bold: Boolean): Float =
+        g.getFontMetrics(Font(Font.SANS_SERIF, if (bold) Font.BOLD else 0, 1).deriveFont(size)).stringWidth(s).toFloat()
+
     fun finish(): BufferedImage { g.dispose(); return image }
 }

@@ -97,7 +97,7 @@ private fun General(app: AppController, onStorage: () -> Unit) {
         CellRow("Storage", formatBytes(size), onStorage, divider = false)
     }
     Group("Template for new notebooks") {
-        PageTemplate.entries.forEach { t -> ChoiceRow(t.label, p.defaultTemplate == t, { p.defaultTemplate = t }) }
+        (listOf(p.defaultTemplate) + p.recentTemplates.take(8)).distinct().forEach { t -> ChoiceRow(t.label, p.defaultTemplate == t, { p.defaultTemplate = t }) }
     }
     val activity = androidx.compose.ui.platform.LocalContext.current.let { c -> generateSequence(c) { (it as? android.content.ContextWrapper)?.baseContext }.filterIsInstance<android.app.Activity>().firstOrNull() }
     Column {
