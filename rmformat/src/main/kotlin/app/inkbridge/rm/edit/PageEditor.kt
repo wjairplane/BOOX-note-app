@@ -3,6 +3,7 @@ package app.inkbridge.rm.edit
 import app.inkbridge.rm.io.*
 import app.inkbridge.rm.render.PageRenderer
 import app.inkbridge.rm.scene.*
+import app.inkbridge.rm.text.TextBuffer
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
@@ -456,6 +457,45 @@ class PageEditor private constructor(initial: List<Block>) {
 
     private fun nextCounter(): Long = maxCounter(blocks) + 1
 
+    // ---- typed text ----
+
+    /** The page's typed text, or null when it has none. */
+    val rootText: Text? get() = tree.rootText
+
+    /** The result of the last text edit that asked to be merged with the next one (typing a word is one undo step). */
+    private var lastMergedTextEdit: List<Block>? = null
+
+    /**
+     * Edit the page's typed text through a [TextBuffer] (a new empty text block is made when the page has none). One undo
+     * step per call, except that consecutive calls with [merge] set share one. Returns true if the text changed.
+     */
+    fun editText(merge: Boolean = false, sideMargin: Float = app.inkbridge.rm.text.TextSettings.DEFAULT_SIDE_MARGIN, edit: (TextBuffer) -> Unit): Boolean {
+        val buffer = TextBuffer.open(tree.rootText, primaryAuthor(), nextCounter(), sideMargin)
+        edit(buffer)
+        if (!buffer.modified) return false
+        val text = buffer.toText()
+        val existing = blocks.firstOrNull { it is RootTextBlock } as? RootTextBlock
+        val block = RootTextBlock(CrdtId.END_MARKER, text, existing?.extra ?: ByteArray(0)).also {
+            it.minVersion = existing?.minVersion ?: 0; it.currentVersion = existing?.currentVersion ?: 1
+        }
+        val content = buffer.content
+        var next = blocks.map { b ->
+            when {
+                b === existing -> block
+                b is PageInfoBlock -> PageInfoBlock(b.loadsCount, b.mergesCount, content.length, content.paragraphs.size, b.typeFolioUseCount, b.extra)
+                    .also { it.minVersion = b.minVersion; it.currentVersion = b.currentVersion }
+                else -> b
+            }
+        }
+        if (existing == null) {
+            val at = next.indexOfFirst { it is SceneItemBlock }.let { if (it < 0) next.size else it }
+            next = next.toMutableList().also { it.add(at, block) }
+        }
+        if (merge && blocks === lastMergedTextEdit) apply(next) else commit(next)
+        lastMergedTextEdit = if (merge) next else null
+        return true
+    }
+
     companion object {
         private const val LINE_ITEM_TYPE = 3
         private const val MAX_UNDO = 100
@@ -487,7 +527,12 @@ class PageEditor private constructor(initial: List<Block>) {
                     see(b.backgroundVisible?.timestamp); see(b.rootDocumentVisible?.timestamp)
                 }
                 is RootTextBlock -> {
-                    for (i in b.value.items.sequenceItems) { see(i.itemId); see(i.leftId); see(i.rightId) }
+                    for (i in b.value.items.sequenceItems) {
+                        see(i.itemId); see(i.leftId); see(i.rightId)
+                        // A run of characters (or of deleted ones) owns one id per character.
+                        val run = if (i.deletedLength > 0) i.deletedLength else (i.value as? TextValue.Chars)?.s?.length ?: 1
+                        if (run > 1) m = max(m, i.itemId.counter + run - 1)
+                    }
                     for ((k, v) in b.value.styles) { see(k); see(v.timestamp) }
                 }
                 else -> Unit

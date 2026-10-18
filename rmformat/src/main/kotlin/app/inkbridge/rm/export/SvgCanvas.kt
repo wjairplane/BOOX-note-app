@@ -40,9 +40,12 @@ class SvgCanvas(private val layout: PageLayout) : PageCanvas {
         body.append("\"/>\n")
     }
 
-    override fun text(s: String, x: Float, y: Float, size: Float, bold: Boolean, italic: Boolean, argb: Int) {
+    override fun text(s: String, x: Float, y: Float, size: Float, bold: Boolean, italic: Boolean, argb: Int) =
+        styledText(s, x, y, size, bold, italic, app.inkbridge.rm.text.TextFont.RM_SANS, argb)
+
+    override fun styledText(s: String, x: Float, y: Float, size: Float, bold: Boolean, italic: Boolean, font: app.inkbridge.rm.text.TextFont, argb: Int) {
         body.append("<text x=\"").append(num(x)).append("\" y=\"").append(num(y))
-            .append("\" font-family=\"sans-serif\" font-size=\"").append(num(size)).append('"')
+            .append("\" font-family=\"").append(font.css).append("\" xml:space=\"preserve\" font-size=\"").append(num(size)).append('"')
         if (bold) body.append(" font-weight=\"bold\"")
         if (italic) body.append(" font-style=\"italic\"")
         body.append(" fill=\"").append(color(argb)).append("\">").append(escape(s)).append("</text>\n")

@@ -100,7 +100,9 @@ class GlyphRange(
 ) : SceneItem
 
 enum class ParagraphStyle(val code: Int) {
-    BASIC(0), PLAIN(1), HEADING(2), BOLD(3), BULLET(4), BULLET2(5), CHECKBOX(6), CHECKBOX_CHECKED(7);
+    BASIC(0), PLAIN(1), HEADING(2), BOLD(3), BULLET(4), BULLET2(5), CHECKBOX(6), CHECKBOX_CHECKED(7),
+    /** Not in rmscene: numbered list, as this app writes it (the tablet's own code for it is not known). */
+    NUMBERED(8);
 
     companion object {
         fun of(code: Int): ParagraphStyle = entries.firstOrNull { it.code == code } ?: PLAIN
@@ -121,4 +123,6 @@ class Text(
     val posX: Double,
     val posY: Double,
     val width: Float,
+    /** Style codes this app does not know, by paragraph id, so that they are written back unchanged. */
+    val unknownStyleCodes: Map<CrdtId, Int> = emptyMap(),
 )

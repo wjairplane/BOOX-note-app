@@ -198,6 +198,7 @@ object SceneStream {
         require(blockId == CrdtId.END_MARKER) { "Unexpected root text block id $blockId" }
         val items = ArrayList<CrdtSequenceItem<TextValue>>()
         val styles = LinkedHashMap<CrdtId, Lww<ParagraphStyle>>()
+        val unknown = HashMap<CrdtId, Int>()
         r.readSubblock(2) {
             r.readSubblock(1) {
                 r.readSubblock(1) {
@@ -211,7 +212,8 @@ object SceneStream {
                         val ts = r.readId(1)
                         val style = r.readSubblock(2) {
                             r.data.readU8() // always 17
-                            ParagraphStyle.of(r.data.readU8())
+                            val code = r.data.readU8()
+                            ParagraphStyle.entries.firstOrNull { it.code == code } ?: ParagraphStyle.PLAIN.also { unknown[charId] = code }
                         }
                         styles[charId] = Lww(ts, style)
                     }
@@ -220,7 +222,7 @@ object SceneStream {
         }
         val (posX, posY) = r.readSubblock(3) { r.data.readFloat64() to r.data.readFloat64() }
         val width = r.readFloat(4)
-        return RootTextBlock(blockId, Text(CrdtSequence(items), styles, posX, posY, width))
+        return RootTextBlock(blockId, Text(CrdtSequence(items), styles, posX, posY, width, unknown))
     }
 
     private fun readTextItem(r: TaggedBlockReader): CrdtSequenceItem<TextValue> = r.readSubblock(0) {
