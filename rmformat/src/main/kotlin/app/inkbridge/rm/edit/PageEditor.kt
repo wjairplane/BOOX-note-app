@@ -105,7 +105,7 @@ class PageEditor private constructor(initial: List<Block>) {
     /** What is left of [line] after erasing within [radius] of [path] (both relative to the line's layer); null if nothing was touched. */
     private fun erasedParts(line: Line, path: List<Pair<Float, Float>>, radius: Float): List<Line>? {
         // Densify first so a long segment between two surviving points can still be cut in the middle.
-        val step = max(radius * 0.5f, 2f)
+        val step = max(radius * 0.15f, 1f)
         val pts = ArrayList<Point>()
         for ((i, q) in line.points.withIndex()) {
             val n = line.points.getOrNull(i + 1)
@@ -121,7 +121,7 @@ class PageEditor private constructor(initial: List<Block>) {
         }
         val erased = BooleanArray(pts.size) { i ->
             val q = pts[i]
-            val r = radius + q.width / 8f
+            val r = radius
             if (path.size == 1) hypot(q.x - path[0].first, q.y - path[0].second) <= r
             else (0 until path.size - 1).any { distToSegment(q.x, q.y, path[it].first, path[it].second, path[it + 1].first, path[it + 1].second) <= r }
         }

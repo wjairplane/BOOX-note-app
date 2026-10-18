@@ -23,7 +23,9 @@ data class PenSample(val x: Float, val y: Float, val pressure: Float, val tiltX:
 /** Receives finished gestures. May be called on a non-UI thread. */
 interface PenListener {
     fun onStroke(samples: List<PenSample>)
-    fun onErase(samples: List<PenSample>)
+    fun onErase(samples: List<PenSample>, hardware: Boolean = false)
+    /** Exact pen preview of the eraser: the pixels it has passed over fade to grey; [from] is how many samples the last frame had. */
+    fun onLiveErase(samples: List<PenSample>, from: Int, hardware: Boolean) {}
     /** A finger swiped across the page: [forward] = towards the next page. */
     fun onSwipe(forward: Boolean) {}
     /** A one-finger vertical swipe: scroll a screen [down] (or up) inside a zoomed page. */
@@ -398,7 +400,7 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         // The stylus's own eraser end/button always erases, whatever tool is selected.
         override fun onRawErasingTouchPointListReceived(list: TouchPointList) {
             val samples = toSamples(list.points)
-            if (samples.isNotEmpty()) listener.onErase(samples)
+            if (samples.isNotEmpty()) listener.onErase(samples, hardware = true)
         }
     }
 
@@ -422,14 +424,14 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         }
         for (i in 0 until event.historySize) addTouch(event.getHistoricalX(i), event.getHistoricalY(i), event.getHistoricalPressure(i), event.getHistoricalEventTime(i), area)
         addTouch(event.x, event.y, event.pressure, event.eventTime, area)
-        if (event.actionMasked == MotionEvent.ACTION_MOVE && !dragMode && !eraserEnd) liveUpdate()
+        if (event.actionMasked == MotionEvent.ACTION_MOVE && !dragMode) liveUpdate(eraserEnd)
         if (event.actionMasked == MotionEvent.ACTION_CANCEL) { liveCount = 0; if (liveShown) { liveShown = false; listener.onLiveEnd() } }
         if (event.actionMasked == MotionEvent.ACTION_UP && touchSamples.isNotEmpty()) {
             val done = touchSamples.toList()
             touchSamples.clear()
             if (liveShown) { liveShown = false; listener.onLiveEnd() }
             liveCount = 0
-            if (eraserEnd) listener.onErase(done) else when (tool.tool) {
+            if (eraserEnd) listener.onErase(done, hardware = true) else when (tool.tool) {
                 PenTool.ERASER -> listener.onErase(done)
                 PenTool.SELECTION -> listener.onLasso(done)
                 PenTool.ERASE_AREA -> listener.onEraseArea(done)
@@ -444,14 +446,15 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
     private var liveShown = false
     private var lastLiveMs = 0L
 
-    private fun liveUpdate() {
-        if (!exactMode || tool.tool == PenTool.ERASER || tool.tool == PenTool.SELECTION || tool.tool == PenTool.ERASE_AREA) return
+    private fun liveUpdate(eraserEnd: Boolean) {
+        val erasing = eraserEnd || tool.tool == PenTool.ERASER
+        if (!exactMode || (!erasing && (tool.tool == PenTool.SELECTION || tool.tool == PenTool.ERASE_AREA))) return
         val now = android.os.SystemClock.uptimeMillis()
-        if (now - lastLiveMs < LIVE_INTERVAL_MS || touchSamples.size < 2) return
+        if (now - lastLiveMs < LIVE_INTERVAL_MS || touchSamples.isEmpty()) return
         lastLiveMs = now
         val snapshot = touchSamples.toList()
         liveShown = true
-        listener.onLiveStroke(snapshot, liveCount)
+        if (erasing) listener.onLiveErase(snapshot, liveCount, eraserEnd) else if (snapshot.size >= 2) listener.onLiveStroke(snapshot, liveCount)
         liveCount = snapshot.size
     }
 

@@ -82,7 +82,9 @@ import java.io.File
 
 /** Radius of the eraser in view pixels. */
 /** Eraser radius in view pixels for thin, medium and thick. */
-private val ERASER_RADII = floatArrayOf(14f, 22f, 36f)
+// The eraser's radius in page units (the firmware's 5 * t^2 for thin, medium and thick); the stylus's own eraser end is 28.8.
+private val ERASER_RADII = floatArrayOf(5f, 20f, 45f)
+private const val HARDWARE_ERASER_RADIUS = 28.8f
 
 /** Toolbar buttons are 112 px square (controlsHeight.large), edge to edge. */
 private val TOOLBAR_THICKNESS = Rm.ToolButton
@@ -596,8 +598,18 @@ private fun PageArea(
                         val view = surface ?: return
                         s.previewStroke(view.currentSpec, samples, from)?.let { view.refreshRect(it) }
                     }
-                    override fun onLiveEnd() { currentSession?.endPreview() }
-                    override fun onErase(samples: List<PenSample>) = apply(samples) { s, _ -> s.erase(samples, currentEraserRadius) }
+                    override fun onLiveErase(samples: List<PenSample>, from: Int, hardware: Boolean) {
+                        val s = currentSession ?: return
+                        s.previewErase(samples, if (hardware) HARDWARE_ERASER_RADIUS else currentEraserRadius, from)?.let { surface?.refreshRect(it) }
+                    }
+                    override fun onLiveEnd() { currentSession?.endPreview(); currentSession?.endErasePreview() }
+                    override fun onErase(samples: List<PenSample>, hardware: Boolean) {
+                        val s = currentSession ?: return
+                        val view = surface ?: return
+                        if (samples.isEmpty()) return
+                        if (s.erase(samples, if (hardware) HARDWARE_ERASER_RADIUS else currentEraserRadius)) currentOnChanged()
+                        view.refresh() // the faded stroke goes, and the cut (if any) shows
+                    }
                     override fun onSwipe(forward: Boolean) { currentOnSwipe(forward) }
                     override fun onFingerTap(fingers: Int) { currentOnFingerTap(fingers) }
                     override fun onEdgeSwipe(edge: FingerGestures.Edge) { currentOnEdge(edge) }

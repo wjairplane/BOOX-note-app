@@ -387,18 +387,78 @@ class PageSession(
         return b
     }
 
+    // ---- the eraser while the pen is down: the firmware paints solid white on every pixel with x+y even (a 1 px checkerboard),
+    // so what it passes over reads as a faded grey; the strokes are only cut when the pen lifts. ----
+
+    private var eraseBounds: android.graphics.Rect? = null
+
+    /**
+     * Fade the pixels the eraser disc (radius [radiusPage] page units) swept over between samples [from]-1 .. end of [samples].
+     * Returns the view rectangle the panel must refresh, or null if nothing changed.
+     */
+    @Synchronized
+    fun previewErase(samples: List<PenSample>, radiusPage: Float, from: Int): android.graphics.Rect? {
+        val t = transform ?: return null
+        val bmp = bitmap ?: return null
+        if (samples.isEmpty()) return null
+        val w = bmp.width; val h = bmp.height
+        val r = radiusPage * t.scale
+        val first = (from - 1).coerceAtLeast(0)
+        var l = Float.MAX_VALUE; var tp = Float.MAX_VALUE; var rt = -Float.MAX_VALUE; var b = -Float.MAX_VALUE
+        for (i in first until samples.size) { l = minOf(l, samples[i].x); rt = maxOf(rt, samples[i].x); tp = minOf(tp, samples[i].y); b = maxOf(b, samples[i].y) }
+        val box = android.graphics.Rect((l - r).toInt() - 1, (tp - r).toInt() - 1, (rt + r).toInt() + 2, (b + r).toInt() + 2)
+        if (!box.intersect(0, 0, w, h)) return null
+        val bw = box.width(); val bh = box.height()
+        val px = IntArray(bw * bh)
+        bmp.getPixels(px, 0, bw, box.left, box.top, bw, bh)
+        val r2 = r * r
+        for (y in box.top until box.bottom) for (x in box.left until box.right) {
+            if ((x + y) and 1 != 0) continue
+            val cx = x + 0.5f; val cy = y + 0.5f
+            var hit = false
+            for (i in first until samples.size) {
+                val a = samples[i]; val n = samples.getOrNull(i + 1) ?: a
+                if (segDist2(cx, cy, a.x, a.y, n.x, n.y) <= r2) { hit = true; break }
+            }
+            if (hit) px[(y - box.top) * bw + (x - box.left)] = -1
+        }
+        bmp.setPixels(px, 0, bw, box.left, box.top, bw, bh)
+        eraseBounds = eraseBounds?.also { it.union(box) } ?: android.graphics.Rect(box)
+        return box
+    }
+
+    private fun segDist2(px: Float, py: Float, ax: Float, ay: Float, bx: Float, by: Float): Float {
+        val dx = bx - ax; val dy = by - ay
+        val len2 = dx * dx + dy * dy
+        val u = if (len2 == 0f) 0f else (((px - ax) * dx + (py - ay) * dy) / len2).coerceIn(0f, 1f)
+        val ex = ax + u * dx - px; val ey = ay + u * dy - py
+        return ex * ex + ey * ey
+    }
+
+    /** Put back the page under the faded eraser stroke (the cut itself is made next, or the gesture was cancelled). */
+    @Synchronized
+    fun endErasePreview(): android.graphics.Rect? {
+        val b = eraseBounds ?: return null
+        eraseBounds = null
+        val bmp = bitmap ?: return null
+        val shown = shownPx ?: return null
+        val w = bmp.width
+        bmp.setPixels(shown, b.top * w + b.left, w, b.left, b.top, b.width(), b.height())
+        return b
+    }
+
     /** The view rectangle [addStroke] last changed on the bitmap (for refreshing just that part of the panel). */
     @Volatile private var lastStrokeRect: android.graphics.Rect? = null
 
     /** The rectangle the last [addStroke] changed (once); null after any other edit, meaning the whole page may have changed. */
     fun takeStrokeRect(): android.graphics.Rect? = lastStrokeRect.also { lastStrokeRect = null }
 
-    /** Erase strokes touched by the dragged view-pixel [samples]. Returns true if anything was erased. */
+    /** Erase strokes touched by the dragged view-pixel [samples]; [radiusPage] is the eraser's radius in page units. Returns true if anything was erased. */
     @Synchronized
-    fun erase(samples: List<PenSample>, radiusPx: Float): Boolean {
+    fun erase(samples: List<PenSample>, radiusPage: Float): Boolean {
         val t = transform ?: return false
         val path = samples.map { t.toPageX(it.x) to t.toPageY(it.y) }
-        if (editor.eraseAlong(path, radiusPx * t.pagePerPixel()) == 0) return false
+        if (editor.eraseAlong(path, radiusPage) == 0) return false
         redrawAll()
         return true
     }
