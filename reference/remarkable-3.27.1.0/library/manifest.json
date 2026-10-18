@@ -1,0 +1,352 @@
+[
+ {
+  "set": "default",
+  "doc": "8352580e-521a-4084-ba0c-cd62bbd915f5",
+  "name": "Learn the basics",
+  "type": "pdf",
+  "pageCount": 9,
+  "formatVersion": 2,
+  "pages": [
+   {
+    "id": "b31adad8-c946-40ee-982d-3849d27947b3",
+    "rm": false
+   },
+   {
+    "id": "888576be-24cb-462a-a614-2d00c83fceb8",
+    "paper": [
+     1620,
+     2160
+    ],
+    "pens": {
+     "MECHANICAL_PENCIL_2": 2,
+     "FINELINER_2": 114,
+     "PAINTBRUSH_2": 1
+    },
+    "colors": {
+     "MAGENTA": 2,
+     "BLACK": 112,
+     "CYAN": 3
+    },
+    "glyph_highlights": []
+   },
+   {
+    "id": "c2ae7cfb-edd6-496b-a02c-86be5402e7fb",
+    "paper": [
+     1620,
+     2160
+    ],
+    "pens": {
+     "MECHANICAL_PENCIL_2": 1,
+     "FINELINER_2": 69
+    },
+    "colors": {
+     "MAGENTA": 1,
+     "BLACK": 67,
+     "CYAN": 2
+    },
+    "glyph_highlights": []
+   },
+   {
+    "id": "e9efb337-7425-45a5-837a-cb061b24acb3",
+    "paper": [
+     1620,
+     2160
+    ],
+    "pens": {
+     "MECHANICAL_PENCIL_2": 1,
+     "FINELINER_2": 63,
+     "PENCIL_2": 5
+    },
+    "colors": {
+     "MAGENTA": 1,
+     "CYAN": 2,
+     "BLACK": 61,
+     "GRAY": 5
+    },
+    "glyph_highlights": []
+   },
+   {
+    "id": "b25aed89-6c28-477f-975e-29aae14b9d42",
+    "paper": [
+     1620,
+     2160
+    ],
+    "pens": {
+     "FINELINER_2": 30,
+     "MECHANICAL_PENCIL_2": 1,
+     "BALLPOINT_2": 1
+    },
+    "colors": {
+     "BLACK": 29,
+     "CYAN": 2,
+     "MAGENTA": 1
+    },
+    "glyph_highlights": []
+   },
+   {
+    "id": "87c12762-9c8b-425d-9cda-9969ef94bb38",
+    "paper": [
+     1620,
+     2160
+    ],
+    "pens": {
+     "MECHANICAL_PENCIL_2": 2,
+     "FINELINER_2": 85
+    },
+    "colors": {
+     "MAGENTA": 2,
+     "BLACK": 83,
+     "CYAN": 2
+    },
+    "glyph_highlights": [
+     ""
+    ]
+   },
+   {
+    "id": "d9ad41cb-2277-41e8-b590-1b109f726730",
+    "paper": [
+     1620,
+     2160
+    ],
+    "pens": {
+     "MECHANICAL_PENCIL_2": 14,
+     "FINELINER_2": 29,
+     "BALLPOINT_2": 2
+    },
+    "colors": {
+     "MAGENTA": 4,
+     "BLACK": 29,
+     "CYAN": 12
+    },
+    "glyph_highlights": []
+   },
+   {
+    "id": "ecfefd3e-f95a-4ba8-9731-984fc19d4658",
+    "paper": [
+     1620,
+     2160
+    ],
+    "pens": {
+     "MECHANICAL_PENCIL_2": 9,
+     "FINELINER_2": 216,
+     "MARKER_2": 175
+    },
+    "colors": {
+     "MAGENTA": 3,
+     "BLACK": 395,
+     "CYAN": 2
+    },
+    "glyph_highlights": []
+   },
+   {
+    "id": "39348f47-f6ab-470f-bccd-f15fa055da62",
+    "paper": [
+     1620,
+     2160
+    ],
+    "pens": {
+     "FINELINER_2": 23
+    },
+    "colors": {
+     "BLACK": 21,
+     "CYAN": 2
+    },
+    "glyph_highlights": []
+   }
+  ]
+ },
+ {
+  "set": "default",
+  "doc": "e49bb79e-ffc1-4b5f-8290-f64628e396cd",
+  "name": "Go further",
+  "type": "pdf",
+  "pageCount": 2,
+  "formatVersion": 1,
+  "pages": [
+   {
+    "id": "93435263-3f00-485f-830e-24058005f7fa",
+    "rm": false
+   },
+   {
+    "id": "96f8c37d-ed74-4e92-a274-64be1bcb8904",
+    "rm": false
+   }
+  ]
+ },
+ {
+  "set": "retail",
+  "doc": "6ca4eb5b-b0fa-4eba-8c10-e2dd4cd0a656",
+  "name": "Connect the dots",
+  "type": "notebook",
+  "pageCount": 1,
+  "formatVersion": 2,
+  "pages": [
+   {
+    "id": "005d1dcf-a259-40d6-9909-0cf8de2099c4",
+    "paper": [
+     1404,
+     1872
+    ],
+    "pens": {
+     "FINELINER_2": 52,
+     "MARKER_2": 26
+    },
+    "colors": {
+     "HIGHLIGHT": 1,
+     "BLACK": 51,
+     "RED": 26
+    },
+    "glyph_highlights": []
+   }
+  ]
+ },
+ {
+  "set": "retail",
+  "doc": "860c58c2-d5bf-4bf9-95be-b2008d59e265",
+  "name": "Check off your to-dos",
+  "type": "notebook",
+  "pageCount": 1,
+  "formatVersion": 2,
+  "pages": [
+   {
+    "id": "4806bd70-9614-425b-856b-7c279e2bea08",
+    "paper": [
+     1404,
+     1872
+    ],
+    "pens": {
+     "BALLPOINT_2": 75
+    },
+    "colors": {
+     "BLACK": 75
+    },
+    "glyph_highlights": []
+   }
+  ]
+ },
+ {
+  "set": "retail",
+  "doc": "beefd159-1854-4563-ac25-ea1c72bf87f4",
+  "name": "Getting started",
+  "type": "notebook",
+  "pageCount": 4,
+  "formatVersion": 2,
+  "pages": [
+   {
+    "id": "0dc24581-c6ec-441e-a6d9-a82ae5d2389d",
+    "paper": [
+     1404,
+     1872
+    ],
+    "pens": {
+     "MECHANICAL_PENCIL_2": 2,
+     "FINELINER_2": 49,
+     "PENCIL_2": 2,
+     "SHADER": 2
+    },
+    "colors": {
+     "BLACK": 53,
+     "HIGHLIGHT": 2
+    },
+    "glyph_highlights": []
+   },
+   {
+    "id": "730c109a-bba6-4a05-948b-fdade0065af9",
+    "paper": [
+     1404,
+     1872
+    ],
+    "pens": {
+     "MECHANICAL_PENCIL_2": 2,
+     "FINELINER_2": 43,
+     "PENCIL_2": 2,
+     "SHADER": 1
+    },
+    "colors": {
+     "BLACK": 47,
+     "HIGHLIGHT": 1
+    },
+    "glyph_highlights": []
+   },
+   {
+    "id": "b86bfef5-04dc-43e5-968f-75716e1f699e",
+    "paper": [
+     1404,
+     1872
+    ],
+    "pens": {
+     "SHADER": 2,
+     "MECHANICAL_PENCIL_2": 2,
+     "FINELINER_2": 46,
+     "PENCIL_2": 5,
+     "HIGHLIGHTER_2": 1
+    },
+    "colors": {
+     "HIGHLIGHT": 3,
+     "BLACK": 48,
+     "GRAY": 5
+    },
+    "glyph_highlights": []
+   },
+   {
+    "id": "976cf701-6317-4cc8-863f-41a801cb83d4",
+    "paper": [
+     1404,
+     1872
+    ],
+    "pens": {
+     "BALLPOINT_2": 3,
+     "PENCIL_2": 1
+    },
+    "colors": {
+     "BLACK": 3,
+     "BLUE": 1
+    },
+    "glyph_highlights": []
+   }
+  ]
+ },
+ {
+  "set": "retail",
+  "doc": "c082f0da-f273-4df8-a779-bb12cec88624",
+  "name": "Highlight and annotate",
+  "type": "notebook",
+  "pageCount": 1,
+  "formatVersion": 2,
+  "pages": [
+   {
+    "id": "73142766-0ac2-462d-ba0f-7f3a5683fd9e",
+    "paper": [
+     1404,
+     1872
+    ],
+    "pens": {
+     "MECHANICAL_PENCIL_2": 393,
+     "FINELINER_2": 105,
+     "BALLPOINT_2": 5,
+     "ERASER": 6,
+     "MARKER_2": 8
+    },
+    "colors": {
+     "BLACK": 448,
+     "RED": 69
+    },
+    "glyph_highlights": []
+   }
+  ]
+ },
+ {
+  "set": "retail",
+  "doc": "fa097101-4a92-4962-960b-9f0ac00c3944",
+  "name": "Read comfortably",
+  "type": "pdf",
+  "pageCount": 1,
+  "formatVersion": 1,
+  "pages": [
+   {
+    "id": "66eeb73f-0f08-4127-a2f7-f4ad7786d230",
+    "rm": false
+   }
+  ]
+ }
+]
