@@ -57,8 +57,6 @@ class LibraryStore(private val context: Context) {
         }
     }
 
-    private companion object { const val SEEDED = "defaultLibrarySeeded" }
-
     private fun displayName(uri: Uri): String =
         context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
             if (c.moveToFirst()) c.getString(0) else null
@@ -68,5 +66,6 @@ class LibraryStore(private val context: Context) {
         /** The failure reasons [importPdf] throws. */
         const val PASSWORD_PROTECTED = "Password protected PDF"
         const val UNREADABLE = "Unable to open"
+        private const val SEEDED = "defaultLibrarySeeded"
     }
 }
