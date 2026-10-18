@@ -3,6 +3,7 @@ package app.inkbridge
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import app.inkbridge.rm.library.DefaultLibrary
 import app.inkbridge.rm.library.DocumentFactory
 import app.inkbridge.rm.library.Library
 import app.inkbridge.rm.library.LibraryEntry
@@ -15,6 +16,20 @@ class LibraryStore(private val context: Context) {
     val dir: File = File(context.filesDir, "library").apply { mkdirs() }
 
     fun load(): Library = LibraryScanner.scan(dir)
+
+    /**
+     * First run only: put the documents a new reMarkable ships with ("Learn the basics", "Go further") into an empty library.
+     * Remembered in its own preference, so documents the user deletes never come back. Returns true if they were installed.
+     */
+    fun seedDefaultLibraryOnce(): Boolean {
+        val sp = context.getSharedPreferences("library_state", Context.MODE_PRIVATE)
+        if (sp.getBoolean(SEEDED, false)) return false
+        val empty = dir.listFiles { f -> f.name.endsWith(".metadata") }.isNullOrEmpty()
+        val installed = empty && runCatching { DefaultLibrary.install(dir) }.isSuccess
+        // A failed install is retried on the next start; a non-empty library is never touched.
+        if (installed || !empty) sp.edit().putBoolean(SEEDED, true).apply()
+        return installed
+    }
 
     /**
      * Copy a PDF picked by the user into the library as a new document in [parentId] ("" = top level).
@@ -41,6 +56,8 @@ class LibraryStore(private val context: Context) {
             throw e
         }
     }
+
+    private companion object { const val SEEDED = "defaultLibrarySeeded" }
 
     private fun displayName(uri: Uri): String =
         context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->

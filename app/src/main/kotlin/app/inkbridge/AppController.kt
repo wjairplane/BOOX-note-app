@@ -11,6 +11,7 @@ import app.inkbridge.rm.render.PageTemplate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** Which list of the file browser is showing. */
 enum class Section(val title: String) { MY_FILES("My files"), NOTEBOOKS("Notebooks"), PDFS("PDFs"), FAVORITES("Favorites"), TAGS("Tags"), TRASH("Trash") }
@@ -30,7 +31,14 @@ sealed interface Screen {
 class AppController(val store: LibraryStore, val prefs: Prefs, private val scope: CoroutineScope) {
     var library by mutableStateOf(Library(emptyList()))
         private set
-    var screen by mutableStateOf<Screen>(Screen.Files())
+    private var shownScreen by mutableStateOf<Screen>(Screen.Files())
+    var screen: Screen
+        get() = shownScreen
+        set(v) {
+            val was = shownScreen
+            shownScreen = v
+            if (v is Screen.Notebook && (was as? Screen.Notebook)?.docId != v.docId) scheduleOpenedStamp(v.docId)
+        }
     /** The panel floating over the current screen (quick settings, the document drawer), opened by an edge swipe. */
     /** Set by the open notebook so "Refresh screen" in quick settings can clear its pen layer too. */
     var onRefresh: (() -> Unit)? = null
@@ -58,7 +66,10 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
     /** True on BOOX/Onyx tablets, where the stylus goes through the Onyx pen SDK. */
     val isBoox: Boolean = android.os.Build.MANUFACTURER.equals("onyx", ignoreCase = true) || android.os.Build.BRAND.equals("onyx", ignoreCase = true)
 
-    init { reload() }
+    init {
+        // The very first start: fill an empty library with the documents a new reMarkable ships with.
+        scope.launch(Dispatchers.IO) { runCatching { synchronized(fileLock) { store.seedDefaultLibraryOnce() } }; publish(store.load()) }
+    }
 
     /** Run [block] on the main thread and wait for it (Compose state should only be written there). Call from background threads. */
     private fun <T> onMain(block: () -> T): T = kotlinx.coroutines.runBlocking(Dispatchers.Main) { block() }
@@ -218,9 +229,31 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
     /** Mark a notebook as edited (bumps its modified time so it sorts to the top). */
     fun touch(e: LibraryEntry) { scope.launch(Dispatchers.IO) { runCatching { synchronized(fileLock) { LibraryOps.touch(store.dir, e.id) }; publish(store.load()) } } }
 
-    /** Remember the page a document was closed on and when: it drives the cover thumbnail, the "Page N of M" caption and the Last opened sort. */
+    /**
+     * Remember the page a document was closed on: it drives the cover thumbnail and the "Page N of M" caption. The "last opened"
+     * time is not touched here: like the firmware, [scheduleOpenedStamp] sets it only once the document has stayed open for 5 s.
+     */
     fun markOpened(docId: String, page: Int) {
-        scope.launch(Dispatchers.IO) { runCatching { synchronized(fileLock) { LibraryOps.setLastOpened(store.dir, docId, page) }; publish(store.load()) } }
+        scope.launch(Dispatchers.IO) { runCatching { synchronized(fileLock) { LibraryOps.setLastOpened(store.dir, docId, page, stamp = false) }; publish(store.load()) } }
+    }
+
+    private var openedStamp: kotlinx.coroutines.Job? = null
+
+    /** xochitl's `updateLastOpened` timer: a document that is still the open one after [LibraryOps.OPEN_STAMP_DELAY_MS] gets its `lastOpened` time. */
+    private fun scheduleOpenedStamp(docId: String) {
+        openedStamp?.cancel()
+        openedStamp = scope.launch {
+            kotlinx.coroutines.delay(LibraryOps.OPEN_STAMP_DELAY_MS)
+            if ((shownScreen as? Screen.Notebook)?.docId != docId) return@launch
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    synchronized(fileLock) {
+                        LibraryOps.setLastOpenedTime(store.dir, docId)
+                    }
+                    publish(store.load())
+                }
+            }
+        }
     }
 
     fun importPdf(uri: Uri, parentId: String) {

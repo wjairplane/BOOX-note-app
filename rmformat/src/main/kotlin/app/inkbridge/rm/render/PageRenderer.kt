@@ -184,7 +184,8 @@ class PageRenderer(private val tree: SceneTree) {
         var y = text.posY.toFloat() + TEXT_TOP_Y
         for (p in doc.paragraphs) {
             y += lineHeight(p.style)
-            val s = p.toString().trim()
+            // U+2028 is a soft line break inside a paragraph; paragraphs are laid out on one line here (as rmc does), so it reads as a space.
+            val s = p.toString().replace('\u2028', ' ').replace(Regex("\\s+"), " ").trim()
             if (s.isEmpty()) continue
             val bold = p.style == ParagraphStyle.BOLD || p.style == ParagraphStyle.HEADING ||
                 p.spans.isNotEmpty() && p.spans.all { it.bold }
