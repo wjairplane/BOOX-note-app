@@ -1,0 +1,129 @@
+{
+    "cPages": {
+        "lastOpened": {
+            "timestamp": "1:1",
+            "value": "005d1dcf-a259-40d6-9909-0cf8de2099c4"
+        },
+        "original": {
+            "timestamp": "1:1",
+            "value": -1
+        },
+        "pages": [
+            {
+                "id": "005d1dcf-a259-40d6-9909-0cf8de2099c4",
+                "idx": {
+                    "timestamp": "1:2",
+                    "value": "ba"
+                },
+                "template": {
+                    "timestamp": "1:2",
+                    "value": "Blank"
+                }
+            }
+        ],
+        "uuids": [
+            {
+                "first": "304189f8-dac1-59f2-a83b-2328fe3584cf",
+                "second": 1
+            }
+        ]
+    },
+    "coverPageNumber": 0,
+    "customZoomCenterX": 0,
+    "customZoomCenterY": 936,
+    "customZoomOrientation": "portrait",
+    "customZoomPageHeight": 1872,
+    "customZoomPageWidth": 1404,
+    "customZoomScale": 1,
+    "documentMetadata": {
+    },
+    "extraMetadata": {
+        "LastActiveTool": "primary",
+        "LastBallpointColor": "Black",
+        "LastBallpointSize": "2",
+        "LastBallpointv2Color": "Black",
+        "LastBallpointv2Size": "2",
+        "LastCalligraphyColor": "Black",
+        "LastCalligraphySize": "3",
+        "LastClearPageColor": "Black",
+        "LastClearPageSize": "2",
+        "LastEraseSectionColor": "Black",
+        "LastEraseSectionSize": "2",
+        "LastEraserColor": "Black",
+        "LastEraserSize": "1",
+        "LastEraserTool": "EraseSection",
+        "LastFinelinerColor": "Black",
+        "LastFinelinerSize": "2",
+        "LastFinelinerv2Color": "Black",
+        "LastFinelinerv2ColorCode": "4278190080",
+        "LastFinelinerv2Size": "2",
+        "LastHighlighterColor": "Black",
+        "LastHighlighterSize": "2",
+        "LastHighlighterv2Color": "HighlighterYellow",
+        "LastHighlighterv2Size": "1",
+        "LastMarkerColor": "Black",
+        "LastMarkerSize": "2",
+        "LastMarkerv2Color": "Black",
+        "LastMarkerv2Size": "2",
+        "LastPaintbrushColor": "Black",
+        "LastPaintbrushSize": "2",
+        "LastPaintbrushv2Color": "Black",
+        "LastPaintbrushv2Size": "2",
+        "LastPen": "Finelinerv2",
+        "LastPencilColor": "Black",
+        "LastPencilSize": "2",
+        "LastPencilv2Color": "Black",
+        "LastPencilv2Size": "2",
+        "LastReservedPenColor": "Black",
+        "LastReservedPenSize": "2",
+        "LastSelectionToolColor": "Black",
+        "LastSelectionToolSize": "2",
+        "LastShadingMarkerColor": "ArgbCode",
+        "LastShadingMarkerColorCode": "2164240450",
+        "LastShadingMarkerSize": "1",
+        "LastSharpPencilColor": "Black",
+        "LastSharpPencilSize": "2",
+        "LastSharpPencilv2Color": "Black",
+        "LastSharpPencilv2Size": "2",
+        "LastSolidPenColor": "Black",
+        "LastSolidPenSize": "2",
+        "LastTool": "Finelinerv2",
+        "LastZoomToolColor": "Black",
+        "LastZoomToolSize": "2",
+        "SecondaryBallpointv2Color": "Black",
+        "SecondaryBallpointv2Size": "2",
+        "SecondaryCalligraphyColor": "Black",
+        "SecondaryCalligraphySize": "3",
+        "SecondaryFinelinerv2Color": "Black",
+        "SecondaryFinelinerv2Size": "2",
+        "SecondaryHighlighterv2Color": "HighlighterYellow",
+        "SecondaryHighlighterv2Size": "1",
+        "SecondaryMarkerv2Color": "Black",
+        "SecondaryMarkerv2Size": "2",
+        "SecondaryPaintbrushv2Color": "Black",
+        "SecondaryPaintbrushv2Size": "3",
+        "SecondaryPen": "Markerv2",
+        "SecondaryPencilv2Color": "Black",
+        "SecondaryPencilv2Size": "2",
+        "SecondaryShadingMarkerColor": "ArgbCode",
+        "SecondaryShadingMarkerColorCode": "2160099282",
+        "SecondaryShadingMarkerSize": "2",
+        "SecondarySharpPencilv2Color": "Black",
+        "SecondarySharpPencilv2Size": "2"
+    },
+    "fileType": "notebook",
+    "fontName": "",
+    "formatVersion": 2,
+    "lineHeight": -1,
+    "margins": 125,
+    "orientation": "portrait",
+    "pageCount": 1,
+    "pageTags": [
+    ],
+    "sizeInBytes": "246022",
+    "tags": [
+    ],
+    "textAlignment": "justify",
+    "textScale": 1,
+    "zoomMode": "bestFit"
+}
