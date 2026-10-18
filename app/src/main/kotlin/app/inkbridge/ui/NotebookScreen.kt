@@ -133,6 +133,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     var surface by remember { mutableStateOf<PenSurface?>(null) }
     var strokes by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf("") }
+    var pageError by remember { mutableStateOf<PageError?>(null) }
     var slider by remember { mutableStateOf(false) }
     // Notifications go away after five seconds, except the clipboard hint, which stays until it is dismissed.
     LaunchedEffect(message) { if (message.isNotEmpty() && !message.startsWith("Copied to clipboard")) { kotlinx.coroutines.delay(5000); message = "" } }
@@ -145,17 +146,21 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
 
     val session by produceState<PageSession?>(null, doc.id, pageIndex, doc.template, doc.pageIds.getOrNull(pageIndex)) {
         value = null
+        pageError = null
         value = withContext(Dispatchers.IO) {
             runCatching {
                 val bg = if (isPdf) DocumentFactory.pdfPageFor(doc, pageIndex).takeIf { it >= 0 }?.let { PdfBackground(DocumentFactory.pdfFile(app.store.dir, doc), it) } else null
-                PageSession(LibraryScanner.pageFile(app.store.dir, doc, pageIndex), bg, doc.template)
-            }.onFailure { message = "Couldn't read this page: ${it.message}" }.getOrNull()
+                if (isPdf && !DocumentFactory.pdfFile(app.store.dir, doc).isFile) { pageError = PageError.MISSING_PDF; return@runCatching null }
+                val file = LibraryScanner.pageFile(app.store.dir, doc, pageIndex)
+                if (StrokeLimit.reached(file)) { pageError = PageError.TOO_LARGE; return@runCatching null }
+                PageSession(file, bg, doc.template)
+            }.onFailure { pageError = if (it is OutOfMemoryError) PageError.LOW_MEMORY else PageError.LOAD }.getOrNull()
         }
     }
 
     fun save(s: PageSession?) {
         if (s == null || !s.isDirty) return
-        message = try { s.save(); app.touch(doc); "" } catch (e: Exception) { "Save failed: ${e.message}" }
+        message = try { s.save(); app.touch(doc); "" } catch (e: Exception) { pageError = PageError.STORAGE; "Unable to save page" }
         revision++
     }
     DisposableEffect(session) { val s = session; onDispose { save(s) } }
@@ -294,12 +299,12 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                                     close()
                                     val s = session ?: return@RmFoldoutItem
                                     val safe = doc.name.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').ifEmpty { "page" }
-                                    message = "Exporting…"
+                                    message = "Exporting file..."
                                     scope.launch {
                                         message = try {
                                             val files = withContext(Dispatchers.IO) { s.export(exportDir, "${safe}_p${pageIndex + 1}") }
-                                            "Exported ${files.joinToString { it.name }} to ${exportDir.absolutePath}"
-                                        } catch (e: Exception) { "Export failed: ${e.message}" }
+                                            "Finished exporting '${doc.name}' to '${exportDir.absolutePath}'"
+                                        } catch (e: Exception) { "Unable to export document" }
                                     }
                                 }, enabled = session != null) { InkIcons.Export(tint = it) }
                                 if (isPdf) RmFoldoutItem("Export annotated PDF", {
@@ -308,9 +313,9 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                                     val out = File(exportDir, "${safe}_annotated.pdf")
                                     scope.launch {
                                         message = try {
-                                            withContext(Dispatchers.IO) { AnnotatedPdfExporter.export(app.store, doc, out) { d, t -> message = "Exporting PDF… $d / $t" } }
-                                            "Saved ${out.name} (${out.length() / 1024} KB) to ${exportDir.absolutePath}"
-                                        } catch (e: Exception) { "PDF export failed: ${e.message}" }
+                                            withContext(Dispatchers.IO) { AnnotatedPdfExporter.export(app.store, doc, out) { d, t -> message = "Exporting file..." } }
+                                            "Finished exporting '${out.name}' to '${exportDir.absolutePath}'"
+                                        } catch (e: Exception) { "Unable to export ${doc.name} as PDF" }
                                     }
                                 }) { InkIcons.Export(tint = it) }
                             }
@@ -401,6 +406,8 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 }, Modifier.align(if (pos == ToolbarPosition.TOP) Alignment.BottomCenter else Alignment.TopCenter).padding(bottom = if (pos == ToolbarPosition.TOP) (if (message.isNotEmpty()) 96.dp else 0.dp) else 0.dp).blocksPen(blockers, "zoom"))
             }
 
+            pageError?.let { PageErrorOverlay(it, doc.id, doc.pageIds.getOrNull(pageIndex).orEmpty(), "") }
+
             // "Page X of Y": a white 258 x 72 label at the bottom centre for four seconds after the page changes.
             LaunchedEffect(pageIndex, doc.pageIds.size) { pageLabelVisible = true; kotlinx.coroutines.delay(4000); pageLabelVisible = false }
             if ((pageLabelVisible || slider) && !overview && message.isEmpty()) {
@@ -423,7 +430,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 NotificationBar(
                     message, { if (clipboardHint) StrokeClipboard.lines = emptyList(); message = "" },
                     action = if (clipboardHint) "OK" else null,
-                    primary = !clipboardHint && !(message.startsWith("Exported ") || message.startsWith("Saved ")),
+                    primary = !clipboardHint && !message.startsWith("Finished exporting"),
                     modifier = Modifier.align(Alignment.BottomCenter).padding(start = if (pos == ToolbarPosition.LEFT) TOOLBAR_THICKNESS else 0.dp, end = if (pos == ToolbarPosition.RIGHT) TOOLBAR_THICKNESS else 0.dp, bottom = if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp).blocksPen(blockers, "notification"),
                 )
             }

@@ -23,9 +23,11 @@ import app.inkbridge.BuildConfig
 import app.inkbridge.Screen
 import app.inkbridge.ToolbarPosition
 import app.inkbridge.rm.render.PageTemplate
+import java.text.DateFormat
 
 private enum class Category(val title: String, val page: String) {
-    GENERAL("General", "General settings"), DISPLAY("Display", "Display settings"), ACCESSIBILITY("Accessibility", "Accessibility settings"), HELP("Help", "Help")
+    GENERAL("General", "General settings"), DISPLAY("Display", "Display settings"), SECURITY("Security", "Security settings"),
+    ACCESSIBILITY("Accessibility", "Accessibility settings"), HELP("Help", "Help")
 }
 
 /**
@@ -37,23 +39,37 @@ fun SettingsScreen(app: AppController) {
     var category by remember { mutableStateOf(Category.GENERAL) }
     var sub by remember { mutableStateOf<String?>(null) }
     val deeper = sub
+    // A notification (the passcode flows end with one) lasts four seconds.
+    var notice by remember { mutableStateOf("") }
+    LaunchedEffect(notice) { if (notice.isNotEmpty()) { kotlinx.coroutines.delay(4000); notice = "" } }
     // The system Back from a deeper page returns to the page it came from.
     BackHandler(enabled = deeper != null) { sub = if (deeper == "Copyrights and licenses") "About" else null }
+    if (deeper == PASSCODE_SET || deeper == PASSCODE_REMOVE) {
+        // The passcode flows take the whole screen, as the firmware's windows do.
+        SetPasscodeScreen(app.prefs.passcode, remove = deeper == PASSCODE_REMOVE, onDone = { notice = it; sub = null }, onCancel = { sub = null })
+        return
+    }
     if (deeper != null) {
-        Column(Modifier.fillMaxSize().background(Ink.White)) {
-            NavigationBar(deeper, onBack = { sub = if (deeper == "Copyrights and licenses") "About" else null })
-            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 132.dp, vertical = 64.dp), verticalArrangement = Arrangement.spacedBy(64.dp)) {
-                Text(deeper, style = RmText.TitleLg)
-                when (deeper) {
-                    "Storage" -> Storage(app)
-                    "Copyrights and licenses" -> Licenses()
-                    else -> About(onLicenses = { sub = "Copyrights and licenses" })
+        Box(Modifier.fillMaxSize().background(Ink.White)) {
+            Column(Modifier.fillMaxSize()) {
+                NavigationBar(deeper, onBack = { sub = if (deeper == "Copyrights and licenses") "About" else null })
+                Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 132.dp, vertical = 64.dp), verticalArrangement = Arrangement.spacedBy(64.dp)) {
+                    Text(deeper, style = RmText.TitleLg)
+                    when (deeper) {
+                        "Storage" -> Storage(app)
+                        "Battery" -> BatteryPage()
+                        "Software" -> SoftwarePage()
+                        "System time" -> SystemTimePage()
+                        "Copyrights and licenses" -> Licenses()
+                        else -> About(onLicenses = { sub = "Copyrights and licenses" })
+                    }
                 }
             }
         }
         return
     }
-    Row(Modifier.fillMaxSize().background(Ink.White)) {
+    Box(Modifier.fillMaxSize().background(Ink.White)) {
+    Row(Modifier.fillMaxSize()) {
         // The sidebar: 112 px rows with a 2 px divider under Back only, and one divider along its right edge.
         Row(Modifier.fillMaxHeight()) {
             Column(Modifier.width(IntrinsicSize.Max)) {
@@ -71,6 +87,7 @@ fun SettingsScreen(app: AppController) {
                         when (c) {
                             Category.GENERAL -> InkIcons.Cog(tint = tint)
                             Category.DISPLAY -> InkIcons.Display(tint = tint)
+                            Category.SECURITY -> InkIcons.Padlock(tint = tint)
                             Category.ACCESSIBILITY -> InkIcons.Accessibility(tint = tint)
                             Category.HELP -> InkIcons.QuestionCircle(tint = tint)
                         }
@@ -82,28 +99,34 @@ fun SettingsScreen(app: AppController) {
         Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(horizontal = 132.dp, vertical = 64.dp), verticalArrangement = Arrangement.spacedBy(64.dp)) {
             Text(category.page, style = RmText.TitleLg)
             when (category) {
-                Category.GENERAL -> General(app, onStorage = { sub = "Storage" })
+                Category.GENERAL -> General(app, onOpen = { sub = it })
                 Category.DISPLAY -> Display(app)
+                Category.SECURITY -> SecurityPage(app.prefs.passcode, onSet = { sub = PASSCODE_SET }, onRemove = { sub = PASSCODE_REMOVE })
                 Category.ACCESSIBILITY -> Accessibility(app)
-                Category.HELP -> Help(onAbout = { sub = "About" })
+                Category.HELP -> Help(onOpen = { sub = it })
             }
         }
     }
+    if (notice.isNotEmpty()) NotificationBar(notice, onAction = { notice = "" }, modifier = Modifier.align(Alignment.BottomCenter))
+    }
 }
+
+private const val PASSCODE_SET = "passcode:set"
+private const val PASSCODE_REMOVE = "passcode:remove"
 
 @Composable
 private fun Group(title: String, content: @Composable ColumnScope.() -> Unit) =
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(title, style = RmText.LabelLg); content() }
 
 @Composable
-private fun General(app: AppController, onStorage: () -> Unit) {
+private fun General(app: AppController, onOpen: (String) -> Unit) {
     val p = app.prefs
     val (battery, _) = rememberBattery()
     val disk = rememberDiskSpace(app)
     CellList {
-        CellRow("Software", "Version ${BuildConfig.VERSION_NAME}")
-        CellRow("Battery", "$battery %")
-        CellRow("Storage", "${formatGb(disk.used)} GB of ${formatGb(disk.total)} GB", onStorage, divider = false)
+        CellRow("Software", "Version ${BuildConfig.VERSION_NAME}", { onOpen("Software") })
+        CellRow("Battery", "$battery %", { onOpen("Battery") })
+        CellRow("Storage", "${formatGb(disk.used)} GB of ${formatGb(disk.total)} GB", { onOpen("Storage") }, divider = false)
     }
     val activity = androidx.compose.ui.platform.LocalContext.current.let { c -> generateSequence(c) { (it as? android.content.ContextWrapper)?.baseContext }.filterIsInstance<android.app.Activity>().firstOrNull() }
     Column {
@@ -135,6 +158,7 @@ private fun Accessibility(app: AppController) {
         Spacer(Modifier.height(16.dp))
         Text("To reposition the toolbar while in a document, drag the hide/show button to any edge of the screen.", style = RmText.Caption)
     }
+    HandednessPanel(app)
 }
 
 @Composable
@@ -154,8 +178,13 @@ private fun Display(app: AppController) {
 }
 
 @Composable
-private fun Help(onAbout: () -> Unit) {
-    CellList { CellRow("About", null, onAbout, divider = false) }
+private fun Help(onOpen: (String) -> Unit) {
+    // The firmware's clock cell (SettingsHelpClockWidget) shows the time and opens the System time page.
+    val now = remember { java.util.Date() }
+    Group("System time") {
+        CellList { CellRow("${DateFormat.getDateInstance(DateFormat.MEDIUM).format(now)} ${DateFormat.getTimeInstance(DateFormat.SHORT).format(now)}", null, { onOpen("System time") }, divider = false) }
+    }
+    CellList { CellRow("About", null, { onOpen("About") }, divider = false) }
 }
 
 /** Total and used bytes of the storage the library lives on (the Storage cell and page). */

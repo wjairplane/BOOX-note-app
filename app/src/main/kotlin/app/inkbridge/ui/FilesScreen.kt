@@ -129,7 +129,7 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
                     IconBtn("Menu", { menuOpen = true }, Modifier.align(Alignment.CenterStart), size = Rm.ToolButton) { InkIcons.Menu(tint = it) }
                     Text("InkBridge", style = RmText.Wordmark, modifier = Modifier.align(Alignment.Center))
                     val (battery, _) = rememberBattery()
-                    BatteryIndicator(battery, highlighted = battery <= 10, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 48.dp).semantics { contentDescription = "Battery $battery%" })
+                    BatteryIndicator(battery, highlighted = battery <= 10, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 48.dp).semantics { contentDescription = "Battery" })
                 }
             }
             // --- ExplorerHeader (120 px): breadcrumbs and the sort dropdown ---

@@ -259,7 +259,7 @@ class ScreenshotTest {
         // Delete moves to the trash at once and says so in the bottom notification bar.
         rule.onNodeWithText("Delete").performClick(); settle(); snapshot("notification_trashed")
         org.junit.Assert.assertEquals(1, app.library.trash.size)
-        rule.onNodeWithText("1 item was moved to Trash").assertExists()
+        rule.onNodeWithText("1 item(s) were moved to Trash").assertExists()
 
         // The trash: its own create-menu button, the empty-trash dialog, and restore/delete in the action bar.
         rule.onNodeWithContentDescription("Menu").performClick(); settle()
