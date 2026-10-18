@@ -35,7 +35,8 @@ class PageTransform(val layout: PageLayout, val viewWidth: Float, val viewHeight
 
     /** The same page and view with a different zoom, keeping the page point under ([focusX], [focusY]) fixed. */
     fun zoomedAround(newZoom: Float, focusX: Float, focusY: Float): PageTransform {
-        val z = newZoom.coerceIn(MIN_ZOOM, MAX_ZOOM)
+        // Near 100 % the zoom snaps back to it (the firmware's +-5 % band).
+        val z = newZoom.coerceIn(MIN_ZOOM, MAX_ZOOM).let { if (kotlin.math.abs(it - 1f) < SNAP_BAND) 1f else it }
         val px = toPageX(focusX); val py = toPageY(focusY)
         val s = fitScale * z
         return PageTransform(layout, viewWidth, viewHeight, z, focusX - (px - layout.xMin) * s, focusY - (py - layout.yMin) * s)
@@ -51,7 +52,8 @@ class PageTransform(val layout: PageLayout, val viewWidth: Float, val viewHeight
     fun fitHeight(): PageTransform = PageTransform(layout, viewWidth, viewHeight, (viewHeight / layout.height) / fitScale, 0f, 0f)
 
     companion object {
-        const val MIN_ZOOM = 1f
-        const val MAX_ZOOM = 4f
+        const val MIN_ZOOM = 0.5f
+        const val MAX_ZOOM = 5f
+        const val SNAP_BAND = 0.05f
     }
 }

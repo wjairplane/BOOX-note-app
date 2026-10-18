@@ -31,7 +31,7 @@ object ShapeSnap {
     }
 
     fun detect(points: List<Pair<Float, Float>>): Shape? {
-        if (points.size < 5) return null
+        if (points.size < 10) return null // the firmware needs at least 10 points
         var length = 0f
         for (i in 1 until points.size) length += dist(points[i - 1], points[i])
         val minX = points.minOf { it.first }; val maxX = points.maxOf { it.first }

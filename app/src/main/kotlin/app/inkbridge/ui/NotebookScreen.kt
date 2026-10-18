@@ -65,6 +65,7 @@ import app.inkbridge.pen.PenListener
 import app.inkbridge.pen.PenSample
 import app.inkbridge.pen.PenSurface
 import app.inkbridge.rm.edit.InputPoint
+import app.inkbridge.rm.edit.PenColorId
 import app.inkbridge.rm.edit.PenSpec
 import app.inkbridge.rm.edit.PenTool
 import app.inkbridge.rm.edit.StrokeBuilder
@@ -161,6 +162,10 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     // Closing the notebook (or switching to another one) remembers the page it was on, for the cover thumbnail and "Page N of M".
     DisposableEffect(doc.id) { onDispose { app.markOpened(doc.id, pageIndex) } }
     DisposableEffect(surface) { app.onRefresh = { surface?.fullRefresh() }; onDispose { app.onRefresh = null } }
+    // The firmware clears ghosting on the first page of a document and whenever the overview, the template picker or the page slider opens or closes.
+    LaunchedEffect(surface) { surface?.pageTurned(first = true) }
+    var overlaysSeen by remember { mutableStateOf(false) }
+    LaunchedEffect(overview, templatePicker, slider) { if (overlaysSeen) surface?.scheduleClear() else overlaysSeen = true }
 
     fun closeDoc() { save(session); app.screen = Screen.Files(folderId = doc.parentId.takeIf { it != "trash" } ?: "") }
 
@@ -170,7 +175,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
         session?.clearSelection(); surface?.refresh()
     }
 
-    fun goTo(i: Int) { if (i in doc.pageIds.indices && i != pageIndex) { save(session); selectionRect = null; newPagePrompt = false; pageIndex = i; if (prefs.refreshEveryStrokes > 0) surface?.fullRefresh() } }
+    fun goTo(i: Int) { if (i in doc.pageIds.indices && i != pageIndex) { save(session); selectionRect = null; newPagePrompt = false; pageIndex = i; surface?.pageTurned() } }
     fun newPageAfterCurrent() { save(session); app.addPage(doc, pageIndex) { pageIndex = it } }
 
     val landscape = androidx.compose.ui.platform.LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
@@ -582,7 +587,12 @@ private fun PageArea(
                         val spec = surface?.currentSpec
                         val body = if (spec != null && spec.tool != PenTool.ERASER && currentShapes) HoldGesture.body(samples) else null
                         val shape = body?.let { ShapeSnap.detect(it.map { p -> p.x to p.y }) }
-                        if (shape == null) { apply(samples) { s, sp -> s.addStroke(sp, samples) }; return }
+                        if (shape == null) {
+                            apply(samples) { s, sp -> s.addStroke(sp, samples) }
+                            // Coloured, grey and highlighter strokes are repainted at quality once the pen has rested.
+                            if (spec != null && spec.colorId != PenColorId.BLACK && spec.colorId != PenColorId.WHITE) surface?.scheduleQuality(currentSession?.lastStrokeBounds())
+                            return
+                        }
                         if (ShapeSnap.isHorizontalLine(shape)) {
                             // A horizontal line held still selects everything below it.
                             val s = currentSession
@@ -617,10 +627,10 @@ private fun PageArea(
                         val s = currentSession ?: return
                         val view = surface ?: return
                         scope.launch(Dispatchers.Default) {
-                            if (s.jump(down)) withContext(Dispatchers.Main) { pushView(view, s); view.setTool(view.currentSpec, s.transform?.scale ?: 1f); currentOnSelectionRect(s.selectionRect()); currentOnChanged() }
+                            if (s.jump(down)) withContext(Dispatchers.Main) { view.scheduleClear(); pushView(view, s); view.setTool(view.currentSpec, s.transform?.scale ?: 1f); currentOnSelectionRect(s.selectionRect()); currentOnChanged() }
                         }
                     }
-                    override fun onSelectionGesture(active: Boolean) { controlsHidden = active }
+                    override fun onSelectionGesture(active: Boolean) { controlsHidden = active; if (!active) surface?.scheduleClear() }
                     override fun onEraseArea(samples: List<PenSample>) = apply(samples) { s, _ -> s.eraseInside(samples) }
                     override fun onLasso(samples: List<PenSample>) {
                         val s = currentSession ?: return

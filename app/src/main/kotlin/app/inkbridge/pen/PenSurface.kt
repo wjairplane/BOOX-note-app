@@ -125,15 +125,16 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
                 beginFastPreview()
             }
             override fun onViewUpdate(scale: Float, focusX: Float, focusY: Float, panX: Float, panY: Float) {
-                gestureScale = scale.coerceIn(1f / zoomNow, MAX_ZOOM / zoomNow)
+                gestureScale = scale.coerceIn(MIN_ZOOM / zoomNow, MAX_ZOOM / zoomNow)
                 gestureFocusX = focusX; gestureFocusY = focusY; gesturePanX = panX; gesturePanY = panY
                 val now = android.os.SystemClock.uptimeMillis()
                 if (now - lastPreviewMs >= PREVIEW_INTERVAL_MS) { lastPreviewMs = now; drawZoomPreview() }
             }
             override fun onViewEnd(scale: Float, focusX: Float, focusY: Float, panX: Float, panY: Float) {
                 endFastPreview()
-                val f = scale.coerceIn(1f / zoomNow, MAX_ZOOM / zoomNow)
+                val f = scale.coerceIn(MIN_ZOOM / zoomNow, MAX_ZOOM / zoomNow)
                 if (kotlin.math.abs(f - 1f) > 0.04f || kotlin.math.hypot(panX, panY) > 24f) listener.onViewGesture(f, focusX, focusY, panX, panY) else draw()
+                scheduleClear()
             }
         },
     )
@@ -507,8 +508,43 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         touchHelper = null
     }
 
+    // The firmware's ghost-clear policy (xochitl GhostBuster / ScreenDriver): a flashing refresh on the next frame after a pan, zoom,
+    // selection drag or shape preview, after any dialog, overview or settings page opens or closes, on the first page of a
+    // document, and on a page turn after 30 s on the previous page. There is no stroke counter.
+    private var lastClearMs = android.os.SystemClock.uptimeMillis()
+    private val clearRunnable = Runnable {
+        // Wait while the pen is still near the screen (the firmware delays its hold phase the same way).
+        if (android.os.SystemClock.uptimeMillis() - lastPenMs < PEN_QUIET_MS) scheduleClear() else fullRefresh()
+    }
+
+    /** Flash-clear the panel soon (once the pen is away); repeated calls collapse into one. */
+    fun scheduleClear(delayMs: Long = CLEAR_DELAY_MS) { removeCallbacks(clearRunnable); postDelayed(clearRunnable, delayMs) }
+
+    /** A page was turned (or the document was just opened): clear after 30 s on the previous page, and on the first page. */
+    fun pageTurned(first: Boolean = false) {
+        if (first || android.os.SystemClock.uptimeMillis() - lastClearMs >= LONG_STAY_MS) scheduleClear(0L)
+    }
+
+    // Coloured, grey and highlighter strokes are drawn fast (black and white) while the pen moves, then re-rendered at quality
+    // 1000 ms after the last one (the firmware's viewportUpdateTimer).
+    private val qualityRect = Rect()
+    private val qualityRunnable = Runnable {
+        if (android.os.SystemClock.uptimeMillis() - lastPenMs < QUALITY_PEN_QUIET_MS) { postQuality(); return@Runnable }
+        val r = Rect(qualityRect); qualityRect.setEmpty()
+        if (!r.isEmpty) runCatching { EpdController.refreshScreenRegion(this, r.left, r.top, r.width(), r.height(), com.onyx.android.sdk.api.device.epd.UpdateMode.GU) }
+    }
+    private fun postQuality() { removeCallbacks(qualityRunnable); postDelayed(qualityRunnable, QUALITY_DELAY_MS) }
+
+    /** [r] (view px) holds a coloured stroke: repaint it at quality after the pen has been idle for a second. */
+    fun scheduleQuality(r: Rect?) {
+        if (r == null || r.isEmpty) return
+        if (qualityRect.isEmpty) qualityRect.set(r) else qualityRect.union(r)
+        postQuality()
+    }
+
     /** Clear e-ink ghosting with a full-quality refresh of the panel. */
     fun fullRefresh() {
+        lastClearMs = android.os.SystemClock.uptimeMillis()
         runCatching { EpdController.refreshScreen(this, com.onyx.android.sdk.api.device.epd.UpdateMode.GC) }
     }
 
@@ -517,8 +553,14 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
     fun onResume() { applyEnabled() }
 
     private companion object {
-        const val MAX_ZOOM = 4f
+        const val MIN_ZOOM = 0.5f
+        const val MAX_ZOOM = 5f
         const val PREVIEW_INTERVAL_MS = 45L
         const val LIVE_INTERVAL_MS = 24L
+        const val CLEAR_DELAY_MS = 700L
+        const val LONG_STAY_MS = 30_000L
+        const val PEN_QUIET_MS = 500L
+        const val QUALITY_DELAY_MS = 1000L
+        const val QUALITY_PEN_QUIET_MS = 100L
     }
 }
