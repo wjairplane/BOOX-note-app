@@ -214,4 +214,26 @@ class PageSessionTest {
         val different = live.indices.count { live[it] != done[it] }
         assertTrue("live and final differ in $different px", different < 40)
     }
+
+    @Test fun eraserFadesWhatItPassesOverAsACheckerboardAndOnlyCutsAtPenUp() {
+        val s = session()
+        val bmp = s.bitmap!!
+        val spec = PenSpec(PenTool.FINELINER, thickness = 3)
+        val stroke = path(s, -200f, 600f, -150f, 620f, -90f, 640f, -30f, 650f, 40f, 640f, 120f, 610f)
+        assertTrue(s.addStroke(spec, stroke)); s.takeStrokeRect()
+        val before = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        val eraser = path(s, -100f, 600f, -60f, 640f, 0f, 660f)
+        val rect = s.previewErase(eraser, 20f, 0)
+        assertNotNull(rect)
+        val live = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        val changed = live.indices.filter { live[it] != before[it] }
+        assertTrue(changed.isNotEmpty())
+        // Only pixels with x + y even turn white, nothing is blended.
+        assertTrue(changed.all { (it % bmp.width + it / bmp.width) % 2 == 0 && live[it] == -1 })
+        // Nothing is cut until the pen lifts.
+        s.endErasePreview()
+        val restored = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        assertArrayEquals(before, restored)
+        assertTrue(s.erase(eraser, 20f))
+    }
 }

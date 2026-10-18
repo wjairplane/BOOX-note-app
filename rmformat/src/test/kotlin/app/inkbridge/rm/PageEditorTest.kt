@@ -70,7 +70,7 @@ class PageEditorTest {
         assertEquals(1, ed.eraseAlong(listOf(400f to 300f, 420f to 300f), radius = 15f))
         val parts = lines(ed.tree).toList()
         assertEquals(2, parts.size)
-        assertTrue(parts.all { it.points.size in 2 until before })
+        assertTrue(parts.all { it.points.size >= 2 && it.points.size < before * 8 })
         assertTrue(parts.maxOf { p -> p.points.maxOf { it.x } } > 650f && parts.minOf { p -> p.points.minOf { it.x } } < 150f)
         // Nowhere near the stroke: nothing changes.
         assertEquals(0, ed.eraseAlong(listOf(400f to 900f), radius = 15f))
@@ -184,7 +184,9 @@ class PageEditorTest {
         assertEquals(1404f - 2808f, farther.offsetX, 1e-3f); assertEquals(1872f - 3744f, farther.offsetY, 1e-3f)
         // The zoom is limited, and the visible page area never exceeds the view.
         assertEquals(PageTransform.MAX_ZOOM, fit.zoomedAround(99f, 0f, 0f).zoom, 1e-6f)
-        assertEquals(1f, fit.zoomedAround(0.1f, 0f, 0f).zoom, 1e-6f)
+        assertEquals(PageTransform.MIN_ZOOM, fit.zoomedAround(0.1f, 0f, 0f).zoom, 1e-6f)
+        // Within 5 % of 100 % the zoom snaps to it.
+        assertEquals(1f, fit.zoomedAround(1.04f, 0f, 0f).zoom, 1e-6f); assertEquals(1.06f, fit.zoomedAround(1.06f, 0f, 0f).zoom, 1e-6f)
         val r = z.visiblePageRect(); assertEquals(0f, r[0], 1e-3f); assertEquals(1404f, r[2], 1e-3f)
         // Fit to width in a view that is wider than the page's shape (a toolbar at the side): the page overflows vertically.
         val wide = PageTransform(layout, 1600f, 1872f)

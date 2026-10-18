@@ -65,7 +65,7 @@ import app.inkbridge.pen.PenListener
 import app.inkbridge.pen.PenSample
 import app.inkbridge.pen.PenSurface
 import app.inkbridge.rm.edit.InputPoint
-import app.inkbridge.rm.edit.PenColorId
+import app.inkbridge.rm.scene.PenColorId
 import app.inkbridge.rm.edit.PenSpec
 import app.inkbridge.rm.edit.PenTool
 import app.inkbridge.rm.edit.StrokeBuilder
