@@ -43,6 +43,6 @@ if __name__ == "__main__":
     a = live_eraser([o.pt(20 + i * 7, 32, width=11.0) for i in range(12)], depth=16, bg=0xffff)
     print("on white paper: untouched =", bool((a == 0xFFFF).all()))
     a = live_eraser([o.pt(10 + i * 10, 20, width=10) for i in range(10)], W=200, H=80, depth=32, zoom=2.0)
-    ys, xs = np.nonzero(a); print("zoom2 rows", ys.min(), ys.max(), "(diameter 20 px = 10*2)")
+    ys, xs = np.nonzero(a == 0xFFFFFFFF); print("zoom2 rows", ys.min(), ys.max(), "(diameter 20 px = 10*2)")
     a = live_eraser(pts, depth=32, flag6e=1)
     print("colour-panel flag +0x6e=1 values:", [hex(v) for v in sorted(set(a.ravel().tolist()))])
