@@ -24,6 +24,8 @@ data class PageTemplate(
     val isBlank: Boolean get() = filename == "Blank"
 
     fun draw(canvas: PageCanvas, layout: PageLayout) {
+        // Hexagon and Calligraphy have no file: the firmware draws them in code (see NativeTemplates).
+        if (NativeTemplates.has(filename)) { NativeTemplates.draw(filename, landscape, canvas, layout); return }
         val def = TemplateCatalog.definition(this) ?: return
         TemplateRenderer.draw(def, landscape, canvas, layout)
     }
