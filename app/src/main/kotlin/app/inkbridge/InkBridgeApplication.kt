@@ -8,6 +8,7 @@ class InkBridgeApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         AndroidPageCanvas.installFonts(this)
+        PdfStructure.init(this)
         // The Onyx pen SDK reaches into hidden Android APIs; on Android 9+ they must be exempted first
         // (same as Onyx's own demo app).
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {

@@ -177,7 +177,7 @@ internal fun NewFolderScreen(app: AppController, parentId: String, moving: Boole
 }
 
 /** The tags known to the library (outside the trash), alphabetically. */
-internal fun knownTags(lib: Library): List<String> = lib.entries.filter { it.parentId != Library.TRASH }.flatMap { it.tags }.distinct().sortedBy { it.lowercase() }
+internal fun knownTags(lib: Library): List<String> = lib.entries.filter { it.parentId != Library.TRASH }.flatMap { it.tags + it.pageTags.values.flatten() }.distinct().sortedBy { it.lowercase() }
 
 /** TagsSelector: a "Tags" header with "View all", up to three rows of pills (chosen ones first), and a "New tag" button. */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
@@ -275,7 +275,10 @@ internal fun TagsWindow(tags: List<String>, selected: Set<String>, onToggle: (St
  * (shown once there is text). Used for new tags; tapping below the bar cancels. Text is limited to [maxLength] characters.
  */
 @Composable
-internal fun HeaderInputDialog(placeholder: String, confirm: String, onDismiss: () -> Unit, maxLength: Int = 20, initial: String = "", onConfirm: (String) -> Unit) {
+internal fun HeaderInputDialog(
+    placeholder: String, confirm: String, onDismiss: () -> Unit, maxLength: Int = 20, initial: String = "",
+    numeric: Boolean = false, label: String? = null, valid: (String) -> Boolean = { true }, onConfirm: (String) -> Unit,
+) {
     val density = LocalDensity.current
     var text by remember { mutableStateOf(initial) }
     val focus = remember { FocusRequester() }
@@ -288,15 +291,16 @@ internal fun HeaderInputDialog(placeholder: String, confirm: String, onDismiss: 
             Row(Modifier.fillMaxWidth().height(Rm.NavigationHeader).background(Ink.Black).padding(horizontal = 32.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("Cancel", style = RmText.Label, color = Ink.White, modifier = Modifier.heightIn(min = Rm.Control).tap(onClick = onDismiss).wrapContentHeight(Alignment.CenterVertically))
                 Spacer(Modifier.width(32.dp))
+                if (label != null) { Text(label, style = RmText.Label, color = Ink.White, maxLines = 1); Spacer(Modifier.width(24.dp)) }
                 BasicTextField(
-                    value = text, onValueChange = { text = it.take(maxLength) }, singleLine = true,
+                    value = text, onValueChange = { v -> text = (if (numeric) v.filter { it.isDigit() } else v).take(maxLength) }, singleLine = true,
                     textStyle = RmText.BodyLg.copy(color = Ink.White), cursorBrush = SolidColor(Ink.White),
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { onConfirm(text.trim()) }),
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, imeAction = ImeAction.Done, keyboardType = if (numeric) androidx.compose.ui.text.input.KeyboardType.Number else androidx.compose.ui.text.input.KeyboardType.Text),
+                    keyboardActions = KeyboardActions(onDone = { if (valid(text.trim())) onConfirm(text.trim()) }),
                     modifier = Modifier.weight(1f).focusRequester(focus),
                     decorationBox = { inner -> Box { if (text.isEmpty()) Text(placeholder, color = Ink.Rule, style = RmText.BodyLg); inner() } },
                 )
-                if (text.isNotBlank()) Text(confirm, style = RmText.Label, color = Ink.White, modifier = Modifier.heightIn(min = Rm.Control).tap { onConfirm(text.trim()) }.wrapContentHeight(Alignment.CenterVertically))
+                if (text.isNotBlank() && valid(text.trim())) Text(confirm, style = RmText.Label, color = Ink.White, modifier = Modifier.heightIn(min = Rm.Control).tap { onConfirm(text.trim()) }.wrapContentHeight(Alignment.CenterVertically))
             }
         }
     }

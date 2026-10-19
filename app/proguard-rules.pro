@@ -29,3 +29,9 @@
 -dontwarn org.slf4j.**
 -dontwarn okhttp3.**
 -dontwarn okio.**
+
+# PdfBox-Android: optional image codecs it can use, and its font / glyph resources are read by name
+-dontwarn com.gemalto.jp2.**
+-dontwarn com.tom_roush.pdfbox.**
+-keep class com.tom_roush.pdfbox.** { *; }
+-keep class com.tom_roush.harmony.** { *; }

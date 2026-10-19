@@ -16,6 +16,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
+import kotlin.math.ceil
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -129,7 +132,7 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
                     IconBtn("Menu", { menuOpen = true }, Modifier.align(Alignment.CenterStart), size = Rm.ToolButton) { InkIcons.Menu(tint = it) }
                     Text("InkBridge", style = RmText.Wordmark, modifier = Modifier.align(Alignment.Center))
                     val (battery, _) = rememberBattery()
-                    BatteryIndicator(battery, highlighted = battery <= 10, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 48.dp).semantics { contentDescription = "Battery $battery%" })
+                    BatteryIndicator(battery, highlighted = battery <= 10, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 48.dp).semantics { contentDescription = "Battery" })
                 }
             }
             // --- ExplorerHeader (120 px): breadcrumbs and the sort dropdown ---
@@ -153,7 +156,7 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
             val select: (LibraryEntry) -> Unit = { e -> if (picked.isNotEmpty() && !isMoving) toggle(e) else open(app, e, s, isMoving) }
             // Starting a selection while moving is not possible: long-press just opens nothing.
             val longPress: (LibraryEntry) -> Unit = { e -> if (!isMoving) toggle(e) }
-            Box(
+            BoxWithConstraints(
                 Modifier.weight(1f).fillMaxWidth().then(
                     if (goUp != null) Modifier.pointerInput(s) {
                         // A swipe to the right goes up one folder (there is no Up button).
@@ -168,9 +171,11 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
                 } else if (prefs.gridView) {
                     // Cells are a third, a quarter or a sixth of the 1404 px screen less the 18 px margins (4 columns: 342 px cells).
                     LazyVerticalGrid(
-                        GridCells.Fixed(prefs.gridSize.columns), contentPadding = PaddingValues(start = Rm.ViewMargin, end = Rm.ViewMargin, bottom = Rm.CreateMenuBottomMargin + Rm.CreateMenuHeight),
+                        GridCells.Fixed(gridColumns(maxWidth.value, prefs.gridSize)), contentPadding = PaddingValues(bottom = Rm.CreateMenuBottomMargin + Rm.CreateMenuHeight),
                     ) {
                         items(folders, key = { it.id }) { e -> FolderCell(lib, e, e.id in picked, onClick = { select(e) }, onLongClick = { longPress(e) }) }
+                        // The firmware shows the folders in a grid of their own above the documents: the documents start on a new row.
+                        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(0.dp)) }
                         items(notebooks, key = { it.id }) { e -> NotebookCell(app, e, e.id in picked, dimmed = isMoving, small = prefs.gridSize == GridSize.SMALL, onClick = { select(e) }, onLongClick = { longPress(e) }) }
                     }
                 } else {
@@ -487,28 +492,39 @@ private fun EmptyState(title: String, body: String, art: Int?) {
 /** The firmware's selected look: the whole cell turns black with white text. */
 private fun Modifier.cellBackground(selected: Boolean) = background(if (selected) Ink.Black else Ink.White)
 
-/** A notebook in the grid: a 15 px inset around a 3:4 thumbnail (312 x 416 in a 342 px cell), then the name and a caption. */
+/** A document in the grid (firmware DocumentGridItem): a 16 px inset around a thumbnail that fills the cell above the text block (see below), then the name and a caption. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun NotebookCell(app: AppController, e: LibraryEntry, selected: Boolean, dimmed: Boolean, small: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
     val fg = if (selected) Ink.White else Ink.Black
-    Column(Modifier.fillMaxWidth().alpha(if (dimmed) 0.4f else 1f).cellBackground(selected).combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(15.dp)) {
-        Box {
-            Thumb(app, e, Modifier.fillMaxWidth().aspectRatio(THUMB_ASPECT))
-            // Tags sit in the thumbnail's top-left corner (ThumbnailTags, 15 px in).
-            if (e.tags.isNotEmpty()) Row(Modifier.align(Alignment.TopStart).padding(15.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                e.tags.take(2).forEach { TagPill(it, selected = false, onClick = {}, small = true, modifier = Modifier.widthIn(max = 120.dp)) }
-                if (e.tags.size > 2) TagPill("+${e.tags.size - 2}", selected = false, onClick = {}, small = true)
+    // Firmware ThumbnailGridSize + DocumentGridItem (0106262a, 00d8d745): the cell is W wide and ceil(W*4/3) + 80 high; the thumbnail is the
+    // cell inset by 16, 8 above the text block, which sits 16 above the bottom (a label line plus a caption line, kept even when hidden).
+    BoxWithConstraints(Modifier.fillMaxWidth().alpha(if (dimmed) 0.4f else 1f).cellBackground(selected).combinedClickable(onClick = onClick, onLongClick = onLongClick)) {
+        val cellW = maxWidth.value
+        val textH = LABEL_LINE + CAPTION_LINE
+        val thumbH = (ceil(cellW * 4f / 3f) + 80f - 16f - 8f - textH - 16f).coerceAtLeast(40f)
+        Column(Modifier.padding(16.dp)) {
+            Box {
+                Thumb(app, e, Modifier.fillMaxWidth().height(thumbH.dp), selected)
+                // Tags sit in the thumbnail's top-left corner (ThumbnailTags, 15 px in).
+                if (e.tags.isNotEmpty()) Row(Modifier.align(Alignment.TopStart).padding(15.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    e.tags.take(2).forEach { TagPill(it, selected = false, onClick = {}, small = true, modifier = Modifier.widthIn(max = 120.dp)) }
+                    if (e.tags.size > 2) TagPill("+${e.tags.size - 2}", selected = false, onClick = {}, small = true)
+                }
             }
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.height(LABEL_LINE.dp), verticalAlignment = Alignment.CenterVertically) {
+                MiddleText(e.name, RmText.Label, fg, Modifier.weight(1f, fill = false))
+                if (e.pinned) InkIcons.StarInverted(tint = fg, size = Rm.IconSmall, modifier = Modifier.padding(start = 8.dp))
+            }
+            Box(Modifier.height(CAPTION_LINE.dp)) { if (!small) Text(pageCaption(e), style = RmText.Caption, color = fg, maxLines = 1) }
         }
-        Spacer(Modifier.height(10.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            MiddleText(e.name, RmText.Label, fg, Modifier.weight(1f, fill = false))
-            if (e.pinned) InkIcons.StarInverted(tint = fg, size = Rm.IconSmall, modifier = Modifier.padding(start = 8.dp))
-        }
-        if (!small) Text(pageCaption(e), style = RmText.Caption, color = fg, maxLines = 1)
     }
 }
+
+/** Line heights of the label (25 px x 1.58) and caption (22 px x 1.45) styles under a thumbnail. */
+private const val LABEL_LINE = 39.5f
+private const val CAPTION_LINE = 31.9f
 
 /** The page a notebook was last on, kept inside its page range. */
 private fun lastPage(e: LibraryEntry) = e.lastOpenedPage.coerceIn(0, (e.pageIds.size - 1).coerceAtLeast(0))
@@ -524,18 +540,23 @@ internal fun formatSize(bytes: Long): String = when {
     else -> String.format(java.util.Locale.US, "%.2f GB", bytes / 1e9)
 }
 
-/** A folder cell: 75 px high, a 15 px margin and 10 px spacing; the icon says whether it has content, then name, favourite and tag marks. */
+/**
+ * A folder cell (firmware ContentGridFolderItem, 00d94342): 75 px high, 15 px side margins and 10 px spacing; the icon says whether it has
+ * content, then the name, and at the right the favourite and tag marks. Unlike the list-view row (00d8fe5c) it has no separator line and no
+ * "N items" caption.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FolderCell(lib: Library, e: LibraryEntry, selected: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
     val fg = if (selected) Ink.White else Ink.Black
-    val filled = remember(lib, e.id) { lib.children(e.id).isNotEmpty() }
+    val count = remember(lib, e.id) { lib.children(e.id).size }
     Row(
         Modifier.fillMaxWidth().height(75.dp).cellBackground(selected).combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(horizontal = 15.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        if (filled) InkIcons.FolderInverted(tint = fg) else InkIcons.FolderOutline(tint = fg)
-        MiddleText(e.name, RmText.Label, fg, Modifier.weight(1f))
+        if (count > 0) InkIcons.FolderInverted(tint = fg) else InkIcons.FolderOutline(tint = fg)
+        MiddleText(e.name, RmText.Label, fg, Modifier.weight(1f, fill = false))
+        Spacer(Modifier.weight(1f))
         if (e.pinned) InkIcons.StarInverted(tint = fg, size = Rm.IconSmall)
         if (e.tags.isNotEmpty()) InkIcons.TagInverted(tint = fg, size = Rm.IconSmall)
     }
@@ -579,7 +600,7 @@ internal fun NotebookRow(app: AppController, e: LibraryEntry, selected: Boolean,
             Modifier.fillMaxWidth().height(160.dp).combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(16.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Thumb(app, e, Modifier.width(96.dp).height(128.dp))
+            Thumb(app, e, Modifier.width(96.dp).height(128.dp), selected)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(e.name, style = RmText.Label, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
@@ -788,15 +809,14 @@ private fun TagsFilter(lib: Library, selected: Set<String>, tab: Int, onTab: (In
     if (all) Box(Modifier.fillMaxSize()) { TagsWindow(tags, selected, onToggle, { all = false }) }
 }
 
-/** Notebook thumbnails are 3:4 (312 x 416 px inside a 342 px cell). */
-private const val THUMB_ASPECT = 312f / 416f
 
 /**
- * A notebook's cover page. Notebooks get a black spine line on the left, PDFs a folded top-right corner
- * (the same cues the tablet uses to tell document types apart at a glance).
+ * A document's cover: the first page (or the page it was last closed on) under the firmware's own DocumentCover drawing
+ * (xochitl `DocumentCover`): a 1 px black frame inside the thumbnail, notebooks with a 12 px spine band and rounded right corners,
+ * PDFs with a folded top-right corner, e-books with rounded right corners only. Not anti-aliased, as on the tablet.
  */
 @Composable
-internal fun Thumb(app: AppController, e: LibraryEntry, modifier: Modifier) {
+internal fun Thumb(app: AppController, e: LibraryEntry, modifier: Modifier, selected: Boolean = false) {
     val shape = androidx.compose.ui.graphics.RectangleShape
     if (e.isFolder) {
         Box(modifier.border(Rm.Outline, Ink.Black, shape).background(Ink.White, shape), contentAlignment = Alignment.Center) { InkIcons.Folder() }
@@ -807,18 +827,67 @@ internal fun Thumb(app: AppController, e: LibraryEntry, modifier: Modifier) {
     val bmp by produceState<Bitmap?>(null, e.id, e.lastModified, page, e.pageIds.getOrNull(page), e.template) {
         value = withContext(Dispatchers.IO) { runCatching { app.thumbnails.render(e, page, 320) }.getOrNull() }
     }
-    Box(modifier.clip(shape).border(Rm.Outline, Ink.Black, shape).background(Ink.White)) {
+    Box(modifier.clip(shape).background(Ink.White)) {
         bmp?.let { Image(it.asImageBitmap(), contentDescription = e.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
-        if (e.fileType == "pdf") {
-            Canvas(Modifier.align(Alignment.TopEnd).size(56.dp)) {
-                val w = size.width
-                val fold = androidx.compose.ui.graphics.Path().apply { moveTo(0f, 0f); lineTo(w, w); lineTo(w, 0f); close() }
-                drawPath(fold, Color.White)
-                drawLine(Color.Black, Offset(0f, 0f), Offset(w, w), strokeWidth = 4f)
-            }
-        } else {
-            // The cover's spine: a 2 px black line (the firmware's covers are strictly black and white).
-            Box(Modifier.align(Alignment.CenterStart).padding(start = 14.dp).fillMaxHeight().width(Rm.Outline).background(Color.Black))
+        val kind = when (e.fileType) { "pdf" -> CoverKind.PDF; "epub", "ebook" -> CoverKind.EBOOK; else -> CoverKind.NOTEBOOK }
+        Canvas(Modifier.fillMaxSize()) {
+            drawIntoCanvas { drawDocumentCover(it.nativeCanvas, size.width, size.height, 1.dp.toPx(), kind, selected) }
+        }
+    }
+}
+
+internal enum class CoverKind { NOTEBOOK, PDF, EBOOK, UNDEFINED }
+
+/**
+ * The firmware's DocumentCover painting (recovered from xochitl; reference/remarkable-3.27.1.0/behaviour/document_cover.md), in device
+ * pixels with [u] = one reMarkable pixel: 1 px black pen, miter joins, flat caps, no anti-aliasing, 0.5 px offsets so lines land on pixels.
+ */
+internal fun drawDocumentCover(c: android.graphics.Canvas, w: Float, h: Float, u: Float, kind: CoverKind, selected: Boolean) {
+    fun paint(style: android.graphics.Paint.Style, color: Int) = android.graphics.Paint().apply {
+        isAntiAlias = false; this.style = style; this.color = color; strokeWidth = u
+        strokeJoin = android.graphics.Paint.Join.MITER; strokeCap = android.graphics.Paint.Cap.BUTT
+    }
+    val white = android.graphics.Color.WHITE; val black = android.graphics.Color.BLACK
+    val fillWhite = paint(android.graphics.Paint.Style.FILL, white)
+    val strokeBlack = paint(android.graphics.Paint.Style.STROKE, black)
+    val half = u * 0.5f
+    val r = 18f * u
+    fun bookFrame() {
+        // The two right corners are cut off (painted white over the page), then the outline is stroked.
+        val mask = android.graphics.Path().apply {
+            moveTo(w, 0f); lineTo(w - r, 0f); quadTo(w, 0f, w, r); lineTo(w, h - r); quadTo(w, h, w - r, h); lineTo(r, h); lineTo(w, h); close()
+        }
+        c.drawPath(mask, fillWhite)
+        val frame = android.graphics.Path().apply {
+            moveTo(half, half); lineTo(w - half - r, half); quadTo(w - half, half, w - half, r); lineTo(w - half, h - half - r)
+            quadTo(w - half, h - half, w - half - r, h - half); lineTo(r, h - half); lineTo(half, h - half); lineTo(half, half)
+        }
+        c.drawPath(frame, strokeBlack)
+    }
+    when (kind) {
+        CoverKind.UNDEFINED -> c.drawRect(half, half, w - half, h - half, strokeBlack)
+        CoverKind.EBOOK -> bookFrame()
+        CoverKind.NOTEBOOK -> {
+            bookFrame()
+            // The spine: an opaque 12 px band (white, black while the item is selected) with its own outline.
+            val spine = paint(android.graphics.Paint.Style.FILL, if (selected) black else white)
+            c.drawRect(half, half, half + 11f * u, h - half, spine)
+            c.drawRect(half, half, half + 11f * u, h - half, strokeBlack)
+        }
+        CoverKind.PDF -> {
+            val f = 40f * u
+            val x = w - f - u
+            // The corner is cut off (white), and the flap folded over it is a white triangle with a black outline.
+            val cut = android.graphics.Path().apply { moveTo(x, half); lineTo(w, half); lineTo(w, f); close() }
+            c.drawPath(cut, fillWhite)
+            c.drawPath(cut, paint(android.graphics.Paint.Style.STROKE, white))
+            val flap = android.graphics.Path().apply { moveTo(x, half); lineTo(x, f); lineTo(w - u, f); close() }
+            c.drawPath(flap, fillWhite)
+            c.drawPath(flap, strokeBlack)
+            c.drawLine(half, half, x, half, strokeBlack)
+            c.drawLine(w - u, f, w - u, h - u, strokeBlack)
+            c.drawLine(half, h - u, w - u, h - u, strokeBlack)
+            c.drawLine(half, half, half, h - u, strokeBlack)
         }
     }
 }
@@ -868,4 +937,10 @@ private fun Sidebar(app: AppController, s: Screen.Files, onClose: () -> Unit, on
             }
         }
     }
+}
+
+/** The firmware's ThumbnailGridSize: as many columns as fit a thumbnail of the minimum width (324 large, 244 medium, 197 small) plus 32 px of margin. */
+internal fun gridColumns(widthPx: Float, size: GridSize): Int {
+    val min = when (size) { GridSize.LARGE -> 324f; GridSize.MEDIUM -> 244f; GridSize.SMALL -> 197f; GridSize.LIST -> return 1 }
+    return kotlin.math.floor(widthPx / (min + 32f)).toInt().coerceAtLeast(1)
 }

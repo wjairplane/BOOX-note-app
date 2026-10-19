@@ -27,4 +27,34 @@ class ShapeSnapTest {
         val s = (0..120).map { (100f + it * 3 + 40 * sin(it / 3.0).toFloat()) to (200f + 90 * cos(it / 5.0).toFloat()) }
         assertNull(ShapeSnap.detect(s))
     }
+
+    @Test fun aSlightlySlopedLineSnapsToHorizontalAndAMoreSlopedOneStays() {
+        // |dy| < max(L/3, 10): 90 over 300 is within a third, so the end is levelled.
+        val gentle = ShapeSnap.detect((0..40).map { (100f + it * 7.5f) to (300f + it * 2.2f) }) as ShapeSnap.Shape.Line
+        assertEquals(gentle.points.first().second, gentle.points.last().second, 0.001f)
+        val steep = ShapeSnap.detect((0..40).map { (100f + it * 6f) to (300f + it * 6f) }) as ShapeSnap.Shape.Line
+        assertTrue(steep.points.last().second > steep.points.first().second + 100f)
+    }
+
+    @Test fun aNearlySquareBoxBecomesASquare() {
+        // 300 x 270 (ratio 0.9 > 0.8): both sides become the mean, 285.
+        val s = ShapeSnap.detect(poly(100f to 100f, 400f to 100f, 400f to 370f, 100f to 370f)) as ShapeSnap.Shape.Closed
+        assertEquals("rectangle", s.kind)
+        val xs = s.points.map { it.first }; val ys = s.points.map { it.second }
+        assertEquals(285f, xs.max() - xs.min(), 8f); assertEquals(285f, ys.max() - ys.min(), 8f)
+    }
+
+    @Test fun aTurnedRectangleKeepsItsTurn() {
+        val a = Math.toRadians(30.0)
+        fun rot(x: Float, y: Float) = (500 + (x * cos(a) - y * sin(a)).toFloat()) to (500 + (x * sin(a) + y * cos(a)).toFloat())
+        val s = ShapeSnap.detect(poly(rot(-200f, -80f), rot(200f, -80f), rot(200f, 80f), rot(-200f, 80f))) as ShapeSnap.Shape.Closed
+        assertEquals("rectangle", s.kind)
+        // Not axis-aligned: the bounding box is much bigger than the 400 x 160 sides.
+        assertTrue(s.points.maxOf { it.first } - s.points.minOf { it.first } > 420f)
+    }
+
+    @Test fun tooFewPointsOrATinyStrokeIsNotAShape() {
+        assertNull(ShapeSnap.detect(circle().take(9)))
+        assertNull(ShapeSnap.detect((0..20).map { (100f + it * 0.1f) to 100f }))
+    }
 }

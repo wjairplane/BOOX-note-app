@@ -35,6 +35,10 @@ data class ToolSlot(val tool: PenTool, val colorId: Int, val thickness: Int) {
 class Prefs(context: Context) {
     private val sp = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
+    /** The passcode (Security settings) and whether the app is currently behind it. */
+    val passcode = PasscodeLock(PrefsPasscodeStorage(context))
+    val lock = AppLock(passcode)
+
     private var _gridSize by mutableStateOf(
         runCatching { GridSize.valueOf(sp.getString("gridSize", null)!!) }.getOrDefault(if (sp.getBoolean("grid", true)) GridSize.MEDIUM else GridSize.LIST),
     )
@@ -78,9 +82,21 @@ class Prefs(context: Context) {
     fun toolbarFor(landscape: Boolean) = if (landscape) toolbarLandscape else toolbarPosition
     fun setToolbarFor(landscape: Boolean, v: ToolbarPosition) { if (landscape) toolbarLandscape = v else toolbarPosition = v }
 
+    private var _penMode by mutableStateOf(runCatching { PenMode.valueOf(sp.getString("penMode", null) ?: "HYBRID") }.getOrDefault(PenMode.HYBRID))
+    /** How the stroke is shown while it is written; see [PenMode]. */
+    var penMode: PenMode get() = _penMode; set(v) { _penMode = v; sp.edit().putString("penMode", v.name).apply() }
+
+    private var _penLatency by mutableStateOf(sp.getBoolean("penLatency", false))
+    /** Show the pen's app-side latency (input age, drawing time) on the page; for tuning on the tablet. */
+    var penLatency: Boolean get() = _penLatency; set(v) { _penLatency = v; sp.edit().putBoolean("penLatency", v).apply() }
+
     private var _shapes by mutableStateOf(sp.getBoolean("shapes", true))
     /** "Enable shapes": hold at the end of a stroke to turn it into a clean shape. */
     var shapesEnabled: Boolean get() = _shapes; set(v) { _shapes = v; sp.edit().putBoolean("shapes", v).apply() }
+
+    private var _snapText by mutableStateOf(sp.getBoolean("snapHighlighter", false))
+    /** The highlighter's "Snap to text" (firmware `snapHighlighterToText`): highlight the text under the stroke instead of drawing it freehand. */
+    var snapHighlighter: Boolean get() = _snapText; set(v) { _snapText = v; sp.edit().putBoolean("snapHighlighter", v).apply() }
 
     private var _block by mutableStateOf(sp.getBoolean("blockDeviceGestures", true))
     /** Hold off the device's own edge gestures (BOOX status bar / back swipes) while the app is open. */
@@ -90,6 +106,23 @@ class Prefs(context: Context) {
     /** Swipe a finger left/right to turn pages. */
     var swipeToTurn: Boolean get() = _swipe; set(v) { _swipe = v; sp.edit().putBoolean("swipe", v).apply() }
 
+    private var _rightHanded by mutableStateOf(sp.getBoolean("rightHanded", true))
+    /** The firmware's `RightHanded` (Accessibility > Handedness). It decides which side the toolbar starts on; see [setRightHanded]. */
+    val rightHanded: Boolean get() = _rightHanded
+
+    /**
+     * Choose the writing hand. Like the firmware's toolbar positioner, a left-handed user gets the toolbar on the right and a right-handed
+     * one on the left: a toolbar that sits on the left or right edge moves to the opposite edge, top and bottom stay.
+     */
+    fun setRightHanded(v: Boolean) {
+        if (v == _rightHanded) return
+        _rightHanded = v
+        sp.edit().putBoolean("rightHanded", v).apply()
+        fun mirror(p: ToolbarPosition) = when (p) { ToolbarPosition.LEFT -> ToolbarPosition.RIGHT; ToolbarPosition.RIGHT -> ToolbarPosition.LEFT; else -> p }
+        toolbarPosition = mirror(toolbarPosition)
+        toolbarLandscape = mirror(toolbarLandscape)
+    }
+
     private var _finger by mutableStateOf(sp.getBoolean("finger", false))
     /** Let a finger draw too (off by default, so a resting palm or hand can't leave marks). */
     var fingerDrawing: Boolean get() = _finger; set(v) { _finger = v; sp.edit().putBoolean("finger", v).apply() }
@@ -98,3 +131,11 @@ class Prefs(context: Context) {
     /** Full e-ink refresh after this many strokes (0 = never automatically). */
     var refreshEveryStrokes: Int get() = _refresh; set(v) { _refresh = v; sp.edit().putInt("refresh", v).apply() }
 }
+
+/**
+ * How a stroke is shown while the pen is down.
+ * - [HYBRID]: the tablet's own pen layer draws the live trail at its lowest latency; the firmware's pen renderer then draws the real stroke when the pen lifts.
+ * - [EXACT]: the app draws the stroke with the firmware's pen renderer while it is written (stylus read as ordinary touch events).
+ * - [EXACT_SDK]: as [EXACT], but the stylus comes from the SDK's native pen reader (experimental).
+ */
+enum class PenMode { HYBRID, EXACT, EXACT_SDK }

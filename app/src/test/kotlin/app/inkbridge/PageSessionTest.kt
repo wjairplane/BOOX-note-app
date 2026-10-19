@@ -190,4 +190,68 @@ class PageSessionTest {
         assertTrue(s.mergeLayerDown(first)); assertEquals(listOf("Notes"), s.layers().map { it.label })
         assertTrue(s.backgroundVisible()); s.setBackgroundVisible(false); assertFalse(s.backgroundVisible())
     }
+
+    @Test fun liveStrokeLooksLikeTheFinishedStrokeAndLeavesNoTrace() {
+        val s = session()
+        val bmp = s.bitmap!!
+        val before = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        val stroke = path(s, -200f, 600f, -150f, 620f, -90f, 640f, -30f, 650f, 40f, 640f, 120f, 610f)
+        val spec = PenSpec(PenTool.BALLPOINT)
+        // Written in two frames, as the pen moves.
+        val first = s.previewStroke(spec, stroke.take(3), 0)
+        val rect = s.previewStroke(spec, stroke, 3)
+        assertNotNull(first); assertNotNull(rect)
+        val live = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        assertTrue(live.indices.any { live[it] != before[it] })
+
+        // The pen lifts: the live stroke comes off, the stroke is added, and the picture matches what was shown (apart from the end cap).
+        s.endPreview()
+        val cleared = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        assertArrayEquals(before, cleared)
+        assertTrue(s.addStroke(spec, stroke))
+        assertNotNull(s.takeStrokeRect()); assertNull(s.takeStrokeRect())
+        val done = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        val different = live.indices.count { live[it] != done[it] }
+        assertTrue("live and final differ in $different px", different < 40)
+    }
+
+    @Test fun eraserFadesWhatItPassesOverAsACheckerboardAndOnlyCutsAtPenUp() {
+        val s = session()
+        val bmp = s.bitmap!!
+        val spec = PenSpec(PenTool.FINELINER, thickness = 3)
+        val stroke = path(s, -200f, 600f, -150f, 620f, -90f, 640f, -30f, 650f, 40f, 640f, 120f, 610f)
+        assertTrue(s.addStroke(spec, stroke)); s.takeStrokeRect()
+        val before = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        val eraser = path(s, -100f, 600f, -60f, 640f, 0f, 660f)
+        val rect = s.previewErase(eraser, 20f, 0)
+        assertNotNull(rect)
+        val live = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        val changed = live.indices.filter { live[it] != before[it] }
+        assertTrue(changed.isNotEmpty())
+        // Only pixels with x + y even turn white, nothing is blended.
+        assertTrue(changed.all { (it % bmp.width + it / bmp.width) % 2 == 0 && live[it] == -1 })
+        // Nothing is cut until the pen lifts.
+        s.endErasePreview()
+        val restored = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        assertArrayEquals(before, restored)
+        assertTrue(s.erase(eraser, 20f))
+    }
+
+    @Test fun aStrokeDrawnInManyFramesLooksLikeTheFinishedStroke() {
+        val s = session()
+        val bmp = s.bitmap!!
+        val spec = PenSpec(PenTool.FINELINER, thickness = 2)
+        // A wavy line that goes up and down, so later frames touch rows that earlier frames drew in.
+        val pts = (0..40).flatMap { i -> listOf(-250f + i * 11f, 640f + (kotlin.math.sin(i / 3.0) * 90).toFloat()) }.toFloatArray()
+        val stroke = path(s, *pts)
+        var from = 0
+        for (n in 6..stroke.size step 5) { s.previewStroke(spec, stroke.take(n), from); from = n }
+        s.previewStroke(spec, stroke, from)
+        val live = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        s.endPreview()
+        assertTrue(s.addStroke(spec, stroke))
+        val done = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        val different = live.indices.count { live[it] != done[it] }
+        assertTrue("frames and final differ in $different px", different < 60)
+    }
 }

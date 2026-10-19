@@ -18,6 +18,10 @@ interface PageCanvas {
     /** Draw a single line of text with its baseline at [y]. */
     fun text(s: String, x: Float, y: Float, size: Float, bold: Boolean, italic: Boolean, argb: Int)
 
+    /** [text] in one of the page fonts; canvases without font support draw it in their default font. */
+    fun styledText(s: String, x: Float, y: Float, size: Float, bold: Boolean, italic: Boolean, font: app.inkbridge.rm.text.TextFont, argb: Int) =
+        text(s, x, y, size, bold, italic, argb)
+
     /**
      * Fill the polygon through the first [pointCount] (x, y) pairs of [xy]. Implementations without a path fill
      * fall back to the bounding box, which is exact for the axis-aligned boxes templates fill.

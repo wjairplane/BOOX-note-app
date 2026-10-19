@@ -129,6 +129,7 @@ object InkIcons {
     @Composable fun GridMedium(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_grid, modifier, tint, size)
     @Composable fun GridSmall(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_grid_small, modifier, tint, size)
     @Composable fun ListView(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_list, modifier, tint, size)
+    @Composable fun GoToPage(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_go_to_page, modifier, tint, size)
     @Composable fun FolderInverted(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_folder_inverted, modifier, tint, size)
     @Composable fun TagInverted(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_tag_inverted, modifier, tint, size)
     @Composable fun MoveHere(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_move_here, modifier, tint, size)
@@ -138,6 +139,12 @@ object InkIcons {
     @Composable fun Handwriting(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_note, modifier, tint, size)
     @Composable fun Cloud(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_cloud, modifier, tint, size)
     @Composable fun ThreeDots(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_three_dots_vertical, modifier, tint, size)
+
+    @Composable fun Padlock(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_padlock, modifier, tint, size)
+    @Composable fun PadlockUnlocked(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_padlock_unlocked, modifier, tint, size)
+    @Composable fun SystemClock(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_system_clock, modifier, tint, size)
+    @Composable fun WarningCircle(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_warning_circle, modifier, tint, size)
+    @Composable fun BatteryFull(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_battery_full, modifier, tint, size)
 
     @Composable fun Document(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_document, modifier, tint, size)
 

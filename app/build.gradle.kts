@@ -12,8 +12,8 @@ android {
         applicationId = "app.inkbridge"
         minSdk = 29
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.0.0"
+        versionCode = 10
+        versionName = "1.2.0"
 
         // The Note Air5 C is 64-bit ARM; the Onyx SDK only ships ARM native libraries anyway.
         ndk {
@@ -54,6 +54,8 @@ android {
         unitTests {
             // Robolectric needs the merged resources and manifest to run Compose screens on the JVM.
             isIncludeAndroidResources = true
+            // One JVM per test class: Compose screen tests share static state (fonts, prefs) and the text-tool screens never go idle after other classes ran.
+            all { it.setForkEvery(1) }
         }
     }
     buildFeatures {
@@ -74,6 +76,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.onyx.pen)
     implementation(libs.hiddenapibypass)
+    implementation(libs.pdfbox.android)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)

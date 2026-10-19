@@ -1,7 +1,8 @@
 package app.inkbridge.rm.render
 
 import app.inkbridge.rm.scene.*
-import app.inkbridge.rm.text.TextDocument
+import app.inkbridge.rm.text.TextLayout
+import app.inkbridge.rm.text.TextStyles
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -22,12 +23,17 @@ data class PageLayout(val xMin: Float, val xMax: Float, val yMin: Float, val yMa
  * Output is in page units with x relative to the page centre (see [layout] for the shift).
  */
 class PageRenderer(private val tree: SceneTree) {
-    private val anchorPos = buildAnchorPos(tree.rootText)
+    /** The typed text set for this page null on a page without text. */
+    val textLayout: TextLayout? by lazy { tree.rootText?.let { TextLayout.of(it) } }
+
+    private val anchorPos: Map<CrdtId, Float> by lazy { textLayout?.anchors() ?: buildAnchorPos(null) }
 
     /** Standard page area, grown if strokes extend past it (notebook pages can scroll vertically). */
     val layout: PageLayout by lazy {
         val b = floatArrayOf(-PageLayout.PAGE_WIDTH / 2, PageLayout.PAGE_WIDTH / 2, 0f, PageLayout.PAGE_HEIGHT)
         grow(tree.root, 0f, 0f, b)
+        // Typed text that runs past the bottom of the page makes the page longer.
+        textLayout?.lines?.lastOrNull()?.let { b[3] = max(b[3], it.bottom + TextStyles.BOTTOM_MARGIN) }
         PageLayout(b[0], b[1], b[2], b[3])
     }
 
@@ -36,6 +42,23 @@ class PageRenderer(private val tree: SceneTree) {
 
     /** Visible strokes in drawing order, with parent and offset (for hit-testing and editing). */
     fun placedLines(): List<PlacedLine> = buildList { collectLines(tree.root, 0f, 0f, this) }
+
+    /** A highlight made from text, with the offset of its parent group. */
+    class PlacedGlyph(val itemId: CrdtId, val parent: Group, val glyph: GlyphRange, val ox: Float, val oy: Float)
+
+    /** Visible text highlights in drawing order. */
+    fun placedGlyphs(): List<PlacedGlyph> = buildList { collectGlyphs(tree.root, 0f, 0f, this) }
+
+    private fun collectGlyphs(g: Group, ox: Float, oy: Float, out: MutableList<PlacedGlyph>) {
+        for (e in g.children.orderedItems()) when (val c = e.value) {
+            is Group -> if (c.visible.value) {
+                val (ax, ay) = anchorOffset(c)
+                collectGlyphs(c, ox + ax, oy + ay, out)
+            }
+            is GlyphRange -> out += PlacedGlyph(e.itemId, g, c, ox, oy)
+            else -> Unit
+        }
+    }
 
     private fun collectLines(g: Group, ox: Float, oy: Float, out: MutableList<PlacedLine>) {
         for (e in g.children.orderedItems()) when (val c = e.value) {
@@ -69,7 +92,7 @@ class PageRenderer(private val tree: SceneTree) {
 
     /** Draw the page's text and highlights; the strokes only when [strokes] (on screen they are drawn pixel by pixel by [renderInk]). */
     fun render(canvas: PageCanvas, strokes: Boolean) {
-        tree.rootText?.let { drawText(it, canvas) }
+        drawText(canvas)
         drawGroup(tree.root, 0f, 0f, canvas, strokes)
     }
 
@@ -175,70 +198,23 @@ class PageRenderer(private val tree: SceneTree) {
 
     private fun drawGlyph(g: GlyphRange, ox: Float, oy: Float, canvas: PageCanvas) {
         val rgba = PenPalette.lookup(g.color, g.colorRgba)
-        val c = argb(rgba, 0.35)
+        val c = argb(rgba, 0.5)
         for (r in g.rectangles) canvas.fillRect((r.x + ox).toFloat(), (r.y + oy).toFloat(), r.w.toFloat(), r.h.toFloat(), c)
     }
 
-    private fun drawText(text: Text, canvas: PageCanvas) {
-        val doc = TextDocument.from(text)
-        var y = text.posY.toFloat() + TEXT_TOP_Y
-        for (p in doc.paragraphs) {
-            y += lineHeight(p.style)
-            val s = p.toString().trim()
-            if (s.isEmpty()) continue
-            val bold = p.style == ParagraphStyle.BOLD || p.style == ParagraphStyle.HEADING ||
-                p.spans.isNotEmpty() && p.spans.all { it.bold }
-            val italic = p.spans.isNotEmpty() && p.spans.all { it.italic }
-            val prefix = when (p.style) {
-                ParagraphStyle.BULLET, ParagraphStyle.BULLET2 -> "• "
-                ParagraphStyle.CHECKBOX -> "☐ "
-                ParagraphStyle.CHECKBOX_CHECKED -> "☑ "
-                else -> ""
-            }
-            canvas.text(prefix + s, text.posX.toFloat(), y, fontSize(p.style), bold, italic, 0xFF000000.toInt())
-        }
-    }
+    private fun drawText(canvas: PageCanvas) { textLayout?.draw(canvas) }
 
     companion object {
         /** Smallest stroke width drawn; pen formulas can dip to zero or below at very light pressure. */
         const val MIN_WIDTH = 0.5
-
-        // Layout constants fitted to real files by rmc: first baseline offset and per-style line heights.
-        const val TEXT_TOP_Y = -88f
-
-        fun lineHeight(style: ParagraphStyle): Float = when (style) {
-            ParagraphStyle.HEADING -> 150f
-            ParagraphStyle.BULLET, ParagraphStyle.BULLET2,
-            ParagraphStyle.CHECKBOX, ParagraphStyle.CHECKBOX_CHECKED -> 35f
-            else -> 70f
-        }
-
-        fun fontSize(style: ParagraphStyle): Float = when (style) {
-            ParagraphStyle.HEADING -> 64f
-            else -> 36f
-        }
 
         private val TOP_ANCHOR = CrdtId(0, 281474976710654)
         private val BOTTOM_ANCHOR = CrdtId(0, 281474976710655)
 
         /** Y position of each text character / paragraph, used to place groups anchored to text. */
         fun buildAnchorPos(text: Text?): Map<CrdtId, Float> {
-            val pos = HashMap<CrdtId, Float>()
-            if (text == null) {
-                pos[TOP_ANCHOR] = 0f
-                pos[BOTTOM_ANCHOR] = PageLayout.PAGE_HEIGHT
-                return pos
-            }
-            val doc = TextDocument.from(text)
-            var y = text.posY.toFloat() + TEXT_TOP_Y
-            pos[TOP_ANCHOR] = y
-            for (p in doc.paragraphs) {
-                pos[p.startId] = y
-                for (s in p.spans) for (id in s.ids) pos[id] = y
-                y += lineHeight(p.style)
-            }
-            pos[BOTTOM_ANCHOR] = y
-            return pos
+            if (text == null) return mapOf(TOP_ANCHOR to 0f, BOTTOM_ANCHOR to PageLayout.PAGE_HEIGHT)
+            return TextLayout.anchors(text)
         }
     }
 }

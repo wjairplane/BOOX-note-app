@@ -2,7 +2,9 @@ package app.inkbridge.rm.edit
 
 import app.inkbridge.rm.io.*
 import app.inkbridge.rm.render.PageRenderer
+import app.inkbridge.rm.render.PenPalette
 import app.inkbridge.rm.scene.*
+import app.inkbridge.rm.text.TextBuffer
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
@@ -46,6 +48,14 @@ class PageEditor private constructor(initial: List<Block>) {
      * Add a stroke drawn at page-space [input] points. Returns the new stroke, or null if the tool
      * isn't a pen or there was no input.
      */
+    /** The stroke [addStroke] would add for [input], without adding it (for drawing the stroke live while the pen is still down). */
+    fun previewLine(spec: PenSpec, input: List<InputPoint>): AddedStroke? {
+        val layer = activeLayer() ?: return null
+        val (ox, oy) = renderer.offsetOf(layer)
+        val line = StrokeBuilder.build(spec, input, ox, oy) ?: return null
+        return AddedStroke(line, ox, oy, CrdtId(0, 0))
+    }
+
     fun addStroke(spec: PenSpec, input: List<InputPoint>): AddedStroke? {
         val layer = activeLayer() ?: throw IllegalStateException("Page has no layer to draw on")
         val (ox, oy) = renderer.offsetOf(layer)
@@ -68,6 +78,28 @@ class PageEditor private constructor(initial: List<Block>) {
         return AddedStroke(line, ox, oy, id)
     }
 
+    // ---- text highlights ----
+
+    /**
+     * Add a highlight over text: [rects] are the highlighted boxes in page units (one per text line), [text] what they cover and [start] where
+     * that text begins in the page's text. The colour follows [spec] as for a highlighter stroke. Returns false if the page has no layer.
+     */
+    fun addGlyphHighlight(spec: PenSpec, text: String, start: Int?, rects: List<Rectangle>): Boolean {
+        if (rects.isEmpty()) return false
+        val layer = activeLayer() ?: return false
+        val (ox, oy) = renderer.offsetOf(layer)
+        val rgba = PenPalette.highlighter(spec.colorId)
+        val glyph = GlyphRange(start, text.length, text, PenColorId.HIGHLIGHT, rects.map { Rectangle(it.x - ox, it.y - oy, it.w, it.h) }, rgba)
+        val id = CrdtId(primaryAuthor(), nextCounter())
+        val block = SceneItemBlock(SceneItemBlock.GLYPH, layer.nodeId, id, lastIdIn(layer), CrdtId.END_MARKER, 0, glyph, GLYPH_ITEM_TYPE)
+            .also { it.minVersion = 0; it.currentVersion = 1 }
+        commit(blocks + block)
+        return true
+    }
+
+    /** The visible text highlights (for hit-testing). */
+    fun glyphHighlights(): List<PageRenderer.PlacedGlyph> = renderer.placedGlyphs()
+
     // ---- erasing ----
 
     /**
@@ -76,8 +108,80 @@ class PageEditor private constructor(initial: List<Block>) {
      */
     fun eraseAlong(path: List<Pair<Float, Float>>, radius: Float): Int {
         if (path.isEmpty()) return 0
-        val hit = renderer.placedLines().filter { touches(it, path, radius) }.map { it.itemId }.toSet()
-        return deleteStrokes(hit)
+        val hit = renderer.placedLines().filter { touches(it, path, radius) }
+        // A text highlight goes whole when the eraser passes over any of its boxes.
+        val hitGlyphs = renderer.placedGlyphs().filter { g -> g.glyph.rectangles.any { r -> touchesRect(r, g.ox, g.oy, path, radius) } }.map { it.itemId }.toSet()
+        if (hit.isEmpty() && hitGlyphs.isEmpty()) return 0
+        // The eraser takes out only the part of a stroke it passes over: what is left on either side stays as separate strokes.
+        val originals = HashSet<CrdtId>()
+        val pieces = LinkedHashMap<Group, MutableList<Line>>()
+        for (p in hit) {
+            val local = path.map { (x, y) -> (x - p.ox) to (y - p.oy) }
+            val parts = erasedParts(p.line, local, radius) ?: continue
+            originals += p.itemId
+            pieces.getOrPut(p.parent) { ArrayList() }.addAll(parts)
+        }
+        if (originals.isEmpty() && hitGlyphs.isEmpty()) return 0
+        var next: List<Block> = blocks.map { b ->
+            if (b is SceneItemBlock && b.blockType == SceneItemBlock.LINE && b.itemId in originals && b.value is Line) tombstone(b)
+            else if (b is SceneItemBlock && b.blockType == SceneItemBlock.GLYPH && b.itemId in hitGlyphs && b.value is GlyphRange) tombstone(b)
+            else b
+        }
+        for ((layer, lines) in pieces) if (lines.isNotEmpty()) next = appended(next, layer, lines).first
+        commit(next)
+        return originals.size + hitGlyphs.size
+    }
+
+    private fun touchesRect(r: Rectangle, ox: Float, oy: Float, path: List<Pair<Float, Float>>, radius: Float): Boolean {
+        val l = (r.x + ox - radius).toFloat(); val t = (r.y + oy - radius).toFloat()
+        val rr = (r.x + ox + r.w + radius).toFloat(); val b = (r.y + oy + r.h + radius).toFloat()
+        fun inBox(x: Float, y: Float) = x in l..rr && y in t..b
+        if (path.size == 1) return inBox(path[0].first, path[0].second)
+        val step = max(radius * 0.5f, 1f)
+        for (i in 0 until path.size - 1) {
+            val (x0, y0) = path[i]; val (x1, y1) = path[i + 1]
+            val n = (hypot(x1 - x0, y1 - y0) / step).toInt() + 1
+            for (k in 0..n) if (inBox(x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n)) return true
+        }
+        return false
+    }
+
+    /** What is left of [line] after erasing within [radius] of [path] (both relative to the line's layer); null if nothing was touched. */
+    private fun erasedParts(line: Line, path: List<Pair<Float, Float>>, radius: Float): List<Line>? {
+        // Densify first so a long segment between two surviving points can still be cut in the middle.
+        val step = max(radius * 0.15f, 1f)
+        val pts = ArrayList<Point>()
+        for ((i, q) in line.points.withIndex()) {
+            val n = line.points.getOrNull(i + 1)
+            pts += q
+            if (n != null) {
+                val d = hypot(n.x - q.x, n.y - q.y)
+                val k = (d / step).toInt()
+                for (j in 1..k) {
+                    val t = j / (k + 1f)
+                    pts += Point(q.x + (n.x - q.x) * t, q.y + (n.y - q.y) * t, q.speed, q.direction, (q.width + (n.width - q.width) * t).roundToInt(), (q.pressure + (n.pressure - q.pressure) * t).roundToInt())
+                }
+            }
+        }
+        val erased = BooleanArray(pts.size) { i ->
+            val q = pts[i]
+            val r = radius
+            if (path.size == 1) hypot(q.x - path[0].first, q.y - path[0].second) <= r
+            else (0 until path.size - 1).any { distToSegment(q.x, q.y, path[it].first, path[it].second, path[it + 1].first, path[it + 1].second) <= r }
+        }
+        if (erased.none { it }) return null
+        val out = ArrayList<Line>()
+        var length = line.startingLength
+        var i = 0
+        while (i < pts.size) {
+            if (erased[i]) { if (i > 0) length += hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y); i++; continue }
+            val start = i
+            while (i < pts.size && !erased[i]) i++
+            val run = pts.subList(start, i)
+            if (run.size >= 2) out += Line(line.tool, line.color, run.toList(), line.thicknessScale, length, line.moveId, line.colorRgba, line.timestamp)
+            for (j in start + 1 until i) length += hypot(pts[j].x - pts[j - 1].x, pts[j].y - pts[j - 1].y)
+        }
+        return out
     }
 
     /** Erase the strokes with the given ids (one undo step). Returns how many were removed. */
@@ -456,8 +560,54 @@ class PageEditor private constructor(initial: List<Block>) {
 
     private fun nextCounter(): Long = maxCounter(blocks) + 1
 
+    // ---- typed text ----
+
+    /** Set the page again with the current text settings (the renderer keeps the layout it was made with). */
+    fun refreshRenderer() { renderer = PageRenderer(tree) }
+
+    /** The next text edit starts a new undo step even if it asks to be merged. */
+    fun endTextRun() { lastMergedTextEdit = null }
+
+    /** The page's typed text, or null when it has none. */
+    val rootText: Text? get() = tree.rootText
+
+    /** The result of the last text edit that asked to be merged with the next one (typing a word is one undo step). */
+    private var lastMergedTextEdit: List<Block>? = null
+
+    /**
+     * Edit the page's typed text through a [TextBuffer] (a new empty text block is made when the page has none). One undo
+     * step per call, except that consecutive calls with [merge] set share one. Returns true if the text changed.
+     */
+    fun editText(merge: Boolean = false, edit: (TextBuffer) -> Unit): Boolean {
+        val buffer = TextBuffer.open(tree.rootText, primaryAuthor(), nextCounter())
+        edit(buffer)
+        if (!buffer.modified) return false
+        val text = buffer.toText()
+        val existing = blocks.firstOrNull { it is RootTextBlock } as? RootTextBlock
+        val block = RootTextBlock(CrdtId.END_MARKER, text, existing?.extra ?: ByteArray(0)).also {
+            it.minVersion = existing?.minVersion ?: 0; it.currentVersion = existing?.currentVersion ?: 1
+        }
+        val content = buffer.content
+        var next = blocks.map { b ->
+            when {
+                b === existing -> block
+                b is PageInfoBlock -> PageInfoBlock(b.loadsCount, b.mergesCount, content.length, content.paragraphs.size, b.typeFolioUseCount, b.extra)
+                    .also { it.minVersion = b.minVersion; it.currentVersion = b.currentVersion }
+                else -> b
+            }
+        }
+        if (existing == null) {
+            val at = next.indexOfFirst { it is SceneItemBlock }.let { if (it < 0) next.size else it }
+            next = next.toMutableList().also { it.add(at, block) }
+        }
+        if (merge && blocks === lastMergedTextEdit) apply(next) else commit(next)
+        lastMergedTextEdit = if (merge) next else null
+        return true
+    }
+
     companion object {
         private const val LINE_ITEM_TYPE = 3
+        private const val GLYPH_ITEM_TYPE = 1
         private const val MAX_UNDO = 100
 
         fun fromBytes(bytes: ByteArray): PageEditor = PageEditor(SceneStream.readBlocks(bytes))
@@ -487,7 +637,12 @@ class PageEditor private constructor(initial: List<Block>) {
                     see(b.backgroundVisible?.timestamp); see(b.rootDocumentVisible?.timestamp)
                 }
                 is RootTextBlock -> {
-                    for (i in b.value.items.sequenceItems) { see(i.itemId); see(i.leftId); see(i.rightId) }
+                    for (i in b.value.items.sequenceItems) {
+                        see(i.itemId); see(i.leftId); see(i.rightId)
+                        // A run of characters (or of deleted ones) owns one id per character.
+                        val run = if (i.deletedLength > 0) i.deletedLength else (i.value as? TextValue.Chars)?.s?.length ?: 1
+                        if (run > 1) m = max(m, i.itemId.counter + run - 1)
+                    }
                     for ((k, v) in b.value.styles) { see(k); see(v.timestamp) }
                 }
                 else -> Unit

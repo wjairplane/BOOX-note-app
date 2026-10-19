@@ -118,7 +118,7 @@ class PageSession(
     fun jump(down: Boolean): Boolean {
         val t = transform ?: return false
         if (t.zoom <= 1.01f) return false
-        val next = t.pannedBy(0f, if (down) -t.viewHeight * 0.85f else t.viewHeight * 0.85f)
+        val next = t.pannedBy(0f, if (down) -t.viewHeight * 0.8f else t.viewHeight * 0.8f)
         if (next.offsetY == t.offsetY) return false
         applyView(next)
         return true
@@ -155,7 +155,7 @@ class PageSession(
     fun selectionStroke(samples: List<PenSample>): Boolean {
         val t = transform ?: return false
         val extent = if (samples.size < 2) 0f else kotlin.math.hypot(samples.maxOf { it.x } - samples.minOf { it.x }, samples.maxOf { it.y } - samples.minOf { it.y })
-        if (extent < 16f) {
+        if (extent < TAP_EXTENT_PAGE * t.scale) { // the firmware's tap: a selection stroke under 30 page units
             // A tap: it ends the selection, or (nothing selected, something copied) pastes the clipboard there.
             val at = samples.firstOrNull()
             if (selection.isEmpty() && at != null && StrokeClipboard.hasContent) return pasteAt(at.x, at.y)
@@ -312,6 +312,19 @@ class PageSession(
     @Synchronized fun moveLayer(id: CrdtId, up: Boolean): Boolean = editor.moveLayer(id, up).also { if (it) redrawAll() }
     @Synchronized fun mergeLayerDown(id: CrdtId): Boolean = editor.mergeLayerDown(id).also { if (it) { selection = emptySet(); redrawAll() } }
     @Synchronized fun backgroundVisible(): Boolean = editor.backgroundVisible
+
+    private var linksCache: List<PdfStructure.Link>? = null
+
+    /** The PDF page that a link under the view point ([vx], [vy]) leads to, or null (no link there, no PDF, or the PDF is hidden). */
+    @Synchronized fun pdfLinkAt(vx: Float, vy: Float): Int? {
+        val bg = background ?: return null
+        val t = transform ?: return null
+        if (!editor.backgroundVisible) return null
+        val pl = bg.placement
+        val x = pl.pageToPdfX(t.toPageX(vx)); val y = pl.pageToPdfY(t.toPageY(vy))
+        val links = linksCache ?: runCatching { bg.links() }.getOrDefault(emptyList()).also { linksCache = it }
+        return links.firstOrNull { it.contains(x, y) }?.page
+    }
     @Synchronized fun setBackgroundVisible(v: Boolean) { editor.setBackgroundVisible(v); baseValid = false; redrawAll() }
     @Synchronized fun deleteLayer(id: CrdtId): Boolean = editor.deleteLayer(id).also { if (it) { selection = emptySet(); redrawAll() } }
 
@@ -319,6 +332,7 @@ class PageSession(
     @Synchronized
     fun addStroke(spec: PenSpec, samples: List<PenSample>, select: Boolean = false): Boolean {
         val t = transform ?: return false
+        lastStrokeRect = null
         val added = editor.addStroke(spec, samples.map { toInput(t, it) }) ?: return false
         if (select) { selection = setOf(added.itemId); redrawAll(); return true }
         val layer = ink; val base = basePx; val shown = shownPx; val bmp = bitmap; val tf = inkTransform()
@@ -326,6 +340,8 @@ class PageSession(
         layer.drawLine(added.line, added.ox, added.oy, tf)
         if (layer.isDirty) {
             val l = layer.dirtyLeft; val tp = layer.dirtyTop; val r = layer.dirtyRight + 1; val b = layer.dirtyBottom + 1
+            lastStrokeRect = android.graphics.Rect(l, tp, r, b)
+            lastBounds = android.graphics.Rect(lastStrokeRect)
             layer.compositeInto(base, shown, l, tp, r, b)
             bmp.setPixels(shown, tp * bmp.width + l, bmp.width, l, tp, r - l, b - tp)
             layer.resetDirty()
@@ -333,12 +349,167 @@ class PageSession(
         return true
     }
 
-    /** Erase strokes touched by the dragged view-pixel [samples]. Returns true if anything was erased. */
+    private var textCache: List<PdfStructure.TextLine>? = null
+
+    /**
+     * The highlighter's "Snap to text": instead of the freehand stroke, highlight the text it ran along. Each line of the PDF page that
+     * the stroke crosses is highlighted from its first to its last character under the stroke, as one clean box per line. Returns false
+     * (and adds nothing) when the page has no text under the stroke, so the caller keeps the plain stroke.
+     */
     @Synchronized
-    fun erase(samples: List<PenSample>, radiusPx: Float): Boolean {
+    fun addSnappedHighlight(spec: PenSpec, samples: List<PenSample>): Boolean {
+        val bg = background ?: return false
         val t = transform ?: return false
+        if (!editor.backgroundVisible || samples.size < 2) return false
+        val pl = bg.placement
+        val path = samples.map { pl.pageToPdfX(t.toPageX(it.x)) to pl.pageToPdfY(t.toPageY(it.y)) }
+        val lines = textCache ?: runCatching { bg.textLines() }.getOrDefault(emptyList()).also { textCache = it }
+        val picked = SnapToText.pick(lines, path)
+        if (picked.isEmpty()) return false
+        val rects = picked.map { r -> app.inkbridge.rm.scene.Rectangle(pl.pdfToPageX(r.left).toDouble(), pl.pdfToPageY(r.top).toDouble(), ((r.right - r.left) * pl.scale).toDouble(), ((r.bottom - r.top) * pl.scale).toDouble()) }
+        val text = picked.joinToString(" ") { it.text }
+        val start = lines.takeWhile { it !== picked.first().line }.sumOf { it.text.length + 1 }
+        if (!editor.addGlyphHighlight(spec, text, start, rects)) return false
+        lastStrokeRect = null
+        redrawAll()
+        return true
+    }
+
+    // ---- the stroke being written (drawn live with the firmware pen renderer while the pen is still down) ----
+
+    private var liveInk: PixelInk? = null
+    private var liveOut: IntArray? = null
+    private var liveBounds: android.graphics.Rect? = null
+
+    /**
+     * Draw the stroke written so far ([samples], view px) over the page without adding it. Returns the view rectangle the panel must
+     * refresh: around the points from [from] on (the part that is new), or null if nothing was drawn.
+     */
+    @Synchronized
+    fun previewStroke(spec: PenSpec, samples: List<PenSample>, from: Int): android.graphics.Rect? {
+        val t = transform ?: return null
+        val bmp = bitmap ?: return null
+        val shown = shownPx ?: return null
+        val tf = inkTransform() ?: return null
+        if (samples.size < 2) return null
+        val added = editor.previewLine(spec, samples.map { toInput(t, it) }) ?: return null
+        val w = bmp.width; val h = bmp.height
+        val live = (if (liveInk?.width == w && liveInk?.height == h) liveInk else null) ?: PixelInk(w, h).also { liveInk = it }
+        val out = (if (liveOut?.size == w * h) liveOut else null) ?: IntArray(w * h).also { liveOut = it }
+        // The panel (and the pixels) only need the newest part: the points since the last frame, padded by the pen's width.
+        var l = Float.MAX_VALUE; var tp = Float.MAX_VALUE; var r = -Float.MAX_VALUE; var b = -Float.MAX_VALUE
+        for (i in (from - 3).coerceAtLeast(0) until samples.size) { l = minOf(l, samples[i].x); r = maxOf(r, samples[i].x); tp = minOf(tp, samples[i].y); b = maxOf(b, samples[i].y) }
+        val pad = (spec.thickness * 8f + 12f) * t.scale + 6f
+        val fresh = android.graphics.Rect((l - pad).toInt(), (tp - pad).toInt(), (r + pad).toInt() + 1, (b + pad).toInt() + 1).also { it.intersect(0, 0, w, h) }
+        if (fresh.isEmpty) return null
+        // Redraw only the rows the new part touches: clear them, then draw the whole stroke clipped to them (so joins and caps are exactly
+        // the firmware's, but the work no longer grows with the length of the stroke).
+        live.clearRect(0, fresh.top, w, fresh.bottom)
+        live.resetDirty()
+        live.drawLine(added.line, added.ox, added.oy, tf, 0, fresh.top, fresh.bottom)
+        val drawn = if (live.isDirty) android.graphics.Rect(live.dirtyLeft, live.dirtyTop, live.dirtyRight + 1, live.dirtyBottom + 1) else android.graphics.Rect(fresh)
+        val band = android.graphics.Rect(minOf(drawn.left, fresh.left), fresh.top, maxOf(drawn.right, fresh.right), fresh.bottom).also { it.intersect(0, 0, w, h) }
+        live.compositeInto(shown, out, band.left, band.top, band.right, band.bottom)
+        bmp.setPixels(out, band.top * w + band.left, w, band.left, band.top, band.width(), band.height())
+        liveBounds = liveBounds?.also { it.union(band) } ?: android.graphics.Rect(band)
+        return fresh
+    }
+
+    /** Remove the live stroke from the picture (the finished stroke is added next, or the gesture was cancelled). */
+    @Synchronized
+    fun endPreview(): android.graphics.Rect? {
+        val b = liveBounds ?: return null
+        liveBounds = null
+        val bmp = bitmap ?: return null
+        val shown = shownPx ?: return null
+        liveInk?.clearRect(b.left, b.top, b.right, b.bottom)
+        liveInk?.resetDirty()
+        val w = bmp.width
+        bmp.setPixels(shown, b.top * w + b.left, w, b.left, b.top, b.width(), b.height())
+        return b
+    }
+
+    // ---- the eraser while the pen is down: the firmware paints solid white on every pixel with x+y even (a 1 px checkerboard),
+    // so what it passes over reads as a faded grey; the strokes are only cut when the pen lifts. ----
+
+    private var eraseBounds: android.graphics.Rect? = null
+
+    /**
+     * Fade the pixels the eraser disc (radius [radiusPage] page units) swept over between samples [from]-1 .. end of [samples].
+     * Returns the view rectangle the panel must refresh, or null if nothing changed.
+     */
+    @Synchronized
+    fun previewErase(samples: List<PenSample>, radiusPage: Float, from: Int): android.graphics.Rect? {
+        val t = transform ?: return null
+        val bmp = bitmap ?: return null
+        if (samples.isEmpty()) return null
+        val w = bmp.width; val h = bmp.height
+        val r = radiusPage * t.scale
+        val first = (from - 1).coerceAtLeast(0)
+        var l = Float.MAX_VALUE; var tp = Float.MAX_VALUE; var rt = -Float.MAX_VALUE; var b = -Float.MAX_VALUE
+        for (i in first until samples.size) { l = minOf(l, samples[i].x); rt = maxOf(rt, samples[i].x); tp = minOf(tp, samples[i].y); b = maxOf(b, samples[i].y) }
+        val box = android.graphics.Rect((l - r).toInt() - 1, (tp - r).toInt() - 1, (rt + r).toInt() + 2, (b + r).toInt() + 2)
+        if (!box.intersect(0, 0, w, h)) return null
+        val bw = box.width(); val bh = box.height()
+        val px = IntArray(bw * bh)
+        bmp.getPixels(px, 0, bw, box.left, box.top, bw, bh)
+        val r2 = r * r
+        for (y in box.top until box.bottom) for (x in box.left until box.right) {
+            if ((x + y) and 1 != 0) continue
+            val cx = x + 0.5f; val cy = y + 0.5f
+            var hit = false
+            for (i in first until samples.size) {
+                val a = samples[i]; val n = samples.getOrNull(i + 1) ?: a
+                if (segDist2(cx, cy, a.x, a.y, n.x, n.y) <= r2) { hit = true; break }
+            }
+            if (hit) px[(y - box.top) * bw + (x - box.left)] = -1
+        }
+        bmp.setPixels(px, 0, bw, box.left, box.top, bw, bh)
+        eraseBounds = eraseBounds?.also { it.union(box) } ?: android.graphics.Rect(box)
+        return box
+    }
+
+    private fun segDist2(px: Float, py: Float, ax: Float, ay: Float, bx: Float, by: Float): Float {
+        val dx = bx - ax; val dy = by - ay
+        val len2 = dx * dx + dy * dy
+        val u = if (len2 == 0f) 0f else (((px - ax) * dx + (py - ay) * dy) / len2).coerceIn(0f, 1f)
+        val ex = ax + u * dx - px; val ey = ay + u * dy - py
+        return ex * ex + ey * ey
+    }
+
+    /** Put back the page under the faded eraser stroke (the cut itself is made next, or the gesture was cancelled). */
+    @Synchronized
+    fun endErasePreview(): android.graphics.Rect? {
+        val b = eraseBounds ?: return null
+        eraseBounds = null
+        val bmp = bitmap ?: return null
+        val shown = shownPx ?: return null
+        val w = bmp.width
+        bmp.setPixels(shown, b.top * w + b.left, w, b.left, b.top, b.width(), b.height())
+        return b
+    }
+
+    /** The view rectangle [addStroke] last changed on the bitmap (for refreshing just that part of the panel). */
+    @Volatile private var lastStrokeRect: android.graphics.Rect? = null
+
+    /** The rectangle the last [addStroke] changed (once); null after any other edit, meaning the whole page may have changed. */
+    /** The rectangle the last stroke changed (kept until the next stroke). */
+    @Volatile private var lastBounds: android.graphics.Rect? = null
+    fun lastStrokeBounds(): android.graphics.Rect? = lastBounds
+
+    /** The text highlights on the page (tests). */
+    @Synchronized internal fun glyphHighlightsForTest() = editor.glyphHighlights()
+
+    fun takeStrokeRect(): android.graphics.Rect? = lastStrokeRect.also { lastStrokeRect = null }
+
+    /** Erase strokes touched by the dragged view-pixel [samples]; [radiusPage] is the eraser's radius in page units. Returns true if anything was erased. */
+    @Synchronized
+    fun erase(samples: List<PenSample>, radiusPage: Float): Boolean {
+        val t = transform ?: return false
+        // The firmware drops an eraser stroke while a selection is active, and ignores one of more than 30,000 points.
+        if (selection.isNotEmpty() || samples.size > 30_000) return false
         val path = samples.map { t.toPageX(it.x) to t.toPageY(it.y) }
-        if (editor.eraseAlong(path, radiusPx * t.pagePerPixel()) == 0) return false
+        if (editor.eraseAlong(path, radiusPage) == 0) return false
         redrawAll()
         return true
     }
@@ -351,8 +522,31 @@ class PageSession(
         return true
     }
 
-    @Synchronized fun undo(): Boolean = editor.undo().also { if (it) { selection = emptySet(); redrawAll() } }
-    @Synchronized fun redo(): Boolean = editor.redo().also { if (it) { selection = emptySet(); redrawAll() } }
+    // The page's typed text is part of the base layer, so undoing or redoing a text edit redraws that too.
+    @Synchronized fun undo(): Boolean = editor.undo().also { if (it) { selection = emptySet(); baseValid = false; redrawAll() } }
+    @Synchronized fun redo(): Boolean = editor.redo().also { if (it) { selection = emptySet(); baseValid = false; redrawAll() } }
+
+    // ---- typed text (the text tool; see TextController) ----
+
+    /** The typed text laid out for the page, or null when the page has none. */
+    @get:Synchronized val textLayout: app.inkbridge.rm.text.TextLayout? get() = editor.renderer.textLayout
+
+    /** Edit the page's typed text (see [PageEditor.editText]) and redraw the page. Returns true if the text changed. */
+    @Synchronized
+    fun editText(merge: Boolean = false, edit: (app.inkbridge.rm.text.TextBuffer) -> Unit): Boolean {
+        if (!editor.editText(merge, edit)) return false
+        textLayoutChanged()
+        return true
+    }
+
+    /** The next text edit starts a new undo step even if it asks to be merged. */
+    @Synchronized fun endTextRun() = editor.endTextRun()
+
+    private fun textLayoutChanged() {
+        if (bitmap == null) return
+        // Long text makes the page taller, which changes how it fits the view.
+        if (transform?.layout != editor.renderer.layout) rebuild(newBitmap = false) else { baseValid = false; redrawAll() }
+    }
 
     /** Write the page to its file (keeping a one-time `.orig` backup). No-op when nothing changed. */
     @Synchronized
@@ -500,3 +694,6 @@ object StrokeClipboard {
     @Volatile var lines: List<app.inkbridge.rm.scene.Line> = emptyList()
     val hasContent: Boolean get() = lines.isNotEmpty()
 }
+
+/** A selection stroke smaller than this (page units) is a tap. */
+private const val TAP_EXTENT_PAGE = 30f

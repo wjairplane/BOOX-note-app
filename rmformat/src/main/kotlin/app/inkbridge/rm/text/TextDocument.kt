@@ -15,7 +15,7 @@ class Paragraph(val spans: List<CrdtStr>, val startId: CrdtId, val style: Paragr
 class TextDocument(val paragraphs: List<Paragraph>) {
     companion object {
         /** Split multi-character items into one item per character with implicit sequential ids. */
-        private fun expand(item: CrdtSequenceItem<TextValue>): List<CrdtSequenceItem<TextValue>> {
+        internal fun expand(item: CrdtSequenceItem<TextValue>): List<CrdtSequenceItem<TextValue>> {
             val v = item.value
             val chars: List<String> = when {
                 item.deletedLength > 0 -> List(item.deletedLength) { "" }
@@ -42,6 +42,9 @@ class TextDocument(val paragraphs: List<Paragraph>) {
             // one id per Kotlin Char keeps ids aligned with the file for those.
             return s.map { it.toString() }
         }
+
+        /** All items of [text] split into one item per character, in file order. */
+        internal fun expandAll(text: Text): List<CrdtSequenceItem<TextValue>> = text.items.sequenceItems.flatMap { expand(it) }
 
         fun from(text: Text): TextDocument {
             val expanded = CrdtSequence(text.items.sequenceItems.flatMap { expand(it) })

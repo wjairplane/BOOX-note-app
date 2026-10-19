@@ -52,12 +52,28 @@ class PageEditorTest {
         assertEquals(1, tomb.deletedLength)
         assertNull(tomb.value); assertNull(tomb.itemType)
         assertTrue(lines(PageEditor.fromBytes(ed.toBytes()).tree).none { it === target.line })
-        assertEquals(10 - erased, lines(PageEditor.fromBytes(ed.toBytes()).tree).size)
+        // Only the part under the eraser goes: the stroke is cut in two, and both halves stay (shorter than the original).
+        val after = lines(PageEditor.fromBytes(ed.toBytes()).tree).toList()
+        assertTrue(after.size > 10 - erased) // something of the touched stroke is left
+        assertTrue(after.any { it.tool == target.line.tool && it.points.size < target.line.points.size && it.points.size >= 2 })
 
         assertTrue(ed.undo())
         assertArrayEquals(original, ed.toBytes())
         assertTrue(ed.redo())
-        assertEquals(10 - erased, lines(ed.tree).size)
+        assertTrue(lines(ed.tree).count() > 10 - erased)
+    }
+
+    @Test fun eraserLeavesTheRestOfALongStroke() {
+        val ed = PageEditor.blank()
+        ed.addStroke(PenSpec(PenTool.FINELINER, thickness = 2), (0..60).map { InputPoint(100f + it * 10f, 300f, 0.6f, 0f, 0f, it * 5L) })
+        val before = lines(ed.tree).single().points.size
+        assertEquals(1, ed.eraseAlong(listOf(400f to 300f, 420f to 300f), radius = 15f))
+        val parts = lines(ed.tree).toList()
+        assertEquals(2, parts.size)
+        assertTrue(parts.all { it.points.size >= 2 && it.points.size < before * 8 })
+        assertTrue(parts.maxOf { p -> p.points.maxOf { it.x } } > 650f && parts.minOf { p -> p.points.minOf { it.x } } < 150f)
+        // Nowhere near the stroke: nothing changes.
+        assertEquals(0, ed.eraseAlong(listOf(400f to 900f), radius = 15f))
     }
 
     @Test fun eraseAllRemovesEveryStrokeInOneUndoStep() {
@@ -168,7 +184,9 @@ class PageEditorTest {
         assertEquals(1404f - 2808f, farther.offsetX, 1e-3f); assertEquals(1872f - 3744f, farther.offsetY, 1e-3f)
         // The zoom is limited, and the visible page area never exceeds the view.
         assertEquals(PageTransform.MAX_ZOOM, fit.zoomedAround(99f, 0f, 0f).zoom, 1e-6f)
-        assertEquals(1f, fit.zoomedAround(0.1f, 0f, 0f).zoom, 1e-6f)
+        assertEquals(PageTransform.MIN_ZOOM, fit.zoomedAround(0.1f, 0f, 0f).zoom, 1e-6f)
+        // Within 5 % of 100 % the zoom snaps to it.
+        assertEquals(1f, fit.zoomedAround(1.04f, 0f, 0f).zoom, 1e-6f); assertEquals(1.06f, fit.zoomedAround(1.06f, 0f, 0f).zoom, 1e-6f)
         val r = z.visiblePageRect(); assertEquals(0f, r[0], 1e-3f); assertEquals(1404f, r[2], 1e-3f)
         // Fit to width in a view that is wider than the page's shape (a toolbar at the side): the page overflows vertically.
         val wide = PageTransform(layout, 1600f, 1872f)
@@ -259,5 +277,23 @@ class PageEditorTest {
         ed.eraseAlong(listOf((first.line.points[1].x + first.ox) to (first.line.points[1].y + first.oy)), 3f)
         val c = Java2DCanvas(ed.renderer.layout); ed.renderer.render(c)
         System.getProperty("rm.renderOut")?.let { File(it).mkdirs(); ImageIO.write(c.finish(), "png", File(it, "edited_Lines_v2.png")) }
+    }
+
+    @Test fun textHighlightIsAddedRenderedErasedAndUndone() {
+        val ed = PageEditor.blank()
+        val rects = listOf(Rectangle(-200.0, 300.0, 300.0, 40.0), Rectangle(-200.0, 350.0, 120.0, 40.0))
+        assertTrue(ed.addGlyphHighlight(PenSpec(PenTool.HIGHLIGHTER, colorId = PenColorId.YELLOW), "Hello world and more", 0, rects))
+        val g = ed.glyphHighlights().single().glyph
+        assertEquals("Hello world and more", g.text); assertEquals(2, g.rectangles.size)
+        assertEquals(PenColorId.HIGHLIGHT, g.color); assertNotNull(g.colorRgba)
+        // It survives a write and read, and the file still parses as a scene.
+        val back = PageEditor.fromBytes(ed.toBytes())
+        assertEquals(1, back.glyphHighlights().size)
+        assertEquals("Hello world and more", back.glyphHighlights()[0].glyph.text)
+        // The eraser takes it away whole when it passes over a box; away from the boxes it stays.
+        assertEquals(0, ed.eraseAlong(listOf(500f to 900f, 520f to 900f), 20f))
+        assertEquals(1, ed.eraseAlong(listOf(-150f to 320f, -100f to 322f), 20f))
+        assertTrue(ed.glyphHighlights().isEmpty())
+        assertTrue(ed.undo()); assertEquals(1, ed.glyphHighlights().size)
     }
 }

@@ -34,6 +34,11 @@ class PixelInk(val width: Int, val height: Int) {
     val isDirty: Boolean get() = dirtyRight >= dirtyLeft && dirtyBottom >= dirtyTop
 
     fun clear() { px.fill(0); resetDirty() }
+    /** Clear one rectangle (inclusive-exclusive) and forget what was drawn in it. */
+    fun clearRect(left: Int, top: Int, right: Int, bottom: Int) {
+        for (y in max(top, 0) until min(bottom, height)) java.util.Arrays.fill(px, y * width + max(left, 0), y * width + min(right, width), 0)
+    }
+
     fun resetDirty() { dirtyLeft = width; dirtyTop = height; dirtyRight = -1; dirtyBottom = -1 }
 
     @Synchronized

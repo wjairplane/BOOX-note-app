@@ -117,7 +117,7 @@ object SceneWriter {
                     for ((charId, style) in t.styles) {
                         crdtId(charId)
                         id(1, style.timestamp)
-                        subblock(2) { u8(17); u8(style.value.code) }
+                        subblock(2) { u8(17); u8(t.unknownStyleCodes[charId]?.takeIf { style.value == ParagraphStyle.PLAIN } ?: style.value.code) }
                     }
                 }
             }

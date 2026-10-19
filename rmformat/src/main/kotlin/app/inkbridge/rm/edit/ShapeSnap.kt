@@ -2,7 +2,6 @@ package app.inkbridge.rm.edit
 
 import kotlin.math.PI
 import kotlin.math.abs
-import kotlin.math.acos
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.hypot
@@ -30,41 +29,118 @@ object ShapeSnap {
         return abs(b.first - a.first) > 3 * abs(b.second - a.second)
     }
 
-    fun detect(points: List<Pair<Float, Float>>): Shape? {
-        if (points.size < 5) return null
-        var length = 0f
-        for (i in 1 until points.size) length += dist(points[i - 1], points[i])
-        val minX = points.minOf { it.first }; val maxX = points.maxOf { it.first }
-        val minY = points.minOf { it.second }; val maxY = points.maxOf { it.second }
-        val diag = hypot(maxX - minX, maxY - minY)
-        if (diag < 40f) return null
-
+    /**
+     * Recognise the stroke [points] (view pixels; [scale] = view pixels per page unit) as the firmware's `DrawAndHoldGesture` does
+     * (reference/remarkable-3.27.1.0/behaviour/shape_snap.md): simplify with Douglas-Peucker at 1 page unit, then in this order a straight line
+     * (deviation < 0.1 x chord, path < 1.2 x chord), an ellipse (fit score > 0.9), a rectangle (score > 0.95) and a 3 or 4 corner polygon
+     * (corners merged within 15 px, simplified length > 0.93 x length). At least 10 points and a chord of 3 px are needed.
+     */
+    fun detect(points: List<Pair<Float, Float>>, scale: Float = 1f): Shape? {
+        if (points.size < MIN_POINTS) return null
         val first = points.first(); val last = points.last()
-        val closed = dist(first, last) < 0.2f * length && length > 2.2f * diag * 0.5f
-        if (!closed) {
-            // A line: every point close to the chord.
-            val chord = dist(first, last)
-            if (chord < 0.5f * length) return null
-            var worst = 0f
-            for (p in points) worst = max(worst, distToLine(p, first, last))
-            if (worst > 0.07f * chord) return null
-            return Shape.Line(sample(listOf(first, last), false, 24))
-        }
+        val chord = dist(first, last)
+        // The firmware wants a first-to-last chord of 3 px; a loop closed to within 3 px would never pass that, so the app tests the stroke's size instead.
+        if (hypot(points.maxOf { it.first } - points.minOf { it.first }, points.maxOf { it.second } - points.minOf { it.second }) < MIN_CHORD_PX) return null
+        val closed = chord < 1e-3f // the firmware's "first equals last" test: only an exactly closed loop is measured from its end point
 
-        val ring = points + points.first()
-        val poly = simplify(ring, 0.1f * diag).let { if (it.size > 1 && dist(it.first(), it.last()) < 1e-3f) it.dropLast(1) else it }
-        val ellipse = ellipseFit(points, minX, maxX, minY, maxY)
-        return when {
-            poly.size == 3 -> Shape.Closed("triangle", sample(poly, true, 24))
-            poly.size == 4 && !ellipse -> {
-                val rect = nearRectangle(poly)
-                Shape.Closed(if (rect != null) "rectangle" else "quadrilateral", sample(rect ?: poly, true, 32))
-            }
-            ellipse -> Shape.Closed("ellipse", ellipsePoints(minX, maxX, minY, maxY, 64))
-            poly.size in 5..6 -> Shape.Closed("polygon", sample(poly, true, 40))
-            else -> null
+        val p = simplify(points, EPS * scale)
+        // Straight line: every simplified point near the chord, and not much longer than it.
+        val maxDev = p.drop(1).maxOfOrNull { if (closed) dist(it, last) else distToLine(it, first, last) } ?: 0f
+        val pathLen = length(p)
+        if (maxDev < 0.1f * chord && pathLen < 1.2f * chord) return Shape.Line(lineSnap(first, last))
+
+        // The minimum-area rectangle of the convex hull, centred on the bounding box of the points.
+        val box = minAreaBox(p)
+        val cx = (p.minOf { it.first } + p.maxOf { it.first }) / 2f; val cy = (p.minOf { it.second } + p.maxOf { it.second }) / 2f
+        val w0 = box.w; val h0 = box.h; val theta = box.theta
+        val cosT = cos(theta); val sinT = sin(theta)
+        fun local(q: Pair<Float, Float>): Pair<Float, Float> { val dx = q.first - cx; val dy = q.second - cy; return (cosT * dx + sinT * dy) to (cosT * dy - sinT * dx) }
+        val pLen = pathLen
+        fun score(outline: Float, tol: Float, d: (Float, Float) -> Float): Float {
+            if (pLen < 0.9f * outline) return 0f
+            return p.count { val (x, y) = local(it); abs(d(x, y)) < tol }.toFloat() / p.size
         }
+        val hw = w0 / 2f; val hh = h0 / 2f
+        val ellipseOutline = ellipsePolygon(hw, hh, 100).let { poly -> (poly.indices).sumOf { dist(poly[it], poly[(it + 1) % poly.size]).toDouble() }.toFloat() }
+        val sE = if (hw > 0f && hh > 0f) score(ellipseOutline, 0.2f) { x, y -> sqrt((x / hw) * (x / hw) + (y / hh) * (y / hh)) - 1f } else 0f
+        val sR = if (hw > 0f && hh > 0f) score(2f * (w0 + h0), 0.35f) { x, y -> max(abs(x) - hw, abs(y) - hh) / min(hw, hh) } else 0f
+
+        // The circle / square rule: nearly equal sides become equal. The firmware keeps the corner computed from the raw sides (so the
+        // averaged shape is not re-centred); its bounds are (cx - w0/2, cy - h0/2, w, h) turned about their own centre.
+        var w = w0; var h = h0
+        if (max(w0, h0) > 0f && min(w0, h0) / max(w0, h0) > 0.8f) { w = (w0 + h0) / 2f; h = w }
+        val ox = cx - w0 / 2f; val oy = cy - h0 / 2f
+        val bx = ox + w / 2f; val by = oy + h / 2f
+        fun world(lx: Float, ly: Float) = (bx + cosT * lx - sinT * ly) to (by + sinT * lx + cosT * ly)
+        if (sE > 0.9f) return Shape.Closed("ellipse", ellipsePolygon(w / 2f, h / 2f, 100).map { world(it.first, it.second) }.let { it + it.first() })
+        if (sR > 0.95f) return Shape.Closed("rectangle", sample(listOf(world(-w / 2f, -h / 2f), world(w / 2f, -h / 2f), world(w / 2f, h / 2f), world(-w / 2f, h / 2f)), true, 32))
+
+        // A polygon of three or four corners.
+        val diag = hypot(w0, h0)
+        if (dist(p.first(), p.last()) >= max(diag / 3f, 1f)) return null
+        val sp = simplify(p, diag / 10f)
+        if (sp.size != 4 && sp.size != 5) return null
+        val v = ArrayList<Pair<Float, Float>>()
+        v += ((sp.first().first + sp.last().first) / 2f) to ((sp.first().second + sp.last().second) / 2f)
+        v += sp.subList(1, sp.size - 1)
+        for (i in 1 until v.size) for (j in 0 until i) {
+            if (abs(v[i].first - v[j].first) < AXIS_SNAP_PX) v[i] = v[j].first to v[i].second
+            if (abs(v[i].second - v[j].second) < AXIS_SNAP_PX) v[i] = v[i].first to v[j].second
+        }
+        if (length(sp) / pLen.coerceAtLeast(1e-6f) <= 0.93f) return null
+        return Shape.Closed(if (v.size == 3) "triangle" else "quadrilateral", sample(v, true, 24))
     }
+
+    private const val MIN_POINTS = 10
+    private const val MIN_CHORD_PX = 3f
+    private const val EPS = 1f
+    private const val AXIS_SNAP_PX = 15f
+
+    private fun length(p: List<Pair<Float, Float>>): Float { var s = 0f; for (i in 1 until p.size) s += dist(p[i - 1], p[i]); return s }
+
+    /** A line from [a] to [b]: close to horizontal or vertical (within max(L/3, 10) px) it is made exactly so. */
+    private fun lineSnap(a: Pair<Float, Float>, b: Pair<Float, Float>): List<Pair<Float, Float>> {
+        val len = dist(a, b); val tol = max(len / 3f, 10f)
+        var end = b
+        if (abs(b.second - a.second) < tol) end = end.first to a.second
+        else if (abs(b.first - a.first) < tol) end = a.first to end.second
+        return sample(listOf(a, end), false, 24)
+    }
+
+    private class Box(val w: Float, val h: Float, val theta: Float)
+
+    /** The minimum-area rectangle of the convex hull of [pts]: the hull edge direction that gives the smallest bounding box. */
+    private fun minAreaBox(pts: List<Pair<Float, Float>>): Box {
+        val hull = convexHull(pts)
+        if (hull.size < 3) return Box(abs(pts.last().first - pts.first().first), abs(pts.last().second - pts.first().second), 0f)
+        var best: Box? = null; var bestArea = Float.MAX_VALUE
+        for (i in hull.indices) {
+            val a = hull[i]; val b = hull[(i + 1) % hull.size]
+            val ang = atan2(b.second - a.second, b.first - a.first)
+            val c = cos(ang); val s = sin(ang)
+            var u0 = Float.MAX_VALUE; var u1 = -Float.MAX_VALUE; var v0 = Float.MAX_VALUE; var v1 = -Float.MAX_VALUE
+            for (q in hull) { val u = c * q.first + s * q.second; val v = c * q.second - s * q.first; u0 = min(u0, u); u1 = max(u1, u); v0 = min(v0, v); v1 = max(v1, v) }
+            val area = (u1 - u0) * (v1 - v0)
+            if (area < bestArea) { bestArea = area; best = Box(u1 - u0, v1 - v0, ang) }
+        }
+        return best!!
+    }
+
+    /** Andrew's monotone chain. */
+    private fun convexHull(pts: List<Pair<Float, Float>>): List<Pair<Float, Float>> {
+        val s = pts.distinct().sortedWith(compareBy({ it.first }, { it.second }))
+        if (s.size < 3) return s
+        fun cr(o: Pair<Float, Float>, a: Pair<Float, Float>, b: Pair<Float, Float>) = (a.first - o.first) * (b.second - o.second) - (a.second - o.second) * (b.first - o.first)
+        val lower = ArrayList<Pair<Float, Float>>()
+        for (q in s) { while (lower.size >= 2 && cr(lower[lower.size - 2], lower.last(), q) <= 0) lower.removeAt(lower.size - 1); lower += q }
+        val upper = ArrayList<Pair<Float, Float>>()
+        for (q in s.asReversed()) { while (upper.size >= 2 && cr(upper[upper.size - 2], upper.last(), q) <= 0) upper.removeAt(upper.size - 1); upper += q }
+        return lower.dropLast(1) + upper.dropLast(1)
+    }
+
+    /** [n] points around an ellipse with half-axes [a], [b] about the origin. */
+    private fun ellipsePolygon(a: Float, b: Float, n: Int): List<Pair<Float, Float>> =
+        (0 until n).map { val t = 2 * PI * it / n; (a * cos(t)).toFloat() to (b * sin(t)).toFloat() }
 
     private fun dist(a: Pair<Float, Float>, b: Pair<Float, Float>) = hypot(a.first - b.first, a.second - b.second)
 
@@ -87,45 +163,6 @@ object ShapeSnap {
             return a.dropLast(1) + b
         }
         return if (worst > eps) simplify(pts.subList(0, idx + 1), eps).dropLast(1) + simplify(pts.subList(idx, pts.size), eps) else listOf(pts.first(), pts.last())
-    }
-
-    private fun ellipseFit(pts: List<Pair<Float, Float>>, x0: Float, x1: Float, y0: Float, y1: Float): Boolean {
-        val cx = (x0 + x1) / 2; val cy = (y0 + y1) / 2; val a = (x1 - x0) / 2; val b = (y1 - y0) / 2
-        if (a < 10f || b < 10f) return false
-        val r = pts.map { hypot((it.first - cx) / a, (it.second - cy) / b) }
-        val mean = r.average().toFloat()
-        val sd = sqrt(r.map { (it - mean) * (it - mean) }.average()).toFloat()
-        return mean in 0.85f..1.12f && sd < 0.11f
-    }
-
-    private fun ellipsePoints(x0: Float, x1: Float, y0: Float, y1: Float, n: Int): List<Pair<Float, Float>> {
-        val cx = (x0 + x1) / 2; val cy = (y0 + y1) / 2; val a = (x1 - x0) / 2; val b = (y1 - y0) / 2
-        return (0..n).map { val t = 2 * PI * it / n; (cx + a * cos(t)).toFloat() to (cy + b * sin(t)).toFloat() }
-    }
-
-    /** A rectangle (possibly rotated) when the four corners are all within 25 degrees of a right angle. */
-    private fun nearRectangle(q: List<Pair<Float, Float>>): List<Pair<Float, Float>>? {
-        for (i in 0 until 4) {
-            val p = q[(i + 3) % 4]; val c = q[i]; val n = q[(i + 1) % 4]
-            val v1x = p.first - c.first; val v1y = p.second - c.second; val v2x = n.first - c.first; val v2y = n.second - c.second
-            val cosA = (v1x * v2x + v1y * v2y) / (hypot(v1x, v1y) * hypot(v2x, v2y)).coerceAtLeast(1e-6f)
-            if (abs(acos(cosA.coerceIn(-1f, 1f)) - PI / 2) > 25 * PI / 180) return null
-        }
-        // Rebuild it from the centre, the averaged side directions and half sizes.
-        val cx = q.sumOf { it.first.toDouble() }.toFloat() / 4; val cy = q.sumOf { it.second.toDouble() }.toFloat() / 4
-        val ux = (q[1].first - q[0].first) + (q[2].first - q[3].first); val uy = (q[1].second - q[0].second) + (q[2].second - q[3].second)
-        val ul = hypot(ux, uy).coerceAtLeast(1e-6f); val dx = ux / ul; val dy = uy / ul
-        val nx = -dy; val ny = dx
-        val w = (dist(q[0], q[1]) + dist(q[2], q[3])) / 4; val h = (dist(q[1], q[2]) + dist(q[3], q[0])) / 4
-        fun c(sw: Float, sh: Float) = (cx + sw * w * dx + sh * h * nx) to (cy + sw * w * dy + sh * h * ny)
-        // keep the original winding
-        return listOf(c(-1f, -1f), c(1f, -1f), c(1f, 1f), c(-1f, 1f)).let { r -> if (cross(q) * cross(r) < 0) r.reversed() else r }
-    }
-
-    private fun cross(p: List<Pair<Float, Float>>): Float {
-        var s = 0f
-        for (i in p.indices) { val a = p[i]; val b = p[(i + 1) % p.size]; s += a.first * b.second - b.first * a.second }
-        return s
     }
 
     /** Points along the polyline through [corners] (closed back to the start when [close]), [perSide] per side at most. */

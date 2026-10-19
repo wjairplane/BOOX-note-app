@@ -87,7 +87,7 @@ class TemplateTest {
         val portrait = PageLayout(-702f, 702f, 0f, 1872f)
         val landscape = PageLayout(-936f, 936f, 0f, 1404f)
         for (t in TemplateCatalog.selectable) {
-            if (!t.isBlank) assertNotNull("${t.filename} parses", TemplateCatalog.definition(t))
+            if (!t.isBlank && !NativeTemplates.has(t.filename)) assertNotNull("${t.filename} parses", TemplateCatalog.definition(t))
             for (layout in listOf(portrait, landscape)) {
                 val r = Recorder()
                 t.draw(r, layout)

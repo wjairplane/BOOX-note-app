@@ -8,6 +8,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -16,6 +17,9 @@ import app.inkbridge.LibraryStore
 import app.inkbridge.Prefs
 import app.inkbridge.Screen
 import app.inkbridge.Section
+
+/** The root fill; the screenshot tests make it transparent so the pen surface (drawn underneath, as on the device) shows through the page. */
+internal var RootBackground: androidx.compose.ui.graphics.Color = Ink.White
 
 @Composable
 fun InkBridgeApp(store: LibraryStore, prefs: Prefs, controller: AppController? = null) {
@@ -28,7 +32,23 @@ fun InkBridgeApp(store: LibraryStore, prefs: Prefs, controller: AppController? =
         val pixelsPerCm = (res.displayMetrics.xdpi.takeIf { it > 50f } ?: (160f * res.displayMetrics.density)) / 2.54f
         // The firmware's global gestures: two fingers down from the top edge (the document drawer) and one finger down from the
         // top-right corner (quick settings) work on every screen; in a notebook the page surface reports them itself.
-        Surface(Modifier.fillMaxSize().globalSwipes(app.screen !is Screen.Notebook && app.overlay == null, pixelsPerCm, { app.overlay = Overlay.QUICK_SETTINGS }, { app.overlay = Overlay.DRAWER }), color = Ink.White) {
+        // The passcode screen replaces everything (the notebook is closed first, so the pen cannot write behind it) until it is entered.
+        val lock = app.prefs.lock
+        val locked = lock.locked
+        LaunchedEffect(locked) {
+            if (locked) {
+                (app.screen as? Screen.Notebook)?.let { lock.resumeDocId = it.docId }
+                app.screen = Screen.Files(); app.overlay = null; app.message = ""
+            } else lock.resumeDocId?.let { id ->
+                lock.resumeDocId = null
+                if (app.library[id] != null) app.screen = Screen.Notebook(id, app.library[id]?.lastOpenedPage ?: 0)
+            }
+        }
+        if (locked) {
+            Surface(Modifier.fillMaxSize(), color = Ink.White) { UnlockScreen(lock, onReset = { app.prefs.passcode.reset(); app.eraseEverything(); lock.unlock() }) }
+            return@MaterialTheme
+        }
+        Surface(Modifier.fillMaxSize().globalSwipes(app.screen !is Screen.Notebook && app.overlay == null, pixelsPerCm, { app.overlay = Overlay.QUICK_SETTINGS }, { app.overlay = Overlay.DRAWER }), color = RootBackground) {
 
             when (val s = app.screen) {
                 is Screen.Files -> {
@@ -66,6 +86,7 @@ fun InkBridgeApp(store: LibraryStore, prefs: Prefs, controller: AppController? =
                 }
                 null -> Unit
             }
+            app.info?.let { InfoDialog(it.header, it.text, onClose = { app.info = null }) }
         }
     }
     }

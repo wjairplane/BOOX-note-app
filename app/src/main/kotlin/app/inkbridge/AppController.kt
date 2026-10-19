@@ -11,9 +11,13 @@ import app.inkbridge.rm.render.PageTemplate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** Which list of the file browser is showing. */
 enum class Section(val title: String) { MY_FILES("My files"), NOTEBOOKS("Notebooks"), PDFS("PDFs"), FAVORITES("Favorites"), TAGS("Tags"), TRASH("Trash") }
+
+/** Header and text of the black "Unable to open" sheet. */
+data class InfoMessage(val header: String, val text: String)
 
 sealed interface Screen {
     data class Files(val section: Section = Section.MY_FILES, val folderId: String = "") : Screen
@@ -30,7 +34,14 @@ sealed interface Screen {
 class AppController(val store: LibraryStore, val prefs: Prefs, private val scope: CoroutineScope) {
     var library by mutableStateOf(Library(emptyList()))
         private set
-    var screen by mutableStateOf<Screen>(Screen.Files())
+    private var shownScreen by mutableStateOf<Screen>(Screen.Files())
+    var screen: Screen
+        get() = shownScreen
+        set(v) {
+            val was = shownScreen
+            shownScreen = v
+            if (v is Screen.Notebook && (was as? Screen.Notebook)?.docId != v.docId) scheduleOpenedStamp(v.docId)
+        }
     /** The panel floating over the current screen (quick settings, the document drawer), opened by an edge swipe. */
     /** Set by the open notebook so "Refresh screen" in quick settings can clear its pen layer too. */
     var onRefresh: (() -> Unit)? = null
@@ -55,10 +66,16 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
 
     val thumbnails = Thumbnails(store)
 
+    /** The black "Unable to open" sheet (InfoDialog) over the current screen; null = none. */
+    var info by mutableStateOf<InfoMessage?>(null)
+
     /** True on BOOX/Onyx tablets, where the stylus goes through the Onyx pen SDK. */
     val isBoox: Boolean = android.os.Build.MANUFACTURER.equals("onyx", ignoreCase = true) || android.os.Build.BRAND.equals("onyx", ignoreCase = true)
 
-    init { reload() }
+    init {
+        // The very first start: fill an empty library with the documents a new reMarkable ships with.
+        scope.launch(Dispatchers.IO) { runCatching { synchronized(fileLock) { store.seedDefaultLibraryOnce() } }; publish(store.load()) }
+    }
 
     /** Run [block] on the main thread and wait for it (Compose state should only be written there). Call from background threads. */
     private fun <T> onMain(block: () -> T): T = kotlinx.coroutines.runBlocking(Dispatchers.Main) { block() }
@@ -80,14 +97,14 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
                 notice?.let { say(it, success = true) }
                 onDone?.let { done -> onMain { done() } }
             } catch (e: Exception) {
-                say("$failure: ${e.message ?: e.javaClass.simpleName}")
+                say(failure)
             }
         }
     }
 
     /** Create a notebook and open it. [coverPage] is -1 (the last visited page) or 0 (the first page). */
     fun newNotebook(name: String, template: PageTemplate, parentId: String, coverPage: Int = -1) {
-        io("Couldn't create the notebook", onDone = null) {
+        io("Unable to create '$name'", onDone = null) {
             val id = LibraryOps.createNotebook(store.dir, name, parentId, template, coverPage = coverPage)
             publish(store.load())
             onMain { screen = Screen.Notebook(id, 0) }
@@ -99,7 +116,7 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
      * page is reused; the notebook opens on that page.
      */
     fun newQuickSheet() {
-        io("Couldn't create the quick sheet") {
+        io("Unable to create '$QUICK_SHEETS'") {
             val lib = store.load()
             val existing = lib.entries.firstOrNull { !it.isFolder && it.fileType == "notebook" && it.name == QUICK_SHEETS && it.parentId != Library.TRASH }
             val id: String
@@ -119,24 +136,28 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
     }
 
     /** Copy notebooks and folders next to the originals. */
-    fun duplicate(es: List<LibraryEntry>) = io("Couldn't duplicate", notice = "${items(es.size)} duplicated") { es.forEach { LibraryOps.duplicate(store.dir, it.id) } }
+    fun duplicate(es: List<LibraryEntry>) = io("Unable to duplicate", notice = plural(es.size, "%n item(s) were duplicated")) { es.forEach { LibraryOps.duplicate(store.dir, it.id) } }
 
-    /** "1 item was" / "3 items were": the notification wording for [n] items. */
-    private fun items(n: Int) = if (n == 1) "1 item was" else "$n items were"
+    /**
+     * The firmware's plural texts, e.g. "%n item(s) were deleted": the English file has the same text for every count (it is the source
+     * string), so the device shows "1 item(s) were deleted" too.
+     */
+    private fun plural(n: Int, text: String) = text.replace("%n", n.toString())
 
-    fun trashAll(es: List<LibraryEntry>) = io("Couldn't move to the trash", notice = "${items(es.size)} moved to Trash") { es.forEach { LibraryOps.trash(store.dir, it.id) } }
+    fun trashAll(es: List<LibraryEntry>) = io("Unable to move to Trash", notice = plural(es.size, "%n item(s) were moved to Trash")) { es.forEach { LibraryOps.trash(store.dir, it.id) } }
 
-    fun restoreAll(es: List<LibraryEntry>) = io("Couldn't restore", notice = "${items(es.size)} restored to My files") { es.forEach { LibraryOps.restore(store.dir, it.id) } }
+    fun restoreAll(es: List<LibraryEntry>) = io("Unable to restore", notice = plural(es.size, "%n item(s) were restored to My files")) { es.forEach { LibraryOps.restore(store.dir, it.id) } }
 
-    fun deleteAll(es: List<LibraryEntry>) = io("Couldn't delete", notice = "${items(es.size)} deleted") { es.forEach { LibraryOps.deletePermanently(store.dir, it.id) } }
+    fun deleteAll(es: List<LibraryEntry>) = io("Unable to delete", notice = plural(es.size, "%n item(s) were deleted")) { es.forEach { LibraryOps.deletePermanently(store.dir, it.id) } }
 
-    fun moveAll(es: List<LibraryEntry>, parentId: String) = io("Couldn't move") { es.forEach { LibraryOps.moveTo(store.dir, it.id, parentId) } }
+    fun moveAll(es: List<LibraryEntry>, parentId: String) = io("Unable to move") { es.forEach { LibraryOps.moveTo(store.dir, it.id, parentId) } }
 
-    fun setPinned(es: List<LibraryEntry>, pinned: Boolean) = io("Couldn't change the favourite") { es.forEach { LibraryOps.setPinned(store.dir, it.id, pinned) } }
+    fun setPinned(es: List<LibraryEntry>, pinned: Boolean) = io("Unable to change favorites") { es.forEach { LibraryOps.setPinned(store.dir, it.id, pinned) } }
 
     /** Export every page of the given notebooks and PDFs (SVG, PNG and PDF per page) into [outDir]. */
     fun exportDocuments(es: List<LibraryEntry>, outDir: java.io.File) {
-        say("Exporting…")
+        val docs = es.filter { !it.isFolder }
+        say(if (docs.size == 1) "Exporting file..." else "Exporting ${docs.size} files...")
         scope.launch(Dispatchers.IO) {
             try {
                 var files = 0
@@ -149,89 +170,119 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
                         files += session.export(outDir, "${safe}_p${i + 1}").size
                     }
                 }
-                say("Exported $files files to ${outDir.absolutePath}", success = true)
-            } catch (e: Exception) { say("Export failed: ${e.message}") }
+                say("Finished exporting '${docs.singleOrNull()?.name ?: "$files files"}' to '${outDir.absolutePath}'", success = true)
+            } catch (e: Exception) { say("Unable to export document") }
         }
     }
 
-    fun setTags(e: LibraryEntry, tags: List<String>) = io("Couldn't change the tags") { LibraryOps.setTags(store.dir, e.id, tags) }
+    fun setTags(e: LibraryEntry, tags: List<String>) = io("Unable to change tags") { LibraryOps.setTags(store.dir, e.id, tags) }
+
+    /** Tag single pages (the firmware's "Tag" action in the page overview); each page's earlier tags are replaced. */
+    fun setPageTags(e: LibraryEntry, pageIndices: Collection<Int>, tags: List<String>) = io("Unable to change tags") {
+        LibraryOps.setPageTags(store.dir, e.id, pageIndices.mapNotNull { e.pageIds.getOrNull(it) }, tags)
+    }
 
     /** Rename a tag on every item that carries it (merging with an existing tag of that name). */
     fun renameTag(old: String, new: String) {
         val name = new.trim()
         if (name.isEmpty() || name == old) return
-        io("Couldn't rename the tag") {
+        io("Unable to rename tag") {
             for (e in store.load().entries.filter { old in it.tags }) LibraryOps.setTags(store.dir, e.id, e.tags.map { if (it == old) name else it })
+            for (e in store.load().entries.filter { en -> en.pageTags.values.any { old in it } }) LibraryOps.mapPageTags(store.dir, e.id) { if (it == old) name else it }
         }
     }
 
     /** Remove tags from every item that carries them. */
     fun deleteTags(names: Set<String>) =
-        io("Couldn't delete the tags", notice = if (names.size == 1) "1 tag was deleted" else "${names.size} tags were deleted") {
+        io("Unable to delete tags", notice = plural(names.size, "%n tag(s) were deleted")) {
             for (e in store.load().entries.filter { it.tags.any { t -> t in names } }) LibraryOps.setTags(store.dir, e.id, e.tags.filter { it !in names })
+            for (e in store.load().entries.filter { en -> en.pageTags.values.any { l -> l.any { it in names } } }) LibraryOps.mapPageTags(store.dir, e.id) { if (it in names) null else it }
         }
 
     fun newFolder(name: String, parentId: String, tags: List<String> = emptyList(), onCreated: ((String) -> Unit)? = null) {
         var id = ""
-        io("Couldn't create the folder", onDone = { onCreated?.invoke(id) }) {
+        io("Unable to create '$name'", onDone = { onCreated?.invoke(id) }) {
             id = LibraryOps.createFolder(store.dir, name, parentId)
             if (tags.isNotEmpty()) LibraryOps.setTags(store.dir, id, tags)
         }
     }
 
-    fun setCoverPage(e: LibraryEntry, cover: Int) = io("Couldn't change the cover") { LibraryOps.setCoverPage(store.dir, e.id, cover) }
+    fun setCoverPage(e: LibraryEntry, cover: Int) = io("Unable to change cover") { LibraryOps.setCoverPage(store.dir, e.id, cover) }
 
-    fun rename(e: LibraryEntry, name: String) = io("Couldn't rename") { LibraryOps.rename(store.dir, e.id, name) }
+    fun rename(e: LibraryEntry, name: String) = io("Unable to rename") { LibraryOps.rename(store.dir, e.id, name) }
 
-    fun togglePinned(e: LibraryEntry) = io("Couldn't change the favourite") { LibraryOps.setPinned(store.dir, e.id, !e.pinned) }
+    fun togglePinned(e: LibraryEntry) = io("Unable to change favorites") { LibraryOps.setPinned(store.dir, e.id, !e.pinned) }
 
-    fun move(e: LibraryEntry, parentId: String) = io("Couldn't move") { LibraryOps.moveTo(store.dir, e.id, parentId) }
+    fun move(e: LibraryEntry, parentId: String) = io("Unable to move") { LibraryOps.moveTo(store.dir, e.id, parentId) }
 
-    fun trash(e: LibraryEntry) = io("Couldn't move to the trash") { LibraryOps.trash(store.dir, e.id) }
+    fun trash(e: LibraryEntry) = io("Unable to move to Trash") { LibraryOps.trash(store.dir, e.id) }
 
-    fun restore(e: LibraryEntry) = io("Couldn't restore") { LibraryOps.restore(store.dir, e.id) }
+    fun restore(e: LibraryEntry) = io("Unable to restore") { LibraryOps.restore(store.dir, e.id) }
 
-    fun deleteForever(e: LibraryEntry) = io("Couldn't delete") { LibraryOps.deletePermanently(store.dir, e.id) }
+    fun deleteForever(e: LibraryEntry) = io("Unable to delete") { LibraryOps.deletePermanently(store.dir, e.id) }
 
     fun emptyTrash() {
         val n = library.trash.size
-        io("Couldn't empty the trash", notice = "${items(n)} deleted") { LibraryOps.emptyTrash(store.dir) }
+        io("Unable to delete", notice = plural(n, "%n item(s) were deleted")) { LibraryOps.emptyTrash(store.dir) }
     }
 
-    fun setTemplate(e: LibraryEntry, t: PageTemplate) = io("Couldn't change the template") { LibraryOps.setTemplate(store.dir, e.id, t) }
+    fun setTemplate(e: LibraryEntry, t: PageTemplate) = io("Unable to change template") { LibraryOps.setTemplate(store.dir, e.id, t) }
 
     /** Add a page after [afterIndex]; [onAdded] gets the new page's index. */
     fun addPage(e: LibraryEntry, afterIndex: Int, onAdded: (Int) -> Unit) =
-        io("Couldn't add a page") { LibraryOps.addPage(store.dir, e, afterIndex); publish(store.load()); onMain { onAdded(afterIndex + 1) } }
+        io("Unable to add page") { LibraryOps.addPage(store.dir, e, afterIndex); publish(store.load()); onMain { onAdded(afterIndex + 1) } }
 
     /** Delete several pages at once (highest first, so the indices stay valid); at least one page always remains. */
     fun deletePages(e: LibraryEntry, indices: Set<Int>, onDone: () -> Unit) =
-        io("Couldn't delete the pages") {
+        io("Unable to delete pages") {
             var deleted = false
             for (i in indices.sortedDescending()) deleted = LibraryOps.deletePage(store.dir, store.load()[e.id] ?: e, i) || deleted
             if (deleted) onMain { onDone() }
         }
 
     fun deletePage(e: LibraryEntry, index: Int, onDone: () -> Unit) =
-        io("Couldn't delete the page") { if (LibraryOps.deletePage(store.dir, e, index)) { publish(store.load()); onMain { onDone() } } }
+        io("Unable to delete page") { if (LibraryOps.deletePage(store.dir, e, index)) { publish(store.load()); onMain { onDone() } } }
 
     /** Mark a notebook as edited (bumps its modified time so it sorts to the top). */
     fun touch(e: LibraryEntry) { scope.launch(Dispatchers.IO) { runCatching { synchronized(fileLock) { LibraryOps.touch(store.dir, e.id) }; publish(store.load()) } } }
 
-    /** Remember the page a document was closed on and when: it drives the cover thumbnail, the "Page N of M" caption and the Last opened sort. */
+    /**
+     * Remember the page a document was closed on: it drives the cover thumbnail and the "Page N of M" caption. The "last opened"
+     * time is not touched here: like the firmware, [scheduleOpenedStamp] sets it only once the document has stayed open for 5 s.
+     */
     fun markOpened(docId: String, page: Int) {
-        scope.launch(Dispatchers.IO) { runCatching { synchronized(fileLock) { LibraryOps.setLastOpened(store.dir, docId, page) }; publish(store.load()) } }
+        scope.launch(Dispatchers.IO) { runCatching { synchronized(fileLock) { LibraryOps.setLastOpened(store.dir, docId, page, stamp = false) }; publish(store.load()) } }
+    }
+
+    private var openedStamp: kotlinx.coroutines.Job? = null
+
+    /** xochitl's `updateLastOpened` timer: a document that is still the open one after [LibraryOps.OPEN_STAMP_DELAY_MS] gets its `lastOpened` time. */
+    private fun scheduleOpenedStamp(docId: String) {
+        openedStamp?.cancel()
+        openedStamp = scope.launch {
+            kotlinx.coroutines.delay(LibraryOps.OPEN_STAMP_DELAY_MS)
+            if ((shownScreen as? Screen.Notebook)?.docId != docId) return@launch
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    synchronized(fileLock) {
+                        LibraryOps.setLastOpenedTime(store.dir, docId)
+                    }
+                    publish(store.load())
+                }
+            }
+        }
     }
 
     fun importPdf(uri: Uri, parentId: String) {
-        message = "Importing PDF…"; messageIsSuccess = false
+        message = "Importing file..."; messageIsSuccess = false
         scope.launch(Dispatchers.IO) {
             try {
                 val entry = store.importPdf(uri, parentId)
                 publish(store.load())
-                say("Imported “${entry.name}” (${entry.pageIds.size} pages)", success = true)
+                say("File imported", success = true)
             } catch (e: Exception) {
-                say("PDF import failed: ${e.message}")
+                // The firmware's black "Unable to open" sheet, with the reason as its text.
+                onMain { message = ""; info = InfoMessage("Unable to open", importFailureText(e)) }
             }
         }
     }
@@ -243,7 +294,21 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
         return generateSequence(2) { it + 1 }.map { "$base $it" }.first { it !in taken }
     }
 
+    /** Erase the whole library (the passcode reset, like the firmware's reset, deletes the files on the device). */
+    fun eraseEverything() {
+        scope.launch(Dispatchers.IO) {
+            synchronized(fileLock) { store.dir.listFiles()?.forEach { it.deleteRecursively() } }
+            publish(store.load())
+        }
+    }
+
     companion object {
+        /** The InfoDialog text for a PDF that could not be imported ([LibraryStore.importPdf] throws these messages). */
+        fun importFailureText(e: Exception): String = when (e.message) {
+            LibraryStore.PASSWORD_PROTECTED -> "Password protected PDF"
+            else -> "This document contains data that is not supported."
+        }
+
         const val QUICK_SHEETS = "Quick sheets"
     }
 }

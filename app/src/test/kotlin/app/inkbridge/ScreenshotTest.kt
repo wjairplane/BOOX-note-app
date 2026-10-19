@@ -42,6 +42,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
+import app.inkbridge.rm.library.DocumentFactory
 
 /** Renders real screens on the JVM so layout can be checked without a device. PNGs go to build/ui-snapshots. */
 @RunWith(RobolectricTestRunner::class)
@@ -49,6 +50,9 @@ import java.io.File
 @Config(sdk = [34], qualifiers = "w702dp-h936dp-xhdpi")
 class ScreenshotTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
+
+    @org.junit.Before fun transparentRoot() { app.inkbridge.ui.RootBackground = androidx.compose.ui.graphics.Color.Transparent; rule.activity.window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)) }
+    @org.junit.After fun opaqueRoot() { app.inkbridge.ui.RootBackground = androidx.compose.ui.graphics.Color.White }
 
     /**
      * Draw the whole window into a PNG, plus any popup windows (menus) on top of it at their own positions.
@@ -58,14 +62,16 @@ class ScreenshotTest {
         val decor = rule.activity.window.decorView
         val bmp = android.graphics.Bitmap.createBitmap(decor.width.coerceAtLeast(1), decor.height.coerceAtLeast(1), android.graphics.Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(bmp)
-        decor.draw(canvas)
+        canvas.drawColor(android.graphics.Color.WHITE)
         // The page itself lives on a SurfaceView, which a view capture leaves out: lay its bitmap over the capture, darkest wins
         // (so the toolbar and menus drawn by Compose stay on top of the white page).
         findSurface(decor)?.takeIf { !(name.startsWith("template_picker") || name.startsWith("overview") || name.startsWith("dialog_delete_page")) }?.let { v ->
             val bitmap = v.shownBitmap ?: return@let
             val at = IntArray(2).also { v.getLocationInWindow(it) }
-            canvas.drawBitmap(bitmap, at[0].toFloat(), at[1].toFloat(), android.graphics.Paint().apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DARKEN) })
+            canvas.drawBitmap(bitmap, at[0].toFloat(), at[1].toFloat(), null)
         }
+        // As on the device the page is underneath: everything Compose draws (toolbar, panels, menus) goes on top of it.
+        decor.draw(canvas)
         runCatching {
             val wmg = Class.forName("android.view.WindowManagerGlobal")
             val global = wmg.getMethod("getInstance").invoke(null)
@@ -254,7 +260,7 @@ class ScreenshotTest {
         // Delete moves to the trash at once and says so in the bottom notification bar.
         rule.onNodeWithText("Delete").performClick(); settle(); snapshot("notification_trashed")
         org.junit.Assert.assertEquals(1, app.library.trash.size)
-        rule.onNodeWithText("1 item was moved to Trash").assertExists()
+        rule.onNodeWithText("1 item(s) were moved to Trash").assertExists()
 
         // The trash: its own create-menu button, the empty-trash dialog, and restore/delete in the action bar.
         rule.onNodeWithContentDescription("Menu").performClick(); settle()
@@ -386,6 +392,57 @@ class ScreenshotTest {
         rule.onAllNodesWithText("Cancel").onLast().performClick(); settle()
     }
 
+    /** The page overview's Go to page, page tags with the tag filter, and a PDF's table of contents. */
+    @Test fun pageOverviewExtras() {
+        val app = launch()
+        val nb = app.library.entries.first { it.name == "Meeting notes" }
+        rule.runOnUiThread { app.prefs.toolbarPosition = ToolbarPosition.LEFT; app.screen = Screen.Notebook(nb.id, 0) }; settle()
+        repeat(2) { rule.onNodeWithContentDescription("More").performClick(); settle(); rule.onNodeWithText("Add page").performClick(); settle() }
+        org.junit.Assert.assertEquals(3, app.library[nb.id]!!.pageIds.size)
+        rule.onNodeWithContentDescription("Page overview").performClick(); settle(); snapshot("overview_goto_header")
+        // Tag the first two pages "exam" (a new tag, typed in the header input), then the third "todo".
+        rule.onNodeWithContentDescription("Page 1").performTouchInput { longClick() }; settle()
+        rule.onNodeWithContentDescription("Page 2").performClick(); settle()
+        rule.onAllNodesWithContentDescription("More").onLast().performClick(); settle(); snapshot("overview_selection_menu")
+        rule.onNodeWithText("Tag").performClick(); settle()
+        rule.onNodeWithContentDescription("New tag").performClick(); settle()
+        rule.onNode(androidx.compose.ui.test.hasSetTextAction()).performTextInput("exam"); settle()
+        rule.onNodeWithText("Create").performClick(); settle(); snapshot("overview_tag_pages")
+        rule.onNodeWithText("Done").performClick(); settle()
+        org.junit.Assert.assertEquals(2, app.library[nb.id]!!.pageTags.size)
+        snapshot("overview_tagged")
+        // The tag filter: only tagged pages remain.
+        rule.onNodeWithText("exam").performClick(); settle(); snapshot("overview_filtered")
+        rule.onNodeWithText("exam").performClick(); settle()
+        rule.onNodeWithContentDescription("Go to page").performClick(); settle()
+        rule.onNode(androidx.compose.ui.test.hasSetTextAction()).performTextInput("3"); settle(); snapshot("overview_goto_page")
+        rule.onNodeWithText("Go").performClick(); settle()
+        org.junit.Assert.assertTrue(app.screen is Screen.Notebook)
+
+        // A PDF with an outline: the overview offers the table of contents.
+        PdfBackground.testSize = 612f to 792f
+        val d = app.store.dir
+        val pdfId = "11111111-2222-3333-4444-555555555555"
+        PdfStructure.init(rule.activity)
+        val doc = com.tom_roush.pdfbox.pdmodel.PDDocument()
+        val pgs = List(6) { com.tom_roush.pdfbox.pdmodel.PDPage(com.tom_roush.pdfbox.pdmodel.common.PDRectangle.LETTER).also { p -> doc.addPage(p) } }
+        val outline = com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline().also { doc.documentCatalog.documentOutline = it }
+        fun item(title: String, page: Int) = com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem().apply {
+            this.title = title; destination = com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageFitDestination().also { it.page = pgs[page] }
+        }
+        val c1 = item("1 Introduction", 0); val c11 = item("1.1 Background", 1); val c2 = item("2 Method", 2); val c3 = item("3 Results", 4); val c31 = item("3.1 Tables", 5)
+        outline.addLast(c1); c1.addLast(c11); outline.addLast(c2); outline.addLast(c3); c3.addLast(c31)
+        doc.save(File(d, "$pdfId.pdf")); doc.close()
+        DocumentFactory.createPdfDocument(d, "Study", 6, File(d, "$pdfId.pdf").length(), id = pdfId)
+        rule.runOnUiThread { app.reload() }; settle()
+        rule.runOnUiThread { app.screen = Screen.Notebook(pdfId, 3) }; settle()
+        rule.onNodeWithContentDescription("Page overview").performClick(); settle(); snapshot("overview_pdf")
+        rule.onNodeWithContentDescription("Table of contents").performClick(); settle(); snapshot("table_of_contents")
+        rule.onNodeWithContentDescription("2 Method").performClick(); settle()
+        snapshot("pdf_after_toc") // the notebook shows page 3 of 6 (the "2 Method" chapter)
+        PdfBackground.testSize = null
+    }
+
     /** The panels the edge-swipe gestures open: quick settings, the document drawer, quick browse, and the zoom button. */
     @Test fun overlays() {
         val app = launch()
@@ -398,6 +455,9 @@ class ScreenshotTest {
         // Quick browse (the page slider): driven through the surface's edge swipe.
         val surface = findSurface(rule.activity.window.decorView)!!
         rule.runOnUiThread { surface.listenerForTest().onEdgeSwipe(FingerGestures.Edge.QUICK_BROWSE) }; settle(); snapshot("page_slider")
+        // Dragging along it: the monochrome thumbnail and "Page N" appear above the strip.
+        rule.onNodeWithContentDescription("Page slider").performTouchInput { down(androidx.compose.ui.geometry.Offset(width * 0.8f, height / 2f)) }; settle(); snapshot("page_slider_dragging")
+        rule.onNodeWithContentDescription("Page slider").performTouchInput { up() }; settle()
     }
 
     /** The firmware-style template picker on its own: all templates, the filter menu open, then Planners in landscape. */

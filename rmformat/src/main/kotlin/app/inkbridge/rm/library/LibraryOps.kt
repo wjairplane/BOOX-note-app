@@ -50,6 +50,29 @@ object LibraryOps {
     }
 
     /**
+     * Set the tags of some pages: every `pageTags` record of those pages is replaced by one record per tag in [tags]
+     * (`{name, pageId, timestamp}`, as the tablet writes them); other pages keep theirs.
+     */
+    fun setPageTags(dir: File, id: String, pageIds: Collection<String>, tags: List<String>, now: Long = now()) = editContent(dir, id) { c ->
+        val keep = (c["pageTags"] as? JsonArray).orEmpty().filter { ((it as? JsonObject)?.get("pageId") as? JsonPrimitive)?.contentOrNull !in pageIds }
+        val names = tags.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        c + ("pageTags" to buildJsonArray {
+            keep.forEach { add(it) }
+            for (page in pageIds) for (n in names) add(buildJsonObject { put("name", n); put("pageId", page); put("timestamp", now) })
+        })
+    }
+
+    /** Rewrite every page tag name through [f] (null drops the record); used when a tag is renamed or deleted everywhere. */
+    fun mapPageTags(dir: File, id: String, f: (String) -> String?) = editContent(dir, id) { c ->
+        val out = (c["pageTags"] as? JsonArray).orEmpty().mapNotNull { r ->
+            val o = r as? JsonObject ?: return@mapNotNull null
+            val name = (o["name"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
+            f(name)?.let { JsonObject(o + ("name" to JsonPrimitive(it))) }
+        }.distinct()
+        c + ("pageTags" to JsonArray(out))
+    }
+
+    /**
      * Copy a notebook, PDF or folder (with everything inside it) next to the original, named "<name> (copy)".
      * Returns the id of the copy.
      */
@@ -68,6 +91,7 @@ object LibraryOps {
             File(dir, "$srcId.content").takeIf { it.isFile }?.copyTo(File(dir, "$newId.content"), overwrite = true)
             File(dir, "$srcId.pdf").takeIf { it.isFile }?.copyTo(File(dir, "$newId.pdf"), overwrite = true)
             File(dir, "$srcId.epub").takeIf { it.isFile }?.copyTo(File(dir, "$newId.epub"), overwrite = true)
+            File(dir, "$srcId.pagedata").takeIf { it.isFile }?.copyTo(File(dir, "$newId.pagedata"), overwrite = true)
             File(dir, srcId).takeIf { it.isDirectory }?.copyRecursively(File(dir, newId), overwrite = true)
             for (child in LibraryScanner.scan(dir).children(srcId)) copy(child.id, newId, rename = false)
             return newId
@@ -79,11 +103,20 @@ object LibraryOps {
     /** Remember which page is the notebook's cover (-1 = last visited, 0 = first). */
     fun setCoverPage(dir: File, id: String, coverPage: Int) = editContent(dir, id) { it + ("coverPageNumber" to JsonPrimitive(coverPage)) }
 
-    /** Remember the page a document was closed on and when (`lastOpenedPage`, `lastOpened`); doesn't change `lastModified`. */
-    fun setLastOpened(dir: File, id: String, page: Int, now: Long = now()) {
+    /** Remember the page a document was closed on (`lastOpenedPage`) and, when [stamp], when (`lastOpened`); doesn't change `lastModified`. */
+    fun setLastOpened(dir: File, id: String, page: Int, now: Long = now(), stamp: Boolean = true) {
         editContent(dir, id) { it + ("lastOpenedPage" to JsonPrimitive(page.coerceAtLeast(0))) }
-        editMetadata(dir, id) { it + ("lastOpened" to JsonPrimitive(now.toString())) + ("lastOpenedPage" to JsonPrimitive(page.coerceAtLeast(0))) }
+        editMetadata(dir, id) { m ->
+            val withPage = m + ("lastOpenedPage" to JsonPrimitive(page.coerceAtLeast(0)))
+            if (stamp) withPage + ("lastOpened" to JsonPrimitive(now.toString())) else withPage
+        }
     }
+
+    /** Stamp `lastOpened`, the "Last opened" sort key. xochitl does this only after the document stayed open [OPEN_STAMP_DELAY_MS]. */
+    fun setLastOpenedTime(dir: File, id: String, now: Long = now()) = editMetadata(dir, id) { it + ("lastOpened" to JsonPrimitive(now.toString())) }
+
+    /** xochitl's `updateLastOpened` timer: most users open and close a document within 5 s by accident, which must not count as opened. */
+    const val OPEN_STAMP_DELAY_MS = 5000L
 
     /** Record that the document changed (bumps `lastModified`). */
     fun touch(dir: File, id: String, now: Long = now()) = editMetadata(dir, id) { it + ("lastModified" to JsonPrimitive(now.toString())) }
@@ -107,7 +140,7 @@ object LibraryOps {
         val ids = LinkedHashSet<String>().also { collect(dir, id, it) }
         for (x in ids) {
             File(dir, "$x.metadata").delete(); File(dir, "$x.content").delete()
-            File(dir, "$x.pdf").delete(); File(dir, "$x.epub").delete()
+            File(dir, "$x.pdf").delete(); File(dir, "$x.epub").delete(); File(dir, "$x.pagedata").delete()
             File(dir, x).deleteRecursively()
         }
         return ids.size
@@ -136,8 +169,12 @@ object LibraryOps {
     fun addPage(dir: File, doc: LibraryEntry, afterIndex: Int = doc.pageIds.lastIndex, pageId: String = newId()): String {
         editContent(dir, doc.id) { c ->
             val ids = pageIdsOf(c).toMutableList()
-            ids.add((afterIndex + 1).coerceIn(0, ids.size), pageId)
-            c + ("pages" to JsonArray(ids.map(::JsonPrimitive))) + ("pageCount" to JsonPrimitive(ids.size))
+            val at = (afterIndex + 1).coerceIn(0, ids.size)
+            ids.add(at, pageId)
+            // A PDF's page map gets an inserted blank page (-1) at the same place.
+            val map = (c["redirectMap"] as? JsonArray)?.toMutableList()?.also { it.add(at.coerceAtMost(it.size), JsonPrimitive(-1)) }
+            c + ("pages" to JsonArray(ids.map(::JsonPrimitive))) + ("pageCount" to JsonPrimitive(ids.size)) +
+                (if (map != null) mapOf("redirectMap" to JsonArray(map)) else emptyMap())
         }
         touch(dir, doc.id)
         return pageId
@@ -149,7 +186,9 @@ object LibraryOps {
         val pageId = doc.pageIds[index]
         editContent(dir, doc.id) { c ->
             val ids = pageIdsOf(c).filterIndexed { i, _ -> i != index }
-            c + ("pages" to JsonArray(ids.map(::JsonPrimitive))) + ("pageCount" to JsonPrimitive(ids.size))
+            val map = (c["redirectMap"] as? JsonArray)?.filterIndexed { i, _ -> i != index }
+            c + ("pages" to JsonArray(ids.map(::JsonPrimitive))) + ("pageCount" to JsonPrimitive(ids.size)) +
+                (if (map != null) mapOf("redirectMap" to JsonArray(map)) else emptyMap())
         }
         File(File(dir, doc.id), "$pageId.rm").delete()
         File(File(dir, doc.id), "$pageId.rm.orig").delete()

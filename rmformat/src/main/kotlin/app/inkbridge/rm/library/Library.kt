@@ -34,6 +34,8 @@ data class LibraryEntry(
     val lastOpened: Long = 0L,
     /** Total size of the entry's files in bytes (pages and PDF source); 0 for folders and entries parsed without a directory. */
     val sizeBytes: Long = 0L,
+    /** Tags on single pages, from `.content` `pageTags` (`{name, pageId, timestamp}`): page id to tag names. */
+    val pageTags: Map<String, List<String>> = emptyMap(),
 ) {
     val isFolder get() = type == EntryType.FOLDER
 }
@@ -108,8 +110,7 @@ object LibraryScanner {
             pinned = m.bool("pinned"),
             fileType = if (isFolder) null else content?.str("fileType")?.ifEmpty { null } ?: "notebook",
             pageIds = if (isFolder) emptyList() else content?.let(::pageIds).orEmpty(),
-            redirectMap = content?.get("redirectMap")?.let { it as? JsonArray }
-                ?.mapNotNull { (it as? JsonPrimitive)?.intOrNull }.orEmpty(),
+            redirectMap = content?.let(::redirectMap).orEmpty(),
             template = app.inkbridge.rm.render.PageTemplate.fromId(content?.str("template")),
             tags = (content?.get("tags") as? JsonArray).orEmpty().mapNotNull { t ->
                 (t as? JsonObject)?.str("name") ?: (t as? JsonPrimitive)?.contentOrNull
@@ -119,6 +120,12 @@ object LibraryScanner {
             lastOpenedPage = (content?.get("lastOpenedPage") as? JsonPrimitive)?.intOrNull
                 ?: (m["lastOpenedPage"] as? JsonPrimitive)?.intOrNull ?: 0,
             lastOpened = m.str("lastOpened")?.toLongOrNull() ?: 0L,
+            pageTags = (content?.get("pageTags") as? JsonArray).orEmpty().mapNotNull { t ->
+                val o = t as? JsonObject ?: return@mapNotNull null
+                val name = o.str("name") ?: return@mapNotNull null
+                val page = o.str("pageId") ?: return@mapNotNull null
+                page to name
+            }.groupBy({ it.first }, { it.second }).mapValues { it.value.distinct() },
         )
     }
 
@@ -137,6 +144,22 @@ object LibraryScanner {
             }
         }
         return (content["pages"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }.orEmpty()
+    }
+
+    /**
+     * Page index → PDF page. Older files keep it as `redirectMap` / `redirectionPageMap`; the CRDT page list of newer
+     * firmware has a `redir` value per page, and a page without one is an inserted blank page (-1).
+     */
+    private fun redirectMap(content: JsonObject): List<Int> {
+        for (key in listOf("redirectMap", "redirectionPageMap")) {
+            val a = content[key] as? JsonArray ?: continue
+            return a.mapNotNull { (it as? JsonPrimitive)?.intOrNull }
+        }
+        val pages = (content["cPages"] as? JsonObject)?.get("pages") as? JsonArray ?: return emptyList()
+        val live = pages.mapNotNull { it as? JsonObject }.filter { it["deleted"] == null }
+        fun redir(o: JsonObject) = ((o["redir"] as? JsonObject)?.get("value") as? JsonPrimitive)?.intOrNull
+        if (live.none { redir(it) != null }) return emptyList()
+        return live.map { redir(it) ?: -1 }
     }
 
     /** `<dir>/<docId>/<pageId>.rm`, which doesn't exist for pages that were never drawn on. */
