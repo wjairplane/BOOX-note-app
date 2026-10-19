@@ -65,6 +65,7 @@ import app.inkbridge.pen.PenListener
 import app.inkbridge.pen.PenSample
 import app.inkbridge.pen.PenSurface
 import app.inkbridge.rm.edit.InputPoint
+import app.inkbridge.rm.scene.PenColorId
 import app.inkbridge.rm.edit.PenSpec
 import app.inkbridge.rm.edit.PenTool
 import app.inkbridge.rm.edit.StrokeBuilder
@@ -90,7 +91,9 @@ import java.io.File
 
 /** Radius of the eraser in view pixels. */
 /** Eraser radius in view pixels for thin, medium and thick. */
-private val ERASER_RADII = floatArrayOf(14f, 22f, 36f)
+// The eraser's radius in page units (the firmware's 5 * t^2 for thin, medium and thick); the stylus's own eraser end is 28.8.
+private val ERASER_RADII = floatArrayOf(5f, 20f, 45f)
+private const val HARDWARE_ERASER_RADIUS = 28.8f
 
 /** Toolbar buttons are 112 px square (controlsHeight.large), edge to edge. */
 private val TOOLBAR_THICKNESS = Rm.ToolButton
@@ -138,6 +141,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     var surface by remember { mutableStateOf<PenSurface?>(null) }
     var strokes by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf("") }
+    var pageError by remember { mutableStateOf<PageError?>(null) }
     var slider by remember { mutableStateOf(false) }
     // The typed-text tool: typing mode, its toolbar foldout, the Text settings page, and a counter that asks the keyboard to show.
     var typing by remember(doc.id) { mutableStateOf(false) }
@@ -155,23 +159,31 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
 
     val session by produceState<PageSession?>(null, doc.id, pageIndex, doc.template, doc.pageIds.getOrNull(pageIndex)) {
         value = null
+        pageError = null
         value = withContext(Dispatchers.IO) {
             runCatching {
                 val bg = if (isPdf) DocumentFactory.pdfPageFor(doc, pageIndex).takeIf { it >= 0 }?.let { PdfBackground(DocumentFactory.pdfFile(app.store.dir, doc), it) } else null
-                PageSession(LibraryScanner.pageFile(app.store.dir, doc, pageIndex), bg, doc.template)
-            }.onFailure { message = "Couldn't read this page: ${it.message}" }.getOrNull()
+                if (isPdf && !DocumentFactory.pdfFile(app.store.dir, doc).isFile) { pageError = PageError.MISSING_PDF; return@runCatching null }
+                val file = LibraryScanner.pageFile(app.store.dir, doc, pageIndex)
+                if (StrokeLimit.reached(file)) { pageError = PageError.TOO_LARGE; return@runCatching null }
+                PageSession(file, bg, doc.template)
+            }.onFailure { pageError = if (it is OutOfMemoryError) PageError.LOW_MEMORY else PageError.LOAD }.getOrNull()
         }
     }
 
     fun save(s: PageSession?) {
         if (s == null || !s.isDirty) return
-        message = try { s.save(); app.touch(doc); "" } catch (e: Exception) { "Save failed: ${e.message}" }
+        message = try { s.save(); app.touch(doc); "" } catch (e: Exception) { pageError = PageError.STORAGE; "Unable to save page" }
         revision++
     }
     DisposableEffect(session) { val s = session; onDispose { save(s) } }
     // Closing the notebook (or switching to another one) remembers the page it was on, for the cover thumbnail and "Page N of M".
     DisposableEffect(doc.id) { onDispose { app.markOpened(doc.id, pageIndex) } }
     DisposableEffect(surface) { app.onRefresh = { surface?.fullRefresh() }; onDispose { app.onRefresh = null } }
+    // The firmware clears ghosting on the first page of a document and whenever the overview, the template picker or the page slider opens or closes.
+    LaunchedEffect(surface) { surface?.pageTurned(first = true) }
+    var overlaysSeen by remember { mutableStateOf(false) }
+    LaunchedEffect(overview, templatePicker, slider) { if (overlaysSeen) surface?.scheduleClear() else overlaysSeen = true }
 
     fun closeDoc() { save(session); app.screen = Screen.Files(folderId = doc.parentId.takeIf { it != "trash" } ?: "") }
 
@@ -217,7 +229,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     LaunchedEffect(revision) { textController?.clamp() }
     LaunchedEffect(textController) { if (typing) textController?.placeAtEnd() }
 
-    fun goTo(i: Int) { if (i in doc.pageIds.indices && i != pageIndex) { save(session); selectionRect = null; newPagePrompt = false; pageIndex = i; if (prefs.refreshEveryStrokes > 0) surface?.fullRefresh() } }
+    fun goTo(i: Int) { if (i in doc.pageIds.indices && i != pageIndex) { save(session); selectionRect = null; newPagePrompt = false; pageIndex = i; surface?.pageTurned() } }
     fun newPageAfterCurrent() { save(session); app.addPage(doc, pageIndex) { pageIndex = it } }
 
     val landscape = androidx.compose.ui.platform.LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
@@ -344,12 +356,12 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                                     close()
                                     val s = session ?: return@RmFoldoutItem
                                     val safe = doc.name.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').ifEmpty { "page" }
-                                    message = "Exporting…"
+                                    message = "Exporting file..."
                                     scope.launch {
                                         message = try {
                                             val files = withContext(Dispatchers.IO) { s.export(exportDir, "${safe}_p${pageIndex + 1}") }
-                                            "Exported ${files.joinToString { it.name }} to ${exportDir.absolutePath}"
-                                        } catch (e: Exception) { "Export failed: ${e.message}" }
+                                            "Finished exporting '${doc.name}' to '${exportDir.absolutePath}'"
+                                        } catch (e: Exception) { "Unable to export document" }
                                     }
                                 }, enabled = session != null) { InkIcons.Export(tint = it) }
                                 if (isPdf) RmFoldoutItem("Export annotated PDF", {
@@ -358,9 +370,9 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                                     val out = File(exportDir, "${safe}_annotated.pdf")
                                     scope.launch {
                                         message = try {
-                                            withContext(Dispatchers.IO) { AnnotatedPdfExporter.export(app.store, doc, out) { d, t -> message = "Exporting PDF… $d / $t" } }
-                                            "Saved ${out.name} (${out.length() / 1024} KB) to ${exportDir.absolutePath}"
-                                        } catch (e: Exception) { "PDF export failed: ${e.message}" }
+                                            withContext(Dispatchers.IO) { AnnotatedPdfExporter.export(app.store, doc, out) { d, t -> message = "Exporting file..." } }
+                                            "Finished exporting '${out.name}' to '${exportDir.absolutePath}'"
+                                        } catch (e: Exception) { "Unable to export ${doc.name} as PDF" }
                                     }
                                 }) { InkIcons.Export(tint = it) }
                             }
@@ -423,6 +435,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 excludeRects = blockers.rects(),
                 blockers = blockers,
                 shapes = prefs.shapesEnabled,
+                exactPen = prefs.penExact,
                 onSelectBelow = { selecting = true; erasing = false; panel = false; eraserMenu = false },
                 onEdgeSwipe = { edge ->
                     panel = false; menu = false; eraserMenu = false; layersMenu = false
@@ -481,9 +494,11 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 }, Modifier.align(if (pos == ToolbarPosition.TOP) Alignment.BottomCenter else Alignment.TopCenter).padding(bottom = if (pos == ToolbarPosition.TOP) (if (message.isNotEmpty()) 96.dp else 0.dp) else 0.dp).blocksPen(blockers, "zoom"))
             }
 
+            pageError?.let { PageErrorOverlay(it, doc.id, doc.pageIds.getOrNull(pageIndex).orEmpty(), "") }
+
             // "Page X of Y": a white 258 x 72 label at the bottom centre for four seconds after the page changes.
             LaunchedEffect(pageIndex, doc.pageIds.size) { pageLabelVisible = true; kotlinx.coroutines.delay(4000); pageLabelVisible = false }
-            if (pageLabelVisible && !overview && message.isEmpty()) {
+            if ((pageLabelVisible || slider) && !overview && message.isEmpty()) {
                 Box(Modifier.align(Alignment.BottomCenter).padding(bottom = if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp).size(258.dp, 72.dp).background(Ink.White), contentAlignment = Alignment.Center) {
                     Text("Page ${pageIndex + 1} of ${doc.pageIds.size}", style = RmText.Label)
                 }
@@ -503,7 +518,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 NotificationBar(
                     message, { if (clipboardHint) StrokeClipboard.lines = emptyList(); message = "" },
                     action = if (clipboardHint) "OK" else null,
-                    primary = !clipboardHint && !(message.startsWith("Exported ") || message.startsWith("Saved ")),
+                    primary = !clipboardHint && !message.startsWith("Finished exporting"),
                     modifier = Modifier.align(Alignment.BottomCenter).padding(start = if (pos == ToolbarPosition.LEFT) TOOLBAR_THICKNESS else 0.dp, end = if (pos == ToolbarPosition.RIGHT) TOOLBAR_THICKNESS else 0.dp, bottom = if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp).blocksPen(blockers, "notification"),
                 )
             }
@@ -513,6 +528,15 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     Box(Modifier.fillMaxSize().onSizeChanged { rootSize = it }) {
         // The page fills the screen and the toolbar floats over it.
         Box(Modifier.fillMaxSize()) { page() }
+        // Quick browse sits over the page but under the toolbar, as in the firmware.
+        if (slider) PageSlider(
+            app, doc, pageIndex, portrait = !landscape,
+            bottomExtra = (if (message.isNotEmpty()) 72.dp else 0.dp) + (if (pos == ToolbarPosition.BOTTOM && !collapsed) TOOLBAR_THICKNESS else 0.dp),
+            startInset = if (pos == ToolbarPosition.LEFT && !collapsed) TOOLBAR_THICKNESS else 0.dp,
+            endInset = if (pos == ToolbarPosition.RIGHT && !collapsed) TOOLBAR_THICKNESS else 0.dp,
+            topInset = if (pos == ToolbarPosition.TOP && !collapsed) TOOLBAR_THICKNESS else 0.dp,
+            onPick = { slider = false; goTo(it) }, onClose = { slider = false },
+        )
         Box(
             Modifier.align(when (pos) { ToolbarPosition.TOP -> Alignment.TopStart; ToolbarPosition.BOTTOM -> Alignment.BottomStart; ToolbarPosition.LEFT -> Alignment.TopStart; ToolbarPosition.RIGHT -> Alignment.TopEnd })
                 .then(if (horizontal) Modifier.fillMaxWidth() else Modifier.fillMaxHeight()),
@@ -552,8 +576,6 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
 
         if (notebookSettings) NotebookSettingsScreen(app, doc, onDismiss = { notebookSettings = false })
         if (tagsScreen) DocumentTagsScreen(app, doc, onDismiss = { tagsScreen = false })
-
-        if (slider) PageSlider(app, doc, pageIndex, if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp, if (pos == ToolbarPosition.LEFT) TOOLBAR_THICKNESS else 0.dp, if (pos == ToolbarPosition.RIGHT) TOOLBAR_THICKNESS else 0.dp, onPick = { slider = false; goTo(it) }, onClose = { slider = false })
 
         if (templatePicker) TemplatePickerScreen(doc.template, onPick = { templatePicker = false; save(session); app.setTemplate(doc, it) }, onBack = { templatePicker = false })
 
@@ -599,7 +621,7 @@ private fun PageArea(
     selecting: Boolean, selectionRect: android.graphics.RectF?, onSelectionRect: (android.graphics.RectF?) -> Unit, onSelectionAction: (String) -> Unit,
     onSurface: (PenSurface?) -> Unit, onChanged: () -> Unit, onSwipe: (Boolean) -> Unit,
     excludeRects: List<Rect>, onFingerTap: (Int) -> Unit, blockers: PenBlockers,
-    onEdgeSwipe: (FingerGestures.Edge) -> Unit, onSelectBelow: () -> Unit, shapes: Boolean,
+    onEdgeSwipe: (FingerGestures.Edge) -> Unit, onSelectBelow: () -> Unit, shapes: Boolean, exactPen: Boolean,
 ) {
     val currentOnEdge by rememberUpdatedState(onEdgeSwipe)
     val currentShapes by rememberUpdatedState(shapes)
@@ -643,10 +665,11 @@ private fun PageArea(
 
         LaunchedEffect(surface, excludeRects) { surface?.setExcludeRects(excludeRects) }
 
-        LaunchedEffect(surface, spec, drawing, session, layoutVersion, swipeEnabled, fingerDraws) {
+        LaunchedEffect(surface, spec, drawing, session, layoutVersion, swipeEnabled, fingerDraws, exactPen) {
             val view = surface ?: return@LaunchedEffect
             view.swipeEnabled = swipeEnabled
             view.fingerDraws = fingerDraws
+            view.exactMode = exactPen
             view.setTool(spec, session?.transform?.scale ?: 1f)
             view.penEnabled = drawing && session != null
         }
@@ -659,7 +682,12 @@ private fun PageArea(
                         val spec = surface?.currentSpec
                         val body = if (spec != null && spec.tool != PenTool.ERASER && currentShapes) HoldGesture.body(samples) else null
                         val shape = body?.let { ShapeSnap.detect(it.map { p -> p.x to p.y }) }
-                        if (shape == null) { apply(samples) { s, sp -> s.addStroke(sp, samples) }; return }
+                        if (shape == null) {
+                            apply(samples) { s, sp -> s.addStroke(sp, samples) }
+                            // Coloured, grey and highlighter strokes are repainted at quality once the pen has rested.
+                            if (spec != null && spec.colorId != PenColorId.BLACK && spec.colorId != PenColorId.WHITE) surface?.scheduleQuality(currentSession?.lastStrokeBounds())
+                            return
+                        }
                         if (ShapeSnap.isHorizontalLine(shape)) {
                             // A horizontal line held still selects everything below it.
                             val s = currentSession
@@ -668,9 +696,25 @@ private fun PageArea(
                         val snapped = HoldGesture.resample(shape.points, body)
                         // The shape comes out selected, so it can be dragged, resized and rotated to fit.
                         val s = currentSession ?: return
-                        if (s.addStroke(surface?.currentSpec ?: return, snapped, select = true)) { surface?.refresh(); currentOnSelectBelow(); currentOnSelectionRect(s.selectionRect()); currentOnChanged() }
+                        if (s.addStroke(surface?.currentSpec ?: return, snapped, select = true)) { surface?.refresh(); s.takeStrokeRect(); currentOnSelectBelow(); currentOnSelectionRect(s.selectionRect()); currentOnChanged() }
                     }
-                    override fun onErase(samples: List<PenSample>) = apply(samples) { s, _ -> s.erase(samples, currentEraserRadius) }
+                    override fun onLiveStroke(samples: List<PenSample>, from: Int) {
+                        val s = currentSession ?: return
+                        val view = surface ?: return
+                        s.previewStroke(view.currentSpec, samples, from)?.let { view.refreshRect(it) }
+                    }
+                    override fun onLiveErase(samples: List<PenSample>, from: Int, hardware: Boolean) {
+                        val s = currentSession ?: return
+                        s.previewErase(samples, if (hardware) HARDWARE_ERASER_RADIUS else currentEraserRadius, from)?.let { surface?.refreshRect(it) }
+                    }
+                    override fun onLiveEnd() { currentSession?.endPreview(); currentSession?.endErasePreview() }
+                    override fun onErase(samples: List<PenSample>, hardware: Boolean) {
+                        val s = currentSession ?: return
+                        val view = surface ?: return
+                        if (samples.isEmpty()) return
+                        if (s.erase(samples, if (hardware) HARDWARE_ERASER_RADIUS else currentEraserRadius)) currentOnChanged()
+                        view.refresh() // the faded stroke goes, and the cut (if any) shows
+                    }
                     override fun onSwipe(forward: Boolean) { currentOnSwipe(forward) }
                     override fun onFingerTap(fingers: Int) { currentOnFingerTap(fingers) }
                     override fun onEdgeSwipe(edge: FingerGestures.Edge) { currentOnEdge(edge) }
@@ -678,10 +722,10 @@ private fun PageArea(
                         val s = currentSession ?: return
                         val view = surface ?: return
                         scope.launch(Dispatchers.Default) {
-                            if (s.jump(down)) withContext(Dispatchers.Main) { pushView(view, s); view.setTool(view.currentSpec, s.transform?.scale ?: 1f); currentOnSelectionRect(s.selectionRect()); currentOnChanged() }
+                            if (s.jump(down)) withContext(Dispatchers.Main) { view.scheduleClear(); pushView(view, s); view.setTool(view.currentSpec, s.transform?.scale ?: 1f); currentOnSelectionRect(s.selectionRect()); currentOnChanged() }
                         }
                     }
-                    override fun onSelectionGesture(active: Boolean) { controlsHidden = active }
+                    override fun onSelectionGesture(active: Boolean) { controlsHidden = active; if (!active) surface?.scheduleClear() }
                     override fun onEraseArea(samples: List<PenSample>) = apply(samples) { s, _ -> s.eraseInside(samples) }
                     override fun onLasso(samples: List<PenSample>) {
                         val s = currentSession ?: return
@@ -700,7 +744,7 @@ private fun PageArea(
                         val s = currentSession ?: return
                         val view = surface ?: return
                         if (samples.isEmpty()) return
-                        if (edit(s, view.currentSpec)) { view.refresh(); currentOnChanged() }
+                        if (edit(s, view.currentSpec)) { if (view.exactMode) view.refreshRect(s.takeStrokeRect()) else view.refresh(); currentOnChanged() }
                     }
                 }).also { v ->
                     v.selectionFrameProvider = { currentSession?.selectionFrame() }

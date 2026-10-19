@@ -22,7 +22,9 @@ object TextFonts {
 
     @Synchronized
     fun install(ctx: Context) {
-        if (context != null) return
+        if (context === ctx.applicationContext) return
+        // (A new application, as in each test, starts with fresh font caches.)
+        cache.clear(); loaded.clear()
         context = ctx.applicationContext
         families[TextFont.RM_SANS] = Family(R.font.rm_sans_regular, R.font.rm_sans_bold, R.font.rm_sans_italic, R.font.rm_sans_bold_italic, Typeface.SANS_SERIF)
         families[TextFont.EB_GARAMOND] = Family(R.font.eb_garamond, null, R.font.eb_garamond_italic, null, Typeface.SERIF)

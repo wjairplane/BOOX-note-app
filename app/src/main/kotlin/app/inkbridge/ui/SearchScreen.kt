@@ -91,7 +91,7 @@ fun SearchScreen(app: AppController) {
             // The "N matches" row is always there (also with nothing typed yet): 40 px below the bar, 72 px high, no rule.
             run {
                 Row(Modifier.fillMaxWidth().padding(top = Rm.NavigatorMargin).height(72.dp).padding(start = Rm.NavigatorMargin, end = 15.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(if (results.size == 1) "1 match" else "${results.size} matches", style = RmText.TitleLg, modifier = Modifier.weight(1f), maxLines = 1)
+                    Text("${results.size} matches",style = RmText.TitleLg, modifier = Modifier.weight(1f), maxLines = 1)
                     if (!moving) Dropdown(effective.label, "Filter") { close ->
                         SearchFilter.entries.forEach { f ->
                             val on = f == filter

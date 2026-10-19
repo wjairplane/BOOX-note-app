@@ -35,6 +35,10 @@ data class ToolSlot(val tool: PenTool, val colorId: Int, val thickness: Int) {
 class Prefs(context: Context) {
     private val sp = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
+    /** The passcode (Security settings) and whether the app is currently behind it. */
+    val passcode = PasscodeLock(PrefsPasscodeStorage(context))
+    val lock = AppLock(passcode)
+
     private var _gridSize by mutableStateOf(
         runCatching { GridSize.valueOf(sp.getString("gridSize", null)!!) }.getOrDefault(if (sp.getBoolean("grid", true)) GridSize.MEDIUM else GridSize.LIST),
     )
@@ -78,6 +82,10 @@ class Prefs(context: Context) {
     fun toolbarFor(landscape: Boolean) = if (landscape) toolbarLandscape else toolbarPosition
     fun setToolbarFor(landscape: Boolean, v: ToolbarPosition) { if (landscape) toolbarLandscape = v else toolbarPosition = v }
 
+    private var _exact by mutableStateOf(sp.getBoolean("penExact", true))
+    /** "Pen preview: Exact": the stroke is drawn by the app with the firmware's pen renderer while writing (instead of the Onyx SDK's trail). */
+    var penExact: Boolean get() = _exact; set(v) { _exact = v; sp.edit().putBoolean("penExact", v).apply() }
+
     private var _shapes by mutableStateOf(sp.getBoolean("shapes", true))
     /** "Enable shapes": hold at the end of a stroke to turn it into a clean shape. */
     var shapesEnabled: Boolean get() = _shapes; set(v) { _shapes = v; sp.edit().putBoolean("shapes", v).apply() }
@@ -89,6 +97,23 @@ class Prefs(context: Context) {
     private var _swipe by mutableStateOf(sp.getBoolean("swipe", true))
     /** Swipe a finger left/right to turn pages. */
     var swipeToTurn: Boolean get() = _swipe; set(v) { _swipe = v; sp.edit().putBoolean("swipe", v).apply() }
+
+    private var _rightHanded by mutableStateOf(sp.getBoolean("rightHanded", true))
+    /** The firmware's `RightHanded` (Accessibility > Handedness). It decides which side the toolbar starts on; see [setRightHanded]. */
+    val rightHanded: Boolean get() = _rightHanded
+
+    /**
+     * Choose the writing hand. Like the firmware's toolbar positioner, a left-handed user gets the toolbar on the right and a right-handed
+     * one on the left: a toolbar that sits on the left or right edge moves to the opposite edge, top and bottom stay.
+     */
+    fun setRightHanded(v: Boolean) {
+        if (v == _rightHanded) return
+        _rightHanded = v
+        sp.edit().putBoolean("rightHanded", v).apply()
+        fun mirror(p: ToolbarPosition) = when (p) { ToolbarPosition.LEFT -> ToolbarPosition.RIGHT; ToolbarPosition.RIGHT -> ToolbarPosition.LEFT; else -> p }
+        toolbarPosition = mirror(toolbarPosition)
+        toolbarLandscape = mirror(toolbarLandscape)
+    }
 
     private var _finger by mutableStateOf(sp.getBoolean("finger", false))
     /** Let a finger draw too (off by default, so a resting palm or hand can't leave marks). */

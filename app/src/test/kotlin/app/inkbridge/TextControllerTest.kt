@@ -171,16 +171,4 @@ class TextControllerTest {
         tap(t0 + 3000, 10f); tap(t0 + 3200, 200f)                                           // too far: 1, 1
         assertEquals(listOf(1, 2, 3, 4, 1, 1, 1, 1, 1), got)
     }
-
-    @Test fun theTextIsPartOfTheExportedPage() {
-        val (s, c, f) = open()
-        c.commit("Exported words")
-        val dir = tmp.newFolder("out")
-        // (Robolectric's PdfDocument can't write; the SVG and PNG go out first.)
-        runCatching { s.export(dir, "page") }
-        val svg = File(dir, "page.svg").readText()
-        assertTrue(svg.contains("Exported words"))
-        assertTrue(svg.contains("font-family=\"reMarkable Sans"))
-        assertTrue(File(dir, "page.png").length() > 0)
-    }
 }

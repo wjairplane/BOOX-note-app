@@ -1,0 +1,2403 @@
+{
+ "Accessibility": {
+  "Accessibility settings": "Paramètres d’accessibilité",
+  "Choose the hand you prefer to write and draw with.": "Avec quelle main préférez-vous écrire et dessiner ?",
+  "Choose the size you prefer for system font and layout.": "Choisissez la taille de la police et de la disposition du système.",
+  "Handedness": "Préférence manuelle",
+  "Readability": "Lisibilité"
+ },
+ "AccidentalTouchSlider": {
+  "Swipe to continue": "Faire glisser pour continuer"
+ },
+ "Account": {
+  "%1 subscription": "Abonnement %1",
+  "Account": "Compte",
+  "Back": "Retour",
+  "Enterprise": "Entreprise",
+  "Factory reset": "Réinitialisation",
+  "Log in to %1 to request a new email from us.": "Connectez-vous à %1 pour demander un nouvel e-&#8288;mail.",
+  "Log in to manage your subscription at %1.": "Connectez-vous pour gérer votre abonnement à %1.",
+  "Not subscribed": "Pas d’abonnement",
+  "Pair your account%1 to the paper tablet, again. This safety verification is required to sync content to the reMarkable cloud and use basic features.": "Veuillez jumeler votre compte %1 à votre tablette papier à nouveau. Ce contrôle de sécurité est requis pour pouvoir synchroniser votre contenu au cloud reMarkable et utiliser les fonctionnalités de base.",
+  "Pair your device": "Jumelez votre appareil",
+  "Reset": "Réinitialiser",
+  "Subscribe to Connect, with unlimited cloud storage and sync, and access to all note-taking features in the mobile and desktop apps.": "Abonnez-vous à Connect pour accéder à un stockage illimité dans le cloud, à l’option de synchronisation et à toutes les fonctionnalités de prise de notes dans les applications mobile et bureau.",
+  "This will delete all files stored on your paper tablet and restore it to its original settings.": "Cette action supprimera tous les fichiers de votre tablette papier et rétablira les paramètres d’usine de votre appareil.",
+  "Verify by pairing": "Confirmez en jumelant",
+  "Verify your account by email": "<b></b>Confirmez votre compte par e-&#8288;mail",
+  "Verify your device": "Confirmez votre appareil",
+  "You have unlimited cloud storage, sync, and access to all note-taking features in the mobile and desktop apps.": "Vous avez accès à un stockage illimité dans le cloud, à l’option de synchronisation et à toutes les fonctionnalités de prise de notes dans les applications mobile et bureau.",
+  "Your Connect subscription is administered by your employer.": "Votre abonnement Connect est administré par votre employeur.",
+  "Your account%1 was created, but not verified. Find a verification link in an email we sent you, to sync content to the reMarkable cloud and use basic features.": "Votre compte %1 a été créé, mais pas confirmé. Cliquez sur le lien de vérification dans l’e-&#8288;mail que nous vous avons envoyé pour pouvoir synchroniser votre contenu au cloud reMarkable et utiliser les fonctionnalités de base.",
+  "Your paper tablet is not connected to the cloud, which is required to use basic features.": "Votre tablette papier n’est pas connectée au cloud. Une connexion au cloud est requise pour utiliser les fonctionnalités de base.",
+  "Your workplace has set certain policies to strengthen the security on the device.": "Votre employeur a mis en place des règles de sécurité sur cet appareil."
+ },
+ "AccountCellItem": {
+  "%1 via a %2 account": "%1 via un compte %2",
+  "Account": "Compte",
+  "Pair with the reMarkable cloud": "Jumelez votre appareil avec le cloud reMarkable"
+ },
+ "AccountErrorMessage": {
+  "Manage your account": "Gérez votre compte",
+  "Pair your paper tablet to sync content to the cloud and use basic features.": "Jumelez votre tablette papier pour synchroniser votre contenu avec le cloud et utiliser les fonctionnalités de base.",
+  "Verify your account by email. Open the verification link we sent you.": "Confirmez votre compte par e-&#8288;mail. Cliquez sur le lien de vérification dans l’e-&#8288;mail que nous vous avons envoyé."
+ },
+ "AccountRetail": {
+  "Account": "Compte",
+  "Back": "Retour",
+  "Back up your work": "Sauvegarder votre travail",
+  "Convert handwritten notes into typed text": "Convertir vos notes manuscrites en texte numérique",
+  "Send files by email": "<b></b>Envoyer des fichiers par e-&#8288;mail",
+  "Sync files between your paper tablet, mobile, and desktop": "Synchroniser vos fichiers entre votre tablette papier, votre téléphone portable et votre ordinateur",
+  "The cloud service is disabled on this retail device.": "Le service cloud est désactivé sur cet appareil de démonstration.",
+  "The cloud service lets you:": "Grâce au service cloud, vous pouvez :",
+  "reMarkable cloud": "Cloud reMarkable"
+ },
+ "ActionBar": {
+  "Close": "Fermer"
+ },
+ "ActionBarBase": {
+  "Cancel": "Annuler"
+ },
+ "ActionHeader": {
+  "%n item(s) were duplicated": [
+   "%n élément dupliqué",
+   "%n éléments dupliqués"
+  ],
+  "%n item(s) were moved to Trash": [
+   "%n élément déplacé dans la corbeille",
+   "%n éléments déplacés dans la corbeille"
+  ],
+  "%n item(s) were restored to My files": [
+   "%n élément restauré dans Mes fichiers",
+   "%n éléments restaurés dans Mes fichiers"
+  ],
+  "Archive": "Archiver",
+  "Back": "Retour",
+  "Choose a placement": "Choisissez une destination",
+  "Connect to Wi-Fi to export documents": "Connectez-vous au Wi-&#8288;Fi pour exporter des documents",
+  "Connect to Wi-Fi to import documents": "Connectez-vous au Wi-&#8288;Fi pour importer des documents",
+  "Delete": "Supprimer",
+  "Disk is almost full": "Disque presque plein",
+  "Disk is full": "Disque plein",
+  "Duplicate": "Dupliquer",
+  "Export here": "Exporter ici",
+  "Export to integration": "Exporter vers le cloud",
+  "Favorite": "Favoris",
+  "Import": "Importer",
+  "Import a duplicate": "Importer une copie",
+  "Import here": "Importer ici",
+  "More": "Plus",
+  "Move": "Déplacer",
+  "Move here": "Déplacer ici",
+  "Original folder found": "Dossier d’origine localisé",
+  "Rename": "Renommer",
+  "Restore": "Restaurer",
+  "Save": "Sauvegarder",
+  "Select destination": "Choisissez la destination",
+  "Select where to move the item": "Où déplacer l’élément ?",
+  "Select where to move the items": "Où déplacer les éléments ?",
+  "Select where to save the file": "Où enregistrer le fichier ?",
+  "Select where to save the files": "Où enregistrer les fichiers ?",
+  "Storage settings": "Paramètres de stockage",
+  "Tag": "Étiqueter",
+  "Tag item": "Étiqueter un élément",
+  "These files have different formats. Try importing them separately.": "Ces fichiers ont des formats différents et doivent être importés séparément.",
+  "Wi-Fi settings": "Paramètres Wi-&#8288;Fi",
+  "Work on your documents from My files. You can export them to %1 whenever you like.": "Travaillez sur vos documents dans Mes fichiers. Vous pouvez les exporter vers %1 à tout moment."
+ },
+ "AddPageButton": {
+  "Add note page": "Ajouter une page de notes",
+  "Add page": "Ajouter une page"
+ },
+ "AddTagPopup": {
+  "Create": "Créer",
+  "Enter tag name": "Saisir le nom de l’étiquette",
+  "Save": "Sauvegarder"
+ },
+ "AdditionalEditingToolsMenu": {
+  "More tools": "Plus d’outils"
+ },
+ "AdjustViewMenu": {
+  "Adjust view": "Ajuster l’affichage",
+  "Fit to custom view": "Affichage personnalisé",
+  "Fit to height": "Ajuster à la hauteur",
+  "Fit to width": "Ajuster à la largeur"
+ },
+ "AdjustViewPopup": {
+  "Cancel": "Annuler",
+  "Custom view": "Affichage personnalisé",
+  "Set": "Définir",
+  "Zoom and pan to adjust the page": "Zoomez et faites glisser pour ajuster la page"
+ },
+ "AdjustmentToolsMenu": {
+  "Adjust view": "Ajuster l’affichage"
+ },
+ "AdvancedPanel": {
+  "Advanced": "Avancé"
+ },
+ "AllTagsView": {
+  "All": "Tout",
+  "Alphabetical (A-Z)": "Nom (A-Z)",
+  "Alphabetical (Z-A)": "Nom (Z-A)",
+  "Back": "Retour",
+  "Tags": "Étiquettes"
+ },
+ "ArkGalleryPanel": {
+  "Test design system components on your paper tablet": "Testez les composants du système de design sur votre tablette papier"
+ },
+ "ArkGalleryWindow": {
+  "Back": "Retour"
+ },
+ "Battery": {
+  "1 hour": "1 heure",
+  "20 minutes": "20 minutes",
+  "5 minutes": "5 minutes",
+  "Back": "Retour",
+  "Battery": "Batterie",
+  "Choose a time interval before your display turns off.": "Choisissez un délai avant que votre écran ne s’éteigne.",
+  "Let your paper tablet power off when it's inactive for 12 hours.": "Forcez votre tablette papier à s’éteindre après 12 heures d’inactivité.",
+  "Make your device turn off after 12 hours of inactivity.": "Forcez votre appareil à s’éteindre après 12 heures d’inactivité.",
+  "Power off": "Éteindre",
+  "Standby": "Veille"
+ },
+ "BatteryCellItem": {
+  "Battery": "Batterie"
+ },
+ "BetaCellItem": {
+  "reMarkable beta program": "Programme bêta reMarkable"
+ },
+ "BetaProgramAgreement": {
+  "Back": "Retour",
+  "End user agreement reMarkable beta program": "Contrat de licence utilisateur final du programme bêta reMarkable"
+ },
+ "ChallengePassword": {
+  "Enter password": "Saisissez votre mot de passe",
+  "Wrong recovery code entered": "Le code de récupération saisi est incorrect",
+  "Your password has been updated": "Votre mot de passe a été mis à jour"
+ },
+ "ChangePasswordWindow": {
+  "Back": "Retour",
+  "Checking password": "Vérification du mot de passe",
+  "Enter password": "Saisissez votre mot de passe",
+  "Enter your new password": "Saisissez votre nouveau mot de passe",
+  "Incorrect password. Please try again.": "Mot de passe incorrect. Veuillez réessayer.",
+  "Setting...": "Création en cours…",
+  "Unable to change password. Try again.": "Impossible de changer le mot de passe. Veuillez réessayer.",
+  "Verify your new password": "Confirmez votre nouveau mot de passe"
+ },
+ "Cloud": {
+  "Check sync": "Vérifier la synchronisation",
+  "Checks if your reMarkable is syncing.": "Vérifiez que votre tablette papier reMarkable est en cours de synchronisation.",
+  "Cloud connection": "Connexion au cloud",
+  "Cloud settings": "Paramètres du cloud",
+  "For more information, go to <b>https://support.remarkable.com/s/article/Pair-your-reMarkable-with-the-cloud</b>": "Pour plus de renseignements, rendez-vous sur <b>https://support.remarkable.com/s/article/Pair-your-reMarkable-with-the-cloud</b>",
+  "Log in to manage your subscription at %1.": "Connectez-vous pour gérer votre abonnement à %1.",
+  "Sync without Connect": "Synchroniser sans Connect",
+  "The reMarkable cloud is a service you can use to store your files and sync them to other devices. Unlimited cloud storage is included in the monthly price of a Connect subscription.": "Le cloud reMarkable est un service permettant de stocker vos fichiers et de les synchroniser avec vos autres appareils. Un stockage illimité dans le cloud est compris dans le tarif mensuel de l’abonnement Connect.",
+  "There was an issue with your last sync": "Une erreur s’est produite pendant votre dernière synchronisation",
+  "Without Connect, only files used and synced online in the last 50 days will continue to be stored in the cloud and updated in our apps.": "Sans abonnement Connect, seuls les fichiers utilisés et synchronisés en ligne au cours des 50 derniers jours continueront à être stockés dans le cloud et à être mis à jour dans nos applications."
+ },
+ "CloudFeaturePopupWindow": {
+  "%1\n\nOnce resolved, the paper tablet may take up to 15 seconds to detect the change.": "%1\n\nUne fois le problème résolu, veuillez compter jusqu’à 15&#160;secondes avant que votre tablette&#160;papier ne détecte la modification.",
+  "Pair your account %1 to the paper tablet, again. This safety verification is required to sync content to the reMarkable cloud and use basic features.": "Veuillez jumeler votre compte %1 avec votre tablette papier à nouveau. Ce contrôle de sécurité est requis pour pouvoir synchroniser votre contenu au cloud reMarkable et utiliser les fonctionnalités de base.",
+  "Pair your device": "Jumelez votre appareil",
+  "Pairing required": "Jumelage requis",
+  "To send content by email, use Screen Share, and convert notes to text, your paper tablet must be paired with a reMarkable account.": "Pour pouvoir envoyer des documents par e-&#8288;mail, partager votre écran et convertir vos notes en texte numérique, votre tablette papier doit être jumelée avec un compte reMarkable.",
+  "Verify by pairing": "Confirmez en jumelant",
+  "Verify your account": "Confirmez votre compte",
+  "Verify your account by email": "<b></b>Confirmez votre compte par e-&#8288;mail",
+  "Your account, %1, was created, but not verified. Find a verification link in an email we sent you, to sync content to the reMarkable cloud and use basic features.\n\nOnce resolved, the paper tablet may take up to 15 seconds to detect the change.": "Votre compte %1 a été créé, mais pas confirmé. Cliquez sur le lien de vérification dans l’e-&#8288;mail que nous vous avons envoyé pour pouvoir synchroniser votre contenu au cloud&#160;reMarkable et utiliser les fonctionnalités de base.\n\nUne fois le problème résolu, veuillez compter jusqu’à 15&#160;secondes avant que votre tablette&#160;papier ne détecte la modification."
+ },
+ "CompletedWindow": {
+  "Continue": "Continuer",
+  "The security of paper tablet has been strengthened. You can update your passcode from Security settings any time.": "Le niveau de sécurité de votre tablette papier a été renforcé. Vous pouvez mettre votre code d’accès à jour dans les paramètres de sécurité à tout moment.",
+  "You're good to go": "Tout est prêt"
+ },
+ "ComplianceInformationWindow": {
+  "About this device": "À propos de cet appareil",
+  "Back": "Retour",
+  "Model number: %1<br>Serial number: %2": "Numéro de modèle : %1<br>Numéro de série : %2"
+ },
+ "ConfirmDeleteTagsWindow": {
+  "Cancel": "Annuler",
+  "Delete": "Supprimer",
+  "Delete %n tag(s)?": [
+   "Supprimer %n étiquette ?",
+   "Supprimer %n étiquettes ?"
+  ],
+  "If you delete these tags, they'll be removed from all tagged content.": "Si vous supprimez ces étiquettes, elles seront retirées de tout le contenu auquel elles étaient attachées.",
+  "If you delete this tag, it'll be removed from all tagged content.": "Si vous supprimez cette étiquette, elle sera retirée de tout le contenu auquel elle était attachée."
+ },
+ "ConfirmDeleteTrashWindow": {
+  "Cancel": "Annuler",
+  "Delete": "Supprimer",
+  "Delete permanently?": "Supprimer de façon permanente ?",
+  "If you delete the items, you won't be able to get them back.": "Si vous supprimez ces éléments, vous ne pourrez pas les récupérer."
+ },
+ "ConnectCalendarDialogWindow": {
+  "* Please note, you'll need a Connect subscription to use this feature. ": "Un abonnement Connect est requis pour accéder à cette fonctionnalité. ",
+  "Close": "Fermer",
+  "Create meeting note": "Fiches de réunion",
+  "Hide create meeting note button": "Masquer Créer une fiche de réunion",
+  "Start focused, stay engaged, and get organized with create meeting note.": "Plus d’organisation et d’efficacité avec Créer une fiche de réunion.",
+  "Visit <b>my.remarkable.com/&#8288;integrations</b> to add your Outlook or Google calendar, so you can view upcoming meetings, create prefilled meeting notes, and automatically store them in a meeting notes folder.": "Ajoutez votre calendrier Outlook ou Google sur <b>my.remarkable.com/&#8288;integrations</b> pour voir vos prochaines réunions et enregistrer des fiches de réunion préremplies directement dans un dossier dédié."
+ },
+ "ContentDropdown": {
+  "Large grid": "Grande grille",
+  "List": "Liste",
+  "List view": "Affichage en liste",
+  "Medium grid": "Grille moyenne",
+  "Small grid": "Petite grille",
+  "View": "Affichage"
+ },
+ "ContentGridItem": {
+  "Password protected PDF": "PDF protégé par mot de passe"
+ },
+ "ContentItemBase": {
+  "%1% read": "%1 % lu",
+  "%n items": [
+   "%n élément",
+   "%n éléments"
+  ],
+  "0% read": "0 % lu",
+  "Not compatible": "Non compatible",
+  "Page %1 of %2": "Page %1 sur %2"
+ },
+ "ContentListItem": {
+  "Not syncing": "Impossible de synchroniser",
+  "Password protected PDF": "PDF protégé par mot de passe"
+ },
+ "ContentPagesMoveHeader": {
+  "Cancel": "Annuler",
+  "Choose a placement": "Choisissez une destination",
+  "Failed to move pages": "Impossible de déplacer les pages",
+  "More": "Plus",
+  "Move here": "Déplacer ici",
+  "Place after": "Placer après",
+  "Place before": "Placer avant",
+  "Select a page for placement": "Sélectionnez une page à déplacer",
+  "Unable to move pages": "Impossible de déplacer les pages",
+  "You can only move out note pages": "Seules les pages de notes peuvent être déplacées"
+ },
+ "ConvertToTextButton": {
+  "Convert to text": "Convertir en texte"
+ },
+ "CreateCollection": {
+  "Cancel": "Annuler",
+  "Create": "Créer",
+  "Create || Notebook creator": "Créer",
+  "Enter tag name": "Saisir le nom de l’étiquette",
+  "Name": "Nom",
+  "New folder": "Nouveau dossier"
+ },
+ "CreateCollectionWindow": {
+  "Folder": "Dossier"
+ },
+ "CreateMenu": {
+  "Create new": "Créer",
+  "Folder": "Dossier",
+  "Jot down your thoughts": "Notez vos idées",
+  "Notebook": "Carnet",
+  "Organize your content": "Organisez votre contenu",
+  "Quick sheet": "Feuille volante",
+  "Record ideas, write, and sketch": "Notez vos idées et faites des croquis"
+ },
+ "CreateNotebook": {
+  "Cancel": "Annuler",
+  "Create": "Créer",
+  "First page": "Première page",
+  "Last visited page": "Dernière page consultée",
+  "Name": "Nom du carnet",
+  "New notebook": "Nouveau carnet",
+  "Notebook cover": "Couverture du carnet",
+  "Templates": "Modèles",
+  "View all": "Afficher tout"
+ },
+ "CreateNotebookWindow": {
+  "Not enough free space to create document": "Pas assez d’espace libre pour créer un document",
+  "Notebook": "Carnet"
+ },
+ "CriticalErrorWindow": {
+  "Factory reset": "Réinitialisation",
+  "Please try again by rebooting your device. If this happens consistently you can reset your device by doing a factory reset.": "Veuillez réessayer en redémarrant votre appareil. Si le problème persiste, réinitialisez votre appareil pour rétablir les paramètres d’usine.",
+  "Reboot": "Redémarrage",
+  "Something went wrong": "Une erreur s’est produite"
+ },
+ "CtNConnectRestrictionDialogWindow": {
+  "Close": "Fermer",
+  "Get access with Connect": "Profitez plus avec Connect",
+  "Import Word files and Google Docs as free-form, editable notebooks with Convert to Notebook. Available with a Connect subscription.": "Importez vos fichiers Word et Google Docs en tant que carnets en format libre modifiable avec la fonction Convertir en carnet disponible via Connect.",
+  "Learn more and get started at remarkable.com/shop/connect": "Pour commencer et en savoir plus, rendez-vous sur remarkable.com/shop/connect"
+ },
+ "DateSpinners": {
+  "Apr": "avr.",
+  "Aug": "août",
+  "Dec": "déc.",
+  "Feb": "févr.",
+  "Jan": "janv.",
+  "Jul": "juil.",
+  "Jun": "juin",
+  "Mar": "mars",
+  "May": "mai",
+  "Nov": "nov.",
+  "Oct": "oct.",
+  "Sep": "sept."
+ },
+ "DateTimePickerWindow": {
+  "Back": "Retour",
+  "Coordinated Universal Time (UTC)": "Temps universel coordonné (TUC)",
+  "Set": "Définir",
+  "Something went wrong. If the issue persists, contact support.": "Une erreur s’est produite. Si le problème persiste, veuillez contacter le service d’assistance.",
+  "System time set": "Heure système définie",
+  "Time": "Heure"
+ },
+ "DefaultSshAboutText": {
+  "<p>The IP addresses available to connect to are listed below:</p>": "<p>La liste des adresses IP avec lesquelles vous pouvez vous connecter est disponible ci-dessous :</p>",
+  "<p>To do so, this device acts as an USB ethernet device, and you can connect using the SSH protocol using the username 'root' and the password <b>'%1'</b>.</p> <p>SSH over WLAN is disabled by default, but can be enabled by connecting to the device over USB using the SSH protocol with the credentials mentioned above and running the command <br><br><b>rm-ssh-over-wlan on</b>.</p><br>": "<p>Pour ce faire, cet appareil fonctionne comme un périphérique Ethernet USB et vous permet de vous connecter via le protocole SSH en utilisant le nom d’utilisateur « root » et le mot de passe <b>'%1'</b>.</p> <p>Le SSH via WLAN est désactivé par défaut, mais peut être activé en vous connectant à l’appareil avec une connexion USB en utilisant le protocole SSH avec les identifiants mentionnés ci-dessus et en exécutant la commande <br><br><b>rm-ssh-over-wlan on</b>.</p><br>"
+ },
+ "Developer": {
+  "A restart is needed after changing service environment. Tap to restart.": "Un redémarrage est requis après un changement d’environnement de service. Appuyez pour redémarrer l’appareil.",
+  "Back": "Retour",
+  "Build date": "Date de fabrication",
+  "Choose the cloud environment your reMarkable connects to.": "Sélectionnez l’environnement cloud auquel se connecte votre reMarkable.",
+  "Cloud service environment": "Environnement de service cloud",
+  "Developer settings": "Paramètres du mode développeur",
+  "Device info": "Informations sur l’appareil",
+  "Enable Filesystem explorer": "Activer Filesystem Explorer",
+  "For testing purposes only. Restarts the device and starts setup flow.": "À des fins de test uniquement. Redémarre l’appareil et commence le processus d’installation.",
+  "Generates system trace report. Blocks until done.": "Génère le rapport de traçage système. Bloque jusqu’à la fin.",
+  "IP addresses": "Adresses IP",
+  "Internal info": "Informations internes",
+  "MAC address": "Adresse MAC",
+  "Requires reboot": "Redémarrage requis",
+  "Restart setup": "Recommencer l’installation",
+  "Restart setup flow": "Redémarrer le processus d’installation",
+  "SSH root password": "Mot de passe root SSH",
+  "Shows splash screen for release notes.": "Montre le splash screen pour les notes de version.",
+  "System trace": "Traçage système",
+  "Tectonic ID": "Identifiant Tectonic"
+ },
+ "DeveloperCellItem": {
+  "Developer information": "Renseignements sur le développeur"
+ },
+ "DeviceSceneView": {
+  "Text copied to clipboard. Go to a notepage to paste.": "Texte copié. Allez sur une page de notes pour le coller."
+ },
+ "DialogScreen": {
+  "Back": "Retour"
+ },
+ "DiskCorruptedDialog": {
+  "Attempting repair...": "Tentative de réparation en cours…",
+  "Disk corrupted": "Disque corrompu",
+  "Tap to attempt\nautomatic repair and restart": "Appuyez pour tenter\nune réparation et un redémarrage automatiques"
+ },
+ "Display": {
+  "Display settings": "Paramètres d’affichage"
+ },
+ "DisplayVisibleContent": {
+  "Show your open document or overview when in standby.": "Affichez votre document ouvert ou une vue d’ensemble en veille.",
+  "Visible content": "Contenu visible"
+ },
+ "Document": {
+  "%1% read": "%1 % lu",
+  "Document is archived.": "Document archivé.",
+  "Downgrade of content detected": "Rétrogradation du contenu détectée",
+  "Page %1 of %2": "Page %1 sur %2",
+  "Password protected %1": "%1 protégé par mot de passe",
+  "Quick sheets": "Feuilles volantes",
+  "Something seems to be wrong. Please try to restart.": "Une erreur s’est produite. Veuillez réessayer.",
+  "There's a mismatch in format versions. Try updating your software.": "Les versions des formats ne sont pas compatibles. Veuillez mettre votre logiciel à jour.",
+  "Transferring": "Transfert en cours",
+  "Unable to view document. File format is outdated.": "Impossible de voir le document. Le format du fichier est obsolète.",
+  "Your PDF file seems to be missing. Try importing it again.": "Votre fichier PDF est introuvable. Essayez de le réimporter."
+ },
+ "DocumentSettingsButton": {
+  "Ebook settings": "Paramètres de l’ebook",
+  "Notebook settings": "Paramètres du carnet",
+  "PDF settings": "Paramètres du PDF"
+ },
+ "DocumentSync_1_5": {
+  "Unable to archive without Wi-Fi connection": "Archivage impossible sans connexion Wi-&#8288;Fi",
+  "Unable to archive/retrieve without Wi-Fi connection": "Archivage/récupération impossible sans connexion Wi-&#8288;Fi",
+  "Unable to retrieve without Wi-Fi connection": "Récupération impossible sans connexion Wi-&#8288;Fi"
+ },
+ "DocumentView": {
+  "%n match(es) found": [
+   "%n résultat",
+   "%n résultats"
+  ],
+  "Accept the connection at app.remarkable.com/screenshare or in the desktop app": "Acceptez la connexion sur app.remarkable.com/screenshare ou dans l’application bureau",
+  "Back to page %1": "Retour à la page %1",
+  "Close": "Fermer",
+  "Close || Button label to close the in-document search bar": "Fermer",
+  "Copied to clipboard. Tap any page with Marker to paste.": "Contenu copié. Pour le coller, appuyez sur une page avec le Marker.",
+  "Handwriting conversion": "Conversion de l’écriture manuscrite",
+  "Make your handwritten notes easy to use in emails, reports, or presentations by converting them into typed text. Handwriting conversion supports 33 languages, cursive and block letters, and sharing your freshly converted notes directly via email.": "Convertissez vos notes manuscrites en texte numérique pour pouvoir les utiliser plus facilement dans vos e-&#8288;mails, rapports et présentations. La conversion de l’écriture manuscrite en texte est disponible en 33 langues, pour l’écriture cursive et scripte, et permet de partager vos notes converties en texte directement par e-&#8288;mail.",
+  "No results found": "Aucun résultat trouvé",
+  "Open QR-code": "Ouvrir le code QR",
+  "Page %1 of %2": "Page %1 sur %2",
+  "Screen Share is active": "Partage d’écran activé",
+  "Screen Share is no longer active": "Partage d’écran désactivé",
+  "Screen Share lost connection. Trying to reconnect...": "Le partage d’écran a perdu sa connexion. Tentative de reconnexion en cours…",
+  "Send by email": "<b></b>Envoyer par e-&#8288;mail",
+  "Sending...": "Envoi en cours…",
+  "Sent page": "Page envoyée",
+  "Tap with Marker to paste": "Appuyez avec le Marker pour coller",
+  "Text formats": "Formats du texte",
+  "The link has been sent to your email": "<b></b>Le lien a été envoyé à votre adresse e-&#8288;mail",
+  "This feature is not available in retail demo mode.": "Cette fonctionnalité n’est pas disponible en mode démo.",
+  "This feature requires a Wi-Fi connection": "<b></b>Cette fonctionnalité nécessite une connexion Wi-&#8288;Fi",
+  "Unable to add page while file is being exported": "Impossible d’ajouter une page pendant l’exportation du fichier",
+  "Unable to send": "Envoi impossible",
+  "Unable to send emails without Connect subscription": "Impossible d’envoyer des e-&#8288;mails sans abonnement Connect"
+ },
+ "DownloadCellItem": {
+  "Download new library": "Télécharger la nouvelle bibliothèque"
+ },
+ "DownloadLibraryWindow": {
+  "Download localized library": "Télécharger la bibliothèque localisée",
+  "Enter passcode to confirm": "Saisissez votre code d’accès pour confirmer"
+ },
+ "DropdownButton": {
+  "BETA": "BÊTA"
+ },
+ "DuplicateFoldout": {
+  "Original document": "Document d’origine",
+  "With edits": "Avec modifications"
+ },
+ "EPubContainer": {
+  "Table of contents": "Sommaire"
+ },
+ "EditDocument": {
+  "%n page(s)": [
+   "%n page",
+   "%n pages"
+  ],
+  "Cancel": "Annuler",
+  "Created %1": "Création : %1",
+  "Details": "Détails",
+  "Ebook cover": "Couverture de l’ebook",
+  "Ebook settings": "Paramètres de l’ebook",
+  "First page": "Première page",
+  "ID: %1": "Identifiant : %1",
+  "Last modified %1": "Dernière modification : %1",
+  "Last visited page": "Dernière page consultée",
+  "Name": "Nom du document",
+  "Not syncing. Cloud limit reached.": "Impossible de synchroniser. Limite de stockage cloud atteinte.",
+  "Notebook cover": "Couverture du carnet",
+  "Notebook settings": "Paramètres du carnet",
+  "PDF cover": "Couverture du PDF",
+  "PDF settings": "Paramètres du PDF",
+  "Save": "Sauvegarder",
+  "Syncing error: %1": "Erreur de synchronisation : %1"
+ },
+ "EmailAddressInputDialog": {
+  "Use space bar to add email address": "<b></b>Utilisez la barre d’espace pour ajouter une adresse e-&#8288;mail",
+  "You have already added this email": "<b></b>Cette adresse e-&#8288;mail a déjà été ajoutée",
+  "You have reached the maxium amount of emails": "Vous avez atteint le nombre maximum d’e-&#8288;mails"
+ },
+ "EmptyViewItem": {
+  "<b>Press and hold</b> any page, document, or folder, and add it to your favorites. They will appear right here.": "<b>Appuyez</b> sur une page, un document ou un dossier pour l’ajouter à vos favoris : ils apparaîtront ici.",
+  "Add storage integrations": "Ajoutez des stockages cloud",
+  "Clear out the clutter": "Faites du tri dans vos documents",
+  "Collect your best content": "Réunissez votre meilleur contenu",
+  "Create a reading list": "Créez une liste de lecture",
+  "Discover our go-to resource for the latest templates, tools, and tips from <b>methods.remarkable.com</b>": "Explorez notre centre de ressources pour découvrir les derniers modèles, outils et conseils sur <b>methods.remarkable.com</b>.",
+  "Fill this with content": "Remplissez cet espace avec du contenu",
+  "Fill this with notebooks and folders. When you're in a rush, <b>press&#160;and&#160;hold</b> the plus icon to create a new quick sheet.": "Remplissez cet espace avec vos carnets et dossiers. Pour gagner du temps, créez une nouvelle feuille volante en <b>appuyant</b> sur l’icône Plus.",
+  "Import inspiring templates": "Importez des modèles inspirants",
+  "In order to search for written content, activate your free trial, or subscribe at <b>remarkable.com/store/connect</b>.": "Pour pouvoir chercher du contenu manuscrit, veuillez activer votre essai gratuit ou vous abonner sur <b>remarkable.com/store/connect</b>.",
+  "Items you delete from My files will be shown here. You can restore or permanently delete them.": "Les éléments supprimés de Mes fichiers apparaîtront ici. Vous pouvez les restaurer ou les supprimer de façon permanente.",
+  "Label your work": "Étiquetez votre travail",
+  "Make your mark": "Faites briller vos idées",
+  "Organize in folders": "Organisez vos documents dans des dossiers",
+  "Search with Connect": "Faites des recherches avec Connect",
+  "See lower back of the device and please visit support.remarkable.com for more information.": "Consultez la section située en bas du dos de votre appareil et rendez-vous sur support.remarkable.com pour plus de renseignements.",
+  "To set up cloud storage services and import files, visit <b>my.remarkable.com/integrations</b>": "Pour configurer des services de stockage dans le cloud et importer des fichiers, rendez-vous sur <b>my.remarkable.com/integrations</b>",
+  "Try a different combination": "Essayez une nouvelle combinaison",
+  "Unable to show compliance statements": "Impossible d’afficher les déclarations de conformité",
+  "Upload your library": "Chargez votre bibliothèque",
+  "You can add tags to documents and pages to categorize your content. They will appear right here.": "Ajoutez des étiquettes sur vos pages et documents pour catégoriser votre contenu. Vos étiquettes apparaîtront ici.",
+  "You can create documents and move any type of content or subfolder here.": "Créez des documents et déplacez vos contenus ou sous-dossiers ici.",
+  "You can create notebooks and they will appear here.": "Créez des carnets : ils apparaîtront ici.",
+  "You can import books in EPUB format through the desktop or mobile app, and on my.remarkable.com.": "Importez des livres au format EPUB sur my.remarkable.com ou via les applications mobile et bureau.",
+  "You can import documents as PDF files through the desktop or mobile app, and on my.remarkable.com.": "Importez des documents au format PDF sur my.remarkable.com ou via les applications mobile et bureau.",
+  "You can sort your pages with combination of tags. Select one that matches what you're looking for.": "Catégorisez vos pages avec plusieurs étiquettes. Sélectionnez l’étiquette correspondant le mieux à votre recherche."
+ },
+ "EnableShapesButton": {
+  "Enable shapes": "Activer les formes"
+ },
+ "EnableUpdates": {
+  "Company policy enforces automatic software updates": "La politique de votre entreprise exige la mise à jour automatique du logiciel.",
+  "Install new software versions as they are released.": "Installez les nouvelles versions du logiciel quand elles sont publiées.",
+  "Updates": "Mises à jour"
+ },
+ "EncryptionConfirmation": {
+  "Any recent changes will sync automatically before your reMarkable is reset.": "Toute modification récente sera automatiquement synchronisée avant la réinitialisation de votre tablette papier reMarkable.",
+  "Cancel": "Annuler",
+  "Continue": "Continuer",
+  "Disk encryption": "Chiffrement du disque",
+  "Factory reset": "Réinitialisation",
+  "Reset your device to factory settings. By doing this all files and settings on your reMarkable will be erased, and your device will be restored to its original state.": "Rétablissez les paramètres d’usine de votre appareil. Tous les fichiers et paramètres de votre tablette papier reMarkable seront supprimés, et votre appareil sera réinitialisé à son état d’origine.",
+  "This requires a factory reset of your paper tablet. All files and settings on your reMarkable will be erased.": "Une réinitialisation de votre tablette papier est requise. Tous les fichiers et paramètres de votre tablette papier reMarkable seront supprimés."
+ },
+ "EncryptionDialog": {
+  "A factory reset will delete all files stored on your paper tablet.": "La réinitialisation supprimera tous les fichiers stockés sur votre tablette papier.",
+  "Accept": "Accepter",
+  "Disk encryption": "Chiffrement du disque",
+  "Factory reset": "Réinitialisation",
+  "If you use your reMarkable 2 for work, being able to encrypt data might be a business requirement.": "Si vous utilisez votre reMarkable 2 pour le travail, le chiffrement des données pourra être requis par votre employeur.",
+  "In addition to the passcode, that prevents others from breaking into your physical paper tablet, you can protect your content by encrypting the disk. It will require a factory reset of your device.": "En plus du code d’accès, qui élimine le risque d’effraction dans votre tablette, vous pouvez protéger votre contenu en chiffrant le disque. Une réinitialisation de votre tablette papier sera requise.",
+  "Make sure notebooks and documents are synced to the cloud.": "Vérifiez que vos carnets et documents sont synchronisés avec le cloud.",
+  "Use the password to power on after being out of battery or factory reset, and a longer passcode means a more secure device.": "Utilisez le mot de passe pour allumer votre appareil après une décharge complète ou une réinitialisation, et un code d’accès plus long pour sécuriser encore plus votre appareil.",
+  "You'll need both a password and a passcode for your device.": "Vous aurez besoin d’un mot de passe et d’un code d’accès pour votre appareil."
+ },
+ "Enroll": {
+  "Access the latest developments by enrolling to the beta program.": "Accédez aux derniers développements en vous inscrivant au programme bêta reMarkable.",
+  "Back": "Retour",
+  "Beta releases may contain bugs or inaccuracies, as they are being developed. Since it's not commercially released software, data loss may occur.": "Les versions bêta sont en cours de développement et peuvent contenir des bugs ou des inexactitudes. Le logiciel final n’étant pas commercialisé, une perte de données est possible.",
+  "By enrolling, you agree to the <a href='link'>End user agreement</a>.": "En vous inscrivant, vous confirmez votre acceptation du <a href='link'>Contrat de licence utilisateur final</a>.",
+  "Close": "Fermer",
+  "Connect to Wi-Fi to enroll.": "<b></b>Connectez-vous au Wi-&#8288;Fi pour vous inscrire.",
+  "Enroll": "M’inscrire",
+  "Enrolled in the reMarkable beta&#160;program": "Votre inscription au programme bêta reMarkable est confirmée.",
+  "Enrolling": "Inscription en cours…",
+  "If a beta release is available, you will get it shortly. Manage your enrollment in <b>Settings > General > Software</b>": "Si une version bêta est disponible, vous la recevrez bientôt. Gérez votre inscription dans la rubrique <b>Paramètres > Général > Logiciel</b>.",
+  "Pair your device in Account settings to enroll": "Jumelez votre appareil dans les paramètres de votre compte pour vous inscrire.",
+  "Participation is voluntary and free of charge.": "La participation est gratuite et volontaire.",
+  "Please try again later. If the problem persists, visit our support pages at support.reMarkable.com.": "Veuillez réessayer plus tard. Si le problème persiste, consultez notre rubrique d’assistance sur support.remarkable.com.",
+  "Something went wrong": "Une erreur s’est produite",
+  "You can unenroll whenever you want.": "Vous pouvez vous désinscrire à tout moment.",
+  "reMarkable beta program": "Programme bêta reMarkable"
+ },
+ "EnterPassword": {
+  "Checking password": "Vérification du mot de passe",
+  "Enter password": "Saisissez votre mot de passe",
+  "Incorrect password. Please try again.": "Mot de passe incorrect. Veuillez réessayer.",
+  "Password": "Mot de passe",
+  "Reset password": "Créez un nouveau mot de passe"
+ },
+ "EnterRecoveryCode": {
+  "Enter recovery code": "Saisissez le code de récupération",
+  "Set new passcode": "Créez un nouveau code d’accès"
+ },
+ "Entry": {
+  "Entry has unresolved conflict": "Cette entrée contient un conflit non résolu"
+ },
+ "EraserMenu": {
+  "Erase all strokes": "Effacer tout le Marker",
+  "Eraser": "Effaceur"
+ },
+ "EventsPopup": {
+  "Create a meeting note": "Créez une fiche de réunion"
+ },
+ "ExitRetailWindow": {
+  "Enter passcode to confirm": "Saisissez votre code d’accès pour confirmer",
+  "Exit retail mode": "Quitter le mode démo",
+  "To exit retail mode and restore the device to its original settings, a factory reset is required.": "Une réinitialisation est requise pour quitter le mode démo et rétablir les paramètres d’usine de l’appareil."
+ },
+ "ExpandableSection": {
+  "Show all": "Afficher tout",
+  "Show less": "Afficher moins"
+ },
+ "Experimental": {
+  "5-finger clear": "Effacer avec 5 doigts",
+  "Add the option to search by Relevance": "Ajouter l’option de recherche par pertinence",
+  "Annotate PDF exports": "Annoter des fichiers PDF exportés",
+  "Auto reflow for text columns": "Alignement automatique de la colonne de texte",
+  "Automatically adjust text column widths when activating the auto reflow toggle": "Activez l’option Alignement automatique pour ajuster automatiquement la largeur de colonne du texte.",
+  "Back": "Retour",
+  "Delay orientation change": "Délai du changement d’orientation",
+  "Disable in-doc UI": "Désactiver l’interface utilisateur dans le document",
+  "Disables UI in documents for UX testing. Use swipe from top gesture to exit the document.": "Désactive l’interface utilisateur dans vos documents pour faciliter les tests UX. Faites glisser votre doigt depuis le haut de l’écran pour quitter le document.",
+  "Drawings in PDF documents will be exported as annotations. Requires reboot": "Les croquis présents dans les documents au format PDF seront exportés sous forme d’annotations. Redémarrage requis.",
+  "Enable Screen Share outside docs": "Activer le partage d’écran en dehors des documents",
+  "Enable experimental gestures": "Activer les gestes tactiles en cours d’expérimentation",
+  "Enable screenshot functionality": "Activer la fonctionnalité de capture d’écran",
+  "Experimental features": "Fonctionnalités expérimentales",
+  "Flick views as on any other tablet or phone, as opposed to scrolling page by page. Leads to more ghosting.": "Défilement fluide comme sur une tablette ou un téléphone, au lieu de faire défiler page par page. Rémanence plus élevée.",
+  "Glyph Selection": "Sélection Glyph",
+  "If enabled, new notebooks created from a Calendar event will be stored in the current folder instead of in the 'Meeting Notes' folder": "Une fois activée, cette fonctionnalité permet d’enregistrer les carnets créés depuis un calendrier dans le dossier actuel plutôt que dans le dossier Fiches de réunion.",
+  "Latest sync schema": "Dernier schéma de synchronisation",
+  "Long press power button to access export screenshot as PDF. Requires reboot.": "Appuyez sur le bouton de marche pendant 2 secondes pour accéder à l’option Exporter une capture d’écran au format PDF. Redémarrage requis.",
+  "Preview of Auth2 setup": "Aperçu de l’installation du protocole Auth2",
+  "Requires reboot. Enable the latest version (4) of document schema for syncing with cloud library": "Redémarrage requis. Activez la dernière version (4) du schéma de document pour synchroniser avec la bibliothèque du cloud.",
+  "Requires reboot. Enable use of curl for all HTTP requests instead of Qt": "Redémarrage requis. Activez l’utilisation de curl au lieu de Qt pour toutes les demandes HTTP.",
+  "Smooth scroll (on selected views)": "Défilement fluide (sur certains affichages)",
+  "Store notebooks from Calendar events in current folder instead of 'Meeting Notes'": "Enregistrer les carnets créés depuis votre calendrier dans le dossier actuel plutôt que le dossier Fiches de réunion.",
+  "Switches out the cslwifi backend with NetworkManager, requires reboot after toggling": "Remplace le cslwifi backend par NetworkManager. Redémarrage requis après l’activation.",
+  "These features are only intended for internal testing. There are no guarantees that they will end up in a future product from reMarkable.": "Ces fonctionnalités sont uniquement destinées à des tests internes. Nous ne pouvons pas garantir qu’elles apparaîtront dans un futur produit reMarkable.",
+  "This adds a test option to Settings->Account page for internal testing and review.": "Cela ajoutera une option de test dans la page Paramètres > Compte pour les tests et vérifications internes.",
+  "This will allow text selection in PDFs and ePubs": "Cette fonction permettra de sélectionner du texte dans les documents au format PDF et EPUB.",
+  "This will delay the orientation change triggered by the sensor. NOTE: Toggling this feature requires a device reboot.": "Cette fonctionnalité entraînera un délai du changement d’orientation déclenché par le capteur. ATTENTION : un redémarrage de l’appareil est requis pour activer cette fonctionnalité.",
+  "Use Curl HTTP backend": "Utiliser le backend Curl HTTP",
+  "Using %1 of %2 features.": "%1 fonctionnalités sur %2 utilisées."
+ },
+ "ExperimentalCellItem": {
+  "Experimental features": "Fonctionnalités expérimentales"
+ },
+ "ExplorerHeader": {
+  "Alphabetical (A-Z)": "Nom (A-Z)",
+  "Alphabetical (Z-A)": "Nom (Z-A)",
+  "Date created": "Date de création",
+  "Date removed": "Date de suppression",
+  "Favorites": "Favoris",
+  "File size": "Taille du fichier",
+  "File type": "Type de fichier",
+  "Last modified": "Dernière modification",
+  "Last opened": "Dernière ouverture",
+  "Notebooks": "Carnets",
+  "PDFs": "Fichiers PDF",
+  "Page count": "Nombre de pages",
+  "Tags": "Étiquettes",
+  "Trash": "Corbeille"
+ },
+ "ExplorerSearch": {
+  "%n matches": [
+   "%n résultat",
+   "%n résultats"
+  ],
+  "All": "Tout",
+  "Alphabetical (A-Z)": "Nom (A-Z)",
+  "Alphabetical (Z-A)": "Nom (Z-A)",
+  "Back": "Retour",
+  "Clear": "Supprimer",
+  "Date created": "Date de création",
+  "Favorites": "Favoris",
+  "Folders": "Dossiers",
+  "Handwriting": "Écriture manuscrite",
+  "Handwriting search": "Recherche dans l’écriture",
+  "Last modified": "Dernière modification",
+  "Notebooks": "Carnets",
+  "PDFs": "Fichiers PDF",
+  "Relevance": "Pertinence",
+  "Search": "Rechercher",
+  "Searchable content filter": "Filtre de contenu offrant l’option de recherche"
+ },
+ "ExplorerView": {
+  "Long-press for actions": "Actions : appuyez"
+ },
+ "ExportIntegrationButton": {
+  "Export to %1": "Exporter vers %1"
+ },
+ "ExportIntegrationOptionsButton": {
+  "Export to storage integrations": "Exporter vers le cloud"
+ },
+ "ExportTask": {
+  "Failed to export %1 as HTML": "Impossible d’exporter %1 au format HTML",
+  "Finished exporting '%1' to '%2'": "Exportation de %1 vers %2 terminée",
+  "Unable to create '%1'": "Impossible de créer %1",
+  "Unable to export %1 as Bundle": "Impossible d’exporter %1 au format Bundle",
+  "Unable to export %1 as PDF": "Impossible d’exporter %1 au format PDF",
+  "Unable to export %1 as PNG": "Impossible d’exporter %1 au format PNG",
+  "Unable to export %1 as SVG": "Impossible d’exporter %1 au format SVG",
+  "Unable to export '%1'": "Impossible d’exporter %1",
+  "Unable to export document": "Impossible d’exporter le document"
+ },
+ "FileTypeSelectionFoldout": {
+  "Connect feature": "Fonctionnalité Connect",
+  "Convert to Notebook": "Convertir en carnet"
+ },
+ "FilterDropdown": {
+  "Filter": "Filtre",
+  "Landscape": "Paysage"
+ },
+ "FilterMenu": {
+  "Increase contrast": "Augmenter le contraste"
+ },
+ "ForgotPasscodeScreen": {
+  "Back": "Retour",
+  "Cancel": "Annuler",
+  "Confirm reset": "Confirmez la réinitialisation",
+  "Confirm reset on %1": "Confirmez la réinitialisation sur %1",
+  "Connect to Wi-Fi": "Connectez-vous au Wi-&#8288;Fi",
+  "If it was unintended, please go back and try again.": "Si ce n’était pas volontaire, revenez en arrière et réessayez.",
+  "Log in to %1 and confirm that you want to reset your passcode.": "Connectez-vous à %1 et confirmez la création d’un nouveau code d’accès.",
+  "No cloud connection": "Pas de connexion au cloud",
+  "Reset canceled": "Réinitialisation annulée",
+  "Reset device": "Réinitialiser l’appareil",
+  "Reset stopped": "Réinitialisation arrêtée",
+  "Something went wrong, please try again later. If the problem persists, visit our support page at support.remarkable.com.": "Une erreur s’est produite, veuillez réessayer plus tard. Si le problème persiste, veuillez vous rendre sur support.remarkable.com pour consulter notre page d’assistance.",
+  "The request to reset the passcode was canceled via %1.": "La demande de réinitialisation du code d’accès a été annulée sur %1.",
+  "This action will delete all files on the device and restore your device settings to their original state.": "Cette action supprimera tous les fichiers de l’appareil et rétablira ses paramètres d’usine.",
+  "Try again": "Réessayer",
+  "Unable to back up content before resetting. Your device is not paired with the cloud.": "Impossible de sauvegarder le contenu avant la réinitialisation. Votre appareil n’est pas jumelé avec le cloud.",
+  "Waiting for confirmation": "En attente de confirmation",
+  "You are currently logged in as: <b>%1</b>": "Votre compte est connecté avec l’adresse e-&#8288;mail suivante : <b>%1</b>",
+  "You can try the passcode again or reset your device.": "Veuillez réessayer le code d’accès, ou réinitialiser votre appareil."
+ },
+ "FormatFont": {
+  "Font": "Police de caractère"
+ },
+ "FormatLineSpacing": {
+  "Line spacing": "Espacement des lignes"
+ },
+ "FormatMargins": {
+  "Page margins": "Marges de la page"
+ },
+ "FormatMenuDelegate": {
+  "Body text": "Corps de texte",
+  "Subheading": "Sous-titre",
+  "Title": "Titre"
+ },
+ "FormatSettings": {
+  "Cancel": "Annuler",
+  "Confirm": "Confirmer",
+  "Misalignment may occur": "Possibilité de mauvais alignement",
+  "Reset": "Réinitialiser",
+  "Save": "Sauvegarder",
+  "Text settings": "Paramètres du texte",
+  "Your annotations, highlights or doodles may lose its alignment with the changed settings. Please confirm that you want to proceed, as this could be irreversible.": "Vos annotations, éléments surlignés ou dessins pourront perdre leur alignement si les paramètres sont modifiés. Veuillez confirmer que vous souhaitez continuer, car cette action sera irréversible."
+ },
+ "FormatTextSize": {
+  "Font size": "Taille de la police"
+ },
+ "General": {
+  "Flight mode": "Mode avion",
+  "General settings": "Paramètres généraux",
+  "Restart": "Redémarrer",
+  "Turn off": "Éteindre"
+ },
+ "GestureCheatSheet": {
+  "Back": "Retour",
+  "Close document": "Fermer le document",
+  "Double-tap with one finger to edit or format typed text": "Appuyez 2 fois avec un doigt pour modifier ou formater du texte numérique",
+  "Draw a horizontal line and hold to select handwriting beneath the line": "Dessinez une ligne horizontale et maintenez le Marker en place pour sélectionner l’écriture manuscrite sous la ligne",
+  "Draw shapes": "Dessiner des formes",
+  "Editing": "Modifier",
+  "Flip page": "Tourner une page",
+  "Gestures": "Gestes tactiles",
+  "Hold and drag on typed text to edit and format it": "Pressez et déplacez le Marker sur du texte pour le modifier ou le formater",
+  "Hold at end of stroke to fix the shape. Drag and rotate it to adjust": "Placez le Marker au bout du trait de crayon et déplacez-le pour ajuster la forme",
+  "Jump": "Sauter à la page suivante",
+  "Navigate pages and overviews with one finger, up, down, and to the sides": "Naviguez dans vos pages et vues d’ensemble avec un doigt, vers le haut, vers le bas et vers les côtés",
+  "Open drawer": "Ouvrir le panneau",
+  "Open quick settings": "Ouvrir les paramètres rapides",
+  "Pan": "Zoomer pour ajuster",
+  "Pinch/spread two fingers to change the zoom level of pages": "Pincez/écartez 2 doigts pour modifier le niveau de zoom de la page",
+  "Press and hold with one finger to perform actions when selected": "Appuyez et gardez le doigt sur l’élément sélectionné pour réaliser des actions",
+  "Quick browse": "Parcourir rapidement",
+  "Redo": "Refaire",
+  "Scroll": "Faire défiler",
+  "Select all": "Tout sélectionner",
+  "Select below": "Sélectionner dessous",
+  "Select item": "Sélectionner un élément",
+  "Select paragraph": "Sélectionner un paragraphe",
+  "Select typed text": "Sélectionner du texte",
+  "Select word": "Sélectionner un mot",
+  "Shortcuts": "Raccourcis",
+  "Slowly navigate inside documents with two fingers, dragging the page": "Naviguez lentement dans vos documents en faisant glisser la page avec 2 doigts",
+  "Swipe down from the top edge to Return to My files": "Faites glisser un doigt depuis le haut de l’écran pour retourner dans Mes fichiers",
+  "Swipe down from the top-right corner to see battery level, Wi-Fi, and more": "<b></b>Faites glisser un doigt depuis le coin en haut à droite pour voir le niveau de batterie, la connexion Wi-&#8288;Fi et plus",
+  "Swipe one finger horizontally to move between pages": "Faites glisser un doigt horizontalement pour passer d’une page à l’autre",
+  "Swipe one finger vertically to quickly scroll in longer pages": "Faites glisser un doigt verticalement pour faire défiler des pages plus longues",
+  "Swipe two fingers from the top edge to view recent and favorited files": "Faites glisser 2 doigts depuis le haut de l’écran pour voir vos fichiers récents et favoris",
+  "Swipe up from the bottom edge to get a scrollable preview of your pages": "Faites glisser un doigt depuis le bas de l’écran pour afficher un aperçu défilant de vos pages",
+  "Tap four times to edit or format the whole text": "Appuyez 4 fois pour modifier ou formater la totalité du texte",
+  "Tap once with three fingers to make undone actions reappear": "Appuyez une fois avec 3 doigts pour faire réapparaître les actions annulées",
+  "Tap once with two fingers to take back your last change": "Appuyez une fois avec 2 doigts pour annuler votre dernière modification",
+  "Triple-tap with one finger to edit or format typed sections": "Appuyez 3 fois avec un doigt pour modifier ou formater une partie du texte",
+  "Typed text": "Texte numérique",
+  "Undo": "Annuler",
+  "Zoom": "Zoomer"
+ },
+ "GettingStartedPage": {
+  "Let's get you set up": "Paramétrons votre tablette papier",
+  "To get started, please have your computer or smartphone nearby. We'll use it to set up your account.": "Pour commencer, assurez-vous d’avoir votre ordinateur ou smartphone à portée de main. Vous en aurez besoin pour configurer votre compte."
+ },
+ "GettingStartedPageBase": {
+  "Before you get started": "Avant de commencer",
+  "Next": "Suivant",
+  "You'll need a smartphone or computer to set up your&#160;paper&#160;tablet.": "Vous aurez besoin d’un smartphone ou d’un ordinateur pour configurer votre tablette papier."
+ },
+ "GlyphSelectionHandler": {
+  "Copy": "Copier"
+ },
+ "HWCLanguagePageWindow": {
+  "Cancel": "Annuler",
+  "Confirm": "Confirmer",
+  "Convert your notes into text in the language you use most often (in addition to English). Change it in Settings at any time.": "Convertissez vos notes en texte numérique dans la langue que vous utilisez le plus souvent (en plus du français). Vous pouvez changer cette langue à tout moment dans les paramètres.",
+  "Handwriting conversion language": "Écriture: langue de conversion",
+  "Handwriting language": "Langue de l’écriture manuscrite"
+ },
+ "HandednessChooser": {
+  "Left": "Gauche",
+  "Right": "Droite"
+ },
+ "HandednessSelectPageBase": {
+  "Choose your writing&#160;hand": "Avec quelle main préférez-vous écrire ?",
+  "Next": "Suivant"
+ },
+ "Header": {
+  "Confirm": "Confirmer"
+ },
+ "HeaderActions": {
+  "Close": "Fermer"
+ },
+ "HeaderContainer": {
+  "Cancel": "Annuler"
+ },
+ "Help": {
+  "For troubleshooting, support, and FAQ go to <b>https://support.remarkable.com</b>": "En cas de problème, rendez-vous sur <b>https://support.remarkable.com</b> pour consulter le service d’assistance et les questions fréquentes.",
+  "Help": "Aide"
+ },
+ "HelpBrowser": {
+  "A four step guide on how to use your paper tablet and improve your workflow.": "Un guide en quatre étapes pour apprendre à utiliser votre tablette papier et améliorer votre workflow.",
+  "Back": "Retour",
+  "Create meeting note": "Créez une fiche de réunion",
+  "Discover our go-to resource for the latest templates, tools, and workbooks.": "Découvrez les derniers modèles, outils et cahiers de travail dans notre centre de ressources.",
+  "Features and functionality": "Fonctionnalités",
+  "Gestures": "Gestes tactiles",
+  "Getting started": "Utiliser reMarkable",
+  "Learn more": "En savoir plus",
+  "Overview of all the gestures that you can use to navigate, edit, and multitask.": "Un catalogue de gestes tactiles à utiliser pour naviguer dans votre contenu, le modifier et gérer plusieurs fonctions à la fois.",
+  "Show tooltips": "Afficher les infobulles",
+  "Start meetings feeling organized and focused.": "Pour des réunions organisées et efficaces.",
+  "Start tutorial": "Commencer le tutoriel",
+  "Tips for how the different tools work, and where to find them on your reMarkable.": "Des conseils pour apprendre à localiser et à utiliser différents outils sur votre tablette papier reMarkable.",
+  "View all": "Afficher tout",
+  "Visit our learning and inspiration hub for more helpful tips, guides, and walkthroughs.": "Consultez notre espace d’apprentissage et d’inspiration pour plus de conseils, de guides et de tutoriels.",
+  "Ways of working": "Travailler avec reMarkable",
+  "reMarkable Methods": "reMarkable Methods"
+ },
+ "HwcDialog": {
+  "Converted text added as new page": "Texte converti ajouté sur une nouvelle page",
+  "Undo": "Annuler"
+ },
+ "HwcNotificationBar": {
+  "Cancel": "Annuler",
+  "Close": "Fermer",
+  "Converting to text (%1)": "Conversion en texte (%1)",
+  "Unable to convert notes": "Impossible de convertir les notes",
+  "Unable to convert text. Pair your device to an account.": "Impossible de convertir en texte. Jumelez votre appareil à un compte.",
+  "Unable to convert text. Please check your Wi-Fi connection.": "<b></b>Impossible de convertir en texte. Vérifiez votre connexion Wi-&#8288;Fi.",
+  "Unable to convert that amount of notes": "Impossible de convertir cette quantité de notes",
+  "Unknown error": "Erreur inconnue"
+ },
+ "HwcSelection": {
+  "Converted text added to clipboard": "Texte converti ajouté au clipboard",
+  "Undo": "Annuler"
+ },
+ "InactiveWarning": {
+  "Close": "Fermer",
+  "Cloud limit reached": "Limite de stockage cloud atteinte",
+  "Don't show this message again": "Ne plus montrer ce message",
+  "Not syncing": "Impossible de synchroniser",
+  "Without Connect, documents stop syncing after 50 days of inactivity. Reactivate cloud storage and sync documents across all devices by subscribing at my.remarkable.com.": "Sans abonnement Connect, la synchronisation des documents s’arrête après 50 jours d’inactivité. Abonnez-vous sur my.remarkable.com pour réactiver le stockage dans le cloud et synchroniser vos documents dans tous vos appareils."
+ },
+ "InfoDialog": {
+  "Close": "Fermer",
+  "This document contains data that is not supported.": "Ce document contient des données non compatibles.",
+  "Unable to open": "Impossible d’ouvrir le document"
+ },
+ "InformationDialog": {
+  "Back": "Retour"
+ },
+ "IntegrationsEmptyViewWindow": {
+  "Back": "Retour",
+  "Integrations": "Stockage cloud"
+ },
+ "IntegrationsFoldoutItem": {
+  "Connect required": "Abonnement Connect requis",
+  "Export to %1": "Exporter vers %1",
+  "Export to Integration": "Exporter vers le cloud"
+ },
+ "IntegrationsOnboardingWindow": {
+  "<b>Press and hold</b> an item for <b>2 seconds</b> and make a duplicate of any PDF and ebook, to download, browse, and edit in My files.": "<b>Appuyez</b> sur un élément pendant <b>2 secondes</b> pour dupliquer un fichier PDF ou un ebook à télécharger, consulter et modifier dans Mes fichiers.",
+  "Content from %1": "Contenu en provenance de %1",
+  "Integration": "Stockage cloud",
+  "With this integrated service, you have access to all your documents in one place.": "Grâce à ce service d’intégration dans le cloud, vous pouvez accéder à tous vos documents au même endroit."
+ },
+ "KeyboardLanguageSelect": {
+  "Close": "Fermer"
+ },
+ "KeyboardPanel": {
+  "Close": "Fermer"
+ },
+ "LanguageAndKeyboard": {
+  "American English": "Anglais américain",
+  "Austrian German": "Allemand autrichien",
+  "Back": "Retour",
+  "British English": "Anglais britannique",
+  "Bulgarian": "Bulgare",
+  "Canadian English": "Anglais canadien",
+  "Canadian French": "Français canadien",
+  "Croatian": "Croate",
+  "Czech": "Tchèque",
+  "Danish": "Danois",
+  "Dutch": "Néerlandais",
+  "Dutch (BE)": "Néerlandais (BE)",
+  "Dutch (NL)": "Néerlandais (NL)",
+  "English": "Anglais",
+  "English (CA)": "Anglais (CA)",
+  "English (UK)": "Anglais (UK)",
+  "English (US)": "Anglais (US)",
+  "Estonian": "Estonien",
+  "Finnish": "Finnois",
+  "Flemish": "Flamand",
+  "French": "Français",
+  "French (CA)": "Français (CA)",
+  "French (FR)": "Français (FR)",
+  "Galician": "Galicien",
+  "German": "Allemand",
+  "German (AT)": "Allemand (AT)",
+  "German (DE)": "Allemand (DE)",
+  "German (beta)": "Allemand (bêta)",
+  "Greek": "Grec",
+  "Handwriting conversion": "Conversion de l’écriture manuscrite",
+  "Handwriting conversion language": "Écriture: langue de conversion",
+  "Hungarian": "Hongrois",
+  "Icelandic": "Islandais",
+  "Irish": "Irlandais",
+  "Italian": "Italien",
+  "Keyboard": "Clavier",
+  "Language and keyboard": "Langue et clavier",
+  "Languages": "Langues",
+  "Latvian": "Letton",
+  "Lithuanian": "Lituanien",
+  "Norwegian": "Norvégien",
+  "On-screen keyboard": "Clavier virtuel",
+  "Polish": "Polonais",
+  "Portuguese": "Portugais",
+  "Romanian": "Roumain",
+  "Slovak": "Slovaque",
+  "Slovenian": "Slovène",
+  "Spanish": "Espagnol",
+  "Specifications and shortcuts": "Spécifications et raccourcis",
+  "Swedish": "Suédois",
+  "System language": "Langue du système",
+  "Type Folio": "Type Folio",
+  "Type Folio language": "Langue du Type Folio"
+ },
+ "LanguageCellItem": {
+  "Language and keyboard": "Langue et clavier"
+ },
+ "LayersMenu": {
+  "Background": "Fond d’écran",
+  "Layers": "Calques",
+  "Layers and templates": "Calques et modèles",
+  "Limit of 5 layers reached": "Limite de 5 calques atteinte",
+  "New layer": "Nouveau calque",
+  "Template": "Modèle",
+  "Text": "Texte"
+ },
+ "LibraryActions": {
+  "Create new": "Créer",
+  "Folder": "un dossier",
+  "Jot down your thoughts": "Pour capturer vos pensées",
+  "Not enough free space to create quick sheet": "Pas assez d’espace libre pour créer une feuille volante",
+  "Notebook": "un carnet",
+  "Organize your content": "Pour organiser votre contenu",
+  "Quick sheet": "une feuille volante",
+  "Record ideas, write, and sketch": "Pour noter vos idées et faire des croquis",
+  "Unable to add page while file is being downloaded": "Impossible d’ajouter une page pendant le téléchargement du fichier",
+  "Unable to add page while file is being exported": "Impossible d’ajouter une page pendant l’exportation du fichier"
+ },
+ "LicenseInformationWindow": {
+  "Back": "Retour"
+ },
+ "MainView": {
+  "\"%1\" was imported as a template": "%1 importé comme modèle",
+  "\"%1\" was imported as a workbook": "%1 importé comme cahier de travail",
+  "<b>Open in a new notebook</b>": "<b>Ouvrir dans nouveau carnet</b>",
+  "<b>Open</b>": "<b>Ouvrir</b>",
+  "Cancel": "Annuler",
+  "Open settings": "Ouvrir les paramètres",
+  "This function requires a network connection": "Connexion réseau requise",
+  "This function requires a paired account": "Compte jumelé requis",
+  "Unable to retrieve without a cloud connection": "Récupération impossible sans connexion au cloud"
+ },
+ "ManualMigrationPopupWindow": {
+  "Pair your device": "Jumelez votre appareil",
+  "Verify your account": "Confirmez votre compte",
+  "We've increased the security for your reMarkable account. To sync your content, and use basic features, pair your paper tablet to the cloud. Make sure you log in with the same email.": "Nous avons augmenté le niveau de sécurité sur votre compte reMarkable. Pour pouvoir synchroniser votre contenu et utiliser les fonctionnalités de base, veuillez jumeler votre tablette papier avec le cloud. Assurez-vous de vous connecter avec la même adresse e-&#8288;mail."
+ },
+ "MdmSshAboutText": {
+  "<p>To do so, this device acts as an USB ethernet device, and you can connect using the SSH protocol. Because this device is enrolled with your enterprise, SSH connectivity has been disabled for security purposes.</p>": "<p>Pour ce faire, cet appareil fonctionne comme un périphérique Ethernet USB et vous permet de vous connecter via le protocole SSH. Comme cet appareil est enregistré auprès de votre entreprise, la connexion SSH a été désactivée pour des raisons de sécurité.</p>"
+ },
+ "MessagingIntegrationButton": {
+  "Send to %1": "Envoyer sur %1"
+ },
+ "MoveFoldout": {
+  "New folder": "Nouveau dossier",
+  "Search": "Rechercher"
+ },
+ "MoveOutFoldout": {
+  "Move out": "Déplacer"
+ },
+ "MoveSelectFoldout": {
+  "New notebook": "Nouveau carnet",
+  "Search": "Rechercher"
+ },
+ "MyFilesMoreFoldout": {
+  "Archive to cloud": "Archiver dans le cloud",
+  "Connect required": "Abonnement Connect requis",
+  "Favorite": "Favoris",
+  "Pairing required": "Jumelage requis",
+  "Retrieve from cloud": "Récupérer dans le cloud",
+  "Send by email": "<b></b>Envoyer par e-&#8288;mail",
+  "Tag": "Étiqueter"
+ },
+ "Navigator": {
+  "%n item(s) were deleted": [
+   "%n élément supprimé",
+   "%n éléments supprimés"
+  ],
+  "%n tag(s) were deleted": [
+   "%n étiquette supprimée",
+   "%n étiquettes supprimées"
+  ],
+  "Access Google Drive, Dropbox, and OneDrive right from your paper&#160;tablet to improve your workflow. Locate stored files, import them to your reMarkable, and export documents directly to your chosen service.": "Accédez à Google Drive, Dropbox et OneDrive depuis votre tablette papier pour améliorer votre workflow. Retrouvez vos fichiers enregistrés, importez-les sur votre reMarkable et exportez des documents directement vers le service de votre choix.",
+  "All": "Tout",
+  "Back to %1": "Retour à %1",
+  "Document drawer": "Panneau de documents",
+  "Favorites": "Favoris",
+  "Find what you're looking for by searching for keywords in your handwritten notes and digital text inside notebooks and documents.": "Trouvez ce dont vous avez besoin en recherchant des mots-clés dans les notes manuscrites ou textes numériques de vos carnets et documents.",
+  "Folders": "Dossiers",
+  "Handwriting search": "Recherche dans l’écriture",
+  "Integrations": "Stockage cloud",
+  "Long-press for quick sheet": "Appuyer pour feuille volante",
+  "More": "Plus",
+  "Notebooks": "Carnets",
+  "Open %1": "Ouvrir %1",
+  "Organize your notes": "Organisez vos notes",
+  "PDFs": "Fichiers PDF",
+  "Quick settings": "Paramètres rapides",
+  "Search now": "Rechercher",
+  "Select where to place the page": "Où placer la page ?",
+  "Try again": "Réessayez"
+ },
+ "NetworkEditorForm": {
+  "Back": "Retour",
+  "Connect": "Me connecter",
+  "Connect to Wi-Fi": "<b></b>Connectez-vous au Wi-&#8288;Fi",
+  "Enter details for other network": "Saisissez les détails d’un autre réseau",
+  "Enter password for %1": "Saisissez le mot de passe pour %1",
+  "Enter&#160;details&#160;for %1": "Saisissez les détails pour %1",
+  "Select option": "Sélectionner cette option"
+ },
+ "NoConnectOnboardingWindow": {
+  "Not subscribed": "Pas d’abonnement",
+  "To search for keywords in your handwritten notes inside documents you need Connect. Subscribe at remarkable.com/store/connect.": "Un abonnement Connect est requis pour faire des recherches dans vos notes manuscrites : abonnez-vous sur remarkable.com/store/connect"
+ },
+ "NoConnectWorkbookActionWindow": {
+  "Close": "Fermer",
+  "Connect required": "Abonnement Connect requis",
+  "To make a duplicate, export, and send workbooks from reMarkable Methods, you need Connect. Manage your subscription at my.remarkable.com.": "Un abonnement Connect est requis pour dupliquer, exporter et envoyer des cahiers de travail depuis reMarkable Methods. Gérez votre abonnement sur my.remarkable.com"
+ },
+ "NotificationBar": {
+  "Clear clipboard": "Vider clipboard"
+ },
+ "NotifyRecovery": {
+  "Enter recovery code": "Saisissez le code de récupération",
+  "Enter the recovery code that you got when setting a passcode. If you can't find it, a factory reset is required.": "Saisissez le code de récupération que vous avez reçu pendant la création du code d’accès. Si vous ne le trouvez pas, une réinitialisation sera requise.",
+  "Factory reset": "Réinitialisation",
+  "Recover your paper tablet": "Restaurez votre tablette papier"
+ },
+ "OAuthAccount": {
+  "Activate Connect": "Activez Connect",
+  "Close": "Fermer",
+  "Get new code": "Demander un nouveau code",
+  "Next": "Suivant",
+  "Pair your device": "Jumelez votre appareil",
+  "Pair your paper tablet with %1, or unpair to use a different account": "Jumelez votre tablette papier avec %1 ou déjumelez-la pour utiliser un autre compte.",
+  "Pairing completed": "Jumelage terminé",
+  "Pairing successful, time to try Connect. Get unlimited cloud storage, handwriting search, exclusive templates, and more.<br><br>Claim your free trial on <b>my.remarkable.com.</b>": "Jumelage réussi. Essayez Connect pour profiter de fonctionnalités comme le stockage illimité dans le cloud, la recherche dans l’écriture manuscrite, des modèles exclusifs, et plus encore.<br><br>Activez votre essai gratuit sur <b>my.remarkable.com</b>",
+  "Please retry and we'll do our best to solve the problem.": "Veuillez réessayer. Nous ferons tout notre possible pour régler ce problème.",
+  "Something went wrong": "Une erreur s’est produite",
+  "To use cloud storage and sync, open the link we sent to your email%1.": "Pour accéder au stockage dans le cloud et à la synchronisation, ouvrez le lien que nous vous avons envoyé sur votre adresse e-&#8288;mail %1.",
+  "Try again": "Réessayez",
+  "Unable to complete pairing": "Impossible de terminer le jumelage",
+  "Verify email to pair": "Confirmez par e-&#8288;mail pour jumeler",
+  "Verify later": "Confirmer plus tard",
+  "Visit the link to enter the verification code. Make the paper tablet your own by pairing it to a&#160;reMarkable&#160;account.": "Suivez le lien pour saisir le code de vérification. Paramétrez votre tablette papier en la jumelant avec un compte reMarkable.",
+  "We are unable to pair your device. Please try again.": "Impossible de jumeler votre appareil. Veuillez réessayer.",
+  "You've successfully paired your device. To manage your account, visit my.remarkable.com.": "Votre appareil a été correctement jumelé. Rendez-vous sur my.remarkable.com pour gérer votre compte."
+ },
+ "OAuthCodeDisplay": {
+  "The code is valid for %1 minutes": "Votre code est valide pendant %1 minutes",
+  "Your code timed out": "Votre code a expiré"
+ },
+ "OAuthSetupPageBase": {
+  "Next": "Suivant",
+  "Pair your device later": "Jumelez votre appareil plus tard"
+ },
+ "OnboardingDialogWindow": {
+  "Create meeting note is ready to use:": "L’option Créer une fiche de réunion est disponible :",
+  "Meeting notebooks can be moved into any other folder": "Les fiches de réunion peuvent être déplacées vers un autre dossier",
+  "Meeting notes are added in a new, dedicated meeting notes folder": "Les fiches de réunion sont ajoutées dans un nouveau dossier dédié",
+  "Notes for recurring meetings are added in the same notebook": "Les notes de réunions récurrentes sont ajoutées au même carnet",
+  "Show meetings": "Afficher les réunions",
+  "Tap a meeting from the list to create a meeting note": "Appuyez sur une réunion dans la liste pour créer une fiche de réunion"
+ },
+ "OnboardingDialogue": {
+  "%1 of %2": "%1 sur %2",
+  "Back": "Retour",
+  "Close": "Fermer",
+  "Next": "Suivant"
+ },
+ "OnboardingWindow": {
+  "Cancel": "Annuler",
+  "Close": "Fermer",
+  "Convert": "Convertir",
+  "Convert and share": "Convertir et partager",
+  "Convert and share uses AI to turn your notes into typed text, and sorts your annotated documents into highlights and next steps. Your converted page is delivered to your email inbox as a shareable link, and can be edited from any browser.": "La fonctionnalité Convertir et partager utilise la puissance de l’IA pour convertir vos notes manuscrites en texte numérique et trier vos documents annotés par mots-clés et étapes suivantes. Votre texte numérique arrive dans votre boîte mail sous forme de lien partageable et peut être modifié dans le navigateur de votre choix.",
+  "Instantly share your thoughts in meetings with Screen Share.": "Partagez vos idées pendant vos réunions grâce au partage d’écran.",
+  "Next": "Suivant",
+  "Share screen": "Partager l’écran",
+  "Share your screen": "Partagez votre écran",
+  "Stream your notes and ideas directly on a big screen. Turn your paper&#160;tablet into the perfect digital whiteboard to sketch and demonstrate concepts live. A must-have for video meetings and presentations.": "Diffusez vos notes et idées directement sur un grand écran. Transformez votre tablette papier en tableau blanc numérique idéal pour dessiner et expliquer des concepts en direct. Une fonctionnalité indispensable pour vos présentations et réunions virtuelles.",
+  "To start mirroring, accept the connection by either opening the desktop app or visiting <b>app.remarkable.com/&#8288;screenshare</b>": "Pour commencer à partager, acceptez la connexion dans l’application bureau ou sur <b>app.remarkable.com/&#8288;screenshare</b>"
+ },
+ "OneTimeCodeDisplay": {
+  "Verification code": "Code de vérification"
+ },
+ "OneTimeCodeSetupPageBase": {
+  "Activate Connect": "Activez Connect",
+  "Another reMarkable already connected. Go to %1 to connect your new device.": "Une autre tablette papier reMarkable est déjà connectée. Rendez-vous sur %1 pour connecter un nouvel appareil.",
+  "Get a verification code at <b>%1</b><br>and enter it below.": "Obtenez un code de vérification sur <b>%1</b><br>et saisissez-le ci-dessous.",
+  "Next": "Suivant",
+  "Pair your device": "Jumelez votre appareil",
+  "Pair your device later": "Jumelez votre appareil plus tard",
+  "Pairing": "Jumelage en cours",
+  "Pairing completed": "Jumelage terminé",
+  "Pairing successful, time to try Connect. Get unlimited cloud storage, handwriting search, exclusive templates, and more.<br><br>Claim your free trial on <b>my.remarkable.com.</b>": "Jumelage réussi. Essayez Connect pour profiter de fonctionnalités comme le stockage illimité dans le cloud, la recherche dans l’écriture manuscrite, des modèles exclusifs, et plus encore.<br><br>Activez votre essai gratuit sur <b>my.remarkable.com.</b>",
+  "Please retry and we'll do our best to solve the problem.": "Veuillez réessayer. Nous ferons tout notre possible pour régler ce problème.",
+  "Please try a different code to log in with.": "Essayez de vous connecter avec un autre code.",
+  "The connection to our servers is not secure. Please try again, or connect to a different Wi-Fi.": "<b></b>La connexion à nos serveurs n’est pas sécurisée. Veuillez réessayer, ou connectez-vous à un autre réseau Wi-&#8288;Fi.",
+  "There might be an issue with the date/time information on your device. Please check System time and try logging in again. If you still experience problems, contact support@remarkable.com.": "Il y a peut-être un problème avec la date et/ou l’heure sur votre appareil. Vérifiez l’heure système et essayez de vous reconnecter. Si le problème persiste, contactez support@remarkable.com",
+  "There's an issue with the server connection. Please try again, or connect to a different Wi-Fi.": "<b></b>Il y a un problème avec la connexion du serveur. Veuillez réessayer, ou connectez-vous à un autre réseau Wi-&#8288;Fi.",
+  "Try again": "Réessayez",
+  "Unable to complete pairing": "Impossible de terminer le jumelage",
+  "You've successfully paired your device. To manage your account, visit my.remarkable.com.": "Votre appareil a été correctement jumelé. Rendez-vous sur my.remarkable.com pour gérer votre compte."
+ },
+ "OptionalTextItem": {
+  "Edit": "Modifier"
+ },
+ "OrientationButton": {
+  "Set to landscape": "Passer en mode paysage",
+  "Set to portrait": "Passer en mode portrait"
+ },
+ "OutdatedSoftwareWindow": {
+  "Don't show this message again": "Ne plus montrer ce message",
+  "Get the latest software": "Mettez votre logiciel à jour",
+  "You have an outdated version of the software. Enable updates in <b>Software settings &gt; Advanced</b> to continue syncing.": "La version de votre logiciel est obsolète. Activez les mises à jour dans la rubrique <b>Paramètres > Logiciel > Avancé</b> pour continuer la synchronisation."
+ },
+ "PageErrorOverlay": {
+  "Diagnostic information:": "Informations sur le diagnostic :",
+  "Document is being synced": "Document en cours de synchronisation",
+  "Please close and try again later": "Veuillez fermer et réessayer plus tard",
+  "Please start a new page or erase something to make further changes": "Commencez une nouvelle page ou effacez quelque chose pour faire d’autres modifications",
+  "Stroke limit reached": "Limite de coups de crayon atteinte",
+  "This document is not supported by your current software version.\nPlease check for updates": "Ce document n’est pas compatible avec la version actuelle de votre logiciel.\nVérifiez si des mises à jour sont disponibles.",
+  "Try restarting your application or contact support if the problem persists": "Essayez de redémarrer votre application. Si le problème persiste, veuillez contacter le service d’assistance.",
+  "Try restarting your reMarkable or contact support if the problem persists": "Essayez de redémarrer votre tablette papier reMarkable. Si le problème persiste, veuillez contacter le service d’assistance",
+  "Unable to save page": "Impossible de sauvegarder la page",
+  "Unable to view page": "Impossible d’afficher la page",
+  "Unable to view page. Low on memory.": "Impossible d’afficher la page. Mémoire insuffisante.",
+  "Update software to view": "Mise à jour du logiciel requise pour afficher"
+ },
+ "PageOverviewButton": {
+  "Page overview": "Vue d’ensemble"
+ },
+ "PagePicker": {
+  "All pages": "Toutes les pages",
+  "Go to page": "Aller à la page",
+  "Select all": "Tout sélectionner",
+  "Tagged pages": "Pages étiquetées",
+  "Unselect all": "Tout désélectionner"
+ },
+ "PageSlider": {
+  "Chapter: %1": "Chapitre : %1"
+ },
+ "PageThumbnail": {
+  "Unable to view": "Impossible d’afficher",
+  "Update software to view": "Mise à jour du logiciel requise pour afficher"
+ },
+ "Pages": {
+  "Back": "Retour",
+  "Cancel": "Annuler",
+  "Cancel || cancel delete": "Annuler",
+  "Connect to Wi-Fi to convert text": "<b></b>Connectez-vous au Wi-&#8288;Fi pour convertir en texte",
+  "Delete": "Supprimer",
+  "Delete %n page(s) permanently?": [
+   "Supprimer %n page de façon permanente ?",
+   "Supprimer %n pages de façon permanente ?"
+  ],
+  "Dismiss": "Ignorer",
+  "Go": "Continuer",
+  "If you delete the page, you won't be able to get it back.": "Si vous supprimez cette page, vous ne pourrez pas la récupérer.",
+  "If you delete the pages, you won't be able to get them back.": "Si vous supprimez ces pages, vous ne pourrez pas les récupérer.",
+  "Tag": "Étiqueter",
+  "Unable to find original document.": "Impossible de trouver le document d’origine"
+ },
+ "PagesActions": {
+  "Back": "Retour",
+  "Connect required": "Abonnement Connect requis",
+  "Delete": "Supprimer",
+  "Duplicate": "Dupliquer",
+  "Handwriting conversion": "Conversion de l’écriture manuscrite",
+  "Make your handwritten notes easy to use in emails, reports, or presentations by converting them into typed text. Handwriting conversion supports 33 languages, cursive and block letters, and sharing your freshly converted notes directly via email.": "Convertissez vos notes manuscrites en texte numérique pour pouvoir les utiliser plus facilement dans vos e-&#8288;mails, rapports et présentations. La conversion de l’écriture manuscrite en texte est disponible en 33 langues, pour l’écriture cursive et scripte, et permet de partager vos notes converties en texte directement par e-&#8288;mail.",
+  "More": "Plus",
+  "Move": "Déplacer",
+  "Send by email": "<b></b>Envoyer par e-&#8288;mail",
+  "Share signed documents, annotated presentations, or handwritten notes directly from your paper tablet without losing focus. Send content as PDF, PNG, or SVG files.": "Partagez des documents signés, des présentations annotées ou des notes manuscrites directement depuis votre tablette papier, sans distractions. Envoyez du contenu au format PDF, PNG ou SVG.",
+  "This feature is not available in retail demo mode.": "Cette fonctionnalité n’est pas disponible en mode démo",
+  "Unable to add page while file is being exported": "Impossible d’ajouter une page pendant l’exportation du fichier",
+  "Unable to convert to text. Another conversion is in progress.": "Impossible de convertir en texte. Une autre conversion est en cours.",
+  "Unable to delete while document is being exported": "Impossible de supprimer le document pendant l’exportation"
+ },
+ "PagesItem": {
+  "%1 (Current)": "%1 (page actuelle)"
+ },
+ "PagesMoreFoldout": {
+  "Add page after": "Ajouter une page après",
+  "Add page before": "Ajouter une page avant",
+  "Convert": "Convertir",
+  "Send by email": "<b></b>Envoyer par e-&#8288;mail",
+  "Tag": "Étiqueter"
+ },
+ "PairingExpiredPopupWindow": {
+  "As a security measure, we need you to pair your account and paper tablet again. This is required to continue syncing content to the cloud and using basic features on your device and apps.": "Par mesure de sécurité, vous devez à nouveau jumeler votre compte avec votre tablette papier. Cette action est requise pour pouvoir continuer à synchroniser votre contenu au cloud et à utiliser les fonctionnalités de base sur votre appareil et dans les applications.",
+  "Pair your device": "Jumelez votre appareil",
+  "Verify your account": "Confirmez votre compte"
+ },
+ "PairingSkipPage": {
+  "Create an account and pair your device later by going to Settings&nbsp;>&nbsp;Account.": "Créez un compte et jumelez votre appareil plus tard dans la rubrique Paramètres > Compte.",
+  "Pair now": "Jumeler",
+  "Pair your device later": "Jumelez votre appareil plus tard"
+ },
+ "PaperTabletCellItem": {
+  "Software": "Logiciel"
+ },
+ "PaperTabletInfoMessage": {
+  "Tap to restart device to complete update.": "Appuyez pour redémarrer l’appareil et terminer la mise à jour"
+ },
+ "PartitionSelectGesture": {
+  "Select below": "Sélectionner dessous"
+ },
+ "PasscodeUpdateWindow": {
+  "Your passcode has been updated": "Votre code d’accès a été mis à jour",
+  "Your passcode is turned off": "Votre code d’accès est désactivé"
+ },
+ "PasswordEntryDialog": {
+  "Enter password to open": "Saisissez votre mot de passe pour ouvrir le document",
+  "Incorrect password. Please try again.": "Mot de passe incorrect. Veuillez réessayer.",
+  "Open": "Ouvrir",
+  "Password protected PDF": "PDF protégé par mot de passe"
+ },
+ "PasswordInputField": {
+  "Password": "Mot de passe"
+ },
+ "PincodeDialog": {
+  "Eight digits": "8 chiffres",
+  "Four digits": "4 chiffres",
+  "Six digits": "6 chiffres"
+ },
+ "PincodeDialogPage": {
+  "Back": "Retour"
+ },
+ "PincodePolicy": {
+  "Keeping work secure": "Sécurisez votre travail",
+  "Set passcode": "Créez un nouveau code d’accès",
+  "To make your paper tablet compliant with your workplace, set a passcode with minimum %1 digits.": "Pour rendre votre tablette papier conforme aux exigences de votre employeur, veuillez créer un code d’accès avec un minimum de %1 chiffres.",
+  "To make your paper tablet compliant with your workplace, update the passcode with minimum %1 digits.": "Pour rendre votre tablette papier conforme aux exigences de votre employeur, veuillez mettre votre code d’accès à jour avec un minimum de %1 chiffres.",
+  "Your reMarkable account is associated with an enterprise with enhanced security.": "Votre compte reMarkable est associé à une entreprise utilisant des mesures de sécurité renforcées."
+ },
+ "PoweroffWindow": {
+  "Cancel": "Annuler",
+  "Do you want to restart your reMarkable?": "Souhaitez-vous redémarrer votre reMarkable ?",
+  "Do you want to turn off your reMarkable?": "Souhaitez-vous éteindre votre reMarkable ?",
+  "Factory reset": "Réinitialisation",
+  "Restart": "Redémarrer",
+  "Turn off": "Éteindre"
+ },
+ "PrimaryPenMenu": {
+  "Primary pen": "Stylo principal"
+ },
+ "Profile": {
+  "<b>%1</b> via a <b>%2 account</b>": "<b>%1</b> via un <b>compte %2 </b>",
+  "Loading...": "Chargement en cours…",
+  "No account": "Pas de compte",
+  "Pair": "Jumeler",
+  "Pair your paper tablet with a&#160;reMarkable&#160;account.": "Jumelez votre tablette papier avec un compte reMarkable.",
+  "Pairing with the cloud requires a Wi-Fi connection.": "<b></b>Une connexion Wi-&#8288;Fi est requise pour jumeler avec le cloud.",
+  "Unpair": "Déjumeler",
+  "Your login details for your reMarkable account.": "Vos identifiants de connexion pour votre compte reMarkable"
+ },
+ "QObject": {
+  "%1 and %2 attendees": "%1 et %2 participants",
+  "%1 files exported": "%1 fichiers exportés",
+  "%1 files failed to export": "Impossible d’exporter %1 fichiers",
+  "%1 files failed to import": "Impossible d’importer %1 fichiers",
+  "%1 files imported": "%1 fichiers importés",
+  "%1/%2 files exported": "%1/%2 fichiers exportés",
+  "%1/%2 files imported": "%1/%2 fichiers importés",
+  "'%1' closed unexpectedly": "Fermeture inattendue de %1",
+  "<b>Reopen</b>": "<b>Rouvrir</b>",
+  "Agenda": "Programme",
+  "Anonymous identity": "Identité anonyme",
+  "Attendees": "Participants",
+  "Calendar button hidden. Learn more in Guides.": "Bouton de calendrier masqué. Retrouvez plus de détails dans les Guides.",
+  "Client disconnected": "Interlocuteur déconnecté",
+  "Close": "Fermer",
+  "Connection failed": "Impossible de se connecter",
+  "Connection timed out": "Connexion expirée",
+  "Connection to %1 failed": "Impossible de se connecter à %1",
+  "Disconnect": "Se déconnecter",
+  "Disk is full. Changes will not be saved.": "Le disque est plein. Impossible de sauvegarder les modifications.",
+  "Download retail library": "Téléchargez la bibliothèque du mode démo",
+  "EAP method": "Méthode EAP",
+  "Ended %1": "Fini %1",
+  "File exported": "Fichier exporté",
+  "File failed to export": "Impossible d’exporter le fichier",
+  "File failed to import": "Impossible d’importer le fichier",
+  "File imported": "Fichier importé",
+  "Files failed to export": "Impossible d’exporter les fichiers",
+  "Files failed to import": "Impossible d’importer les fichiers",
+  "Identity": "Identité",
+  "Identity required": "Identité requise",
+  "Invalid password": "Mot de passe invalide",
+  "Manage account": "Gérer mon compte",
+  "Manage cloud": "Gérer le cloud",
+  "Meeting series | %1": "Série de réunion | %1",
+  "Meeting | %1": "Réunion | %1",
+  "Must be at least %1 characters": "Doit contenir %1 caractères minimum",
+  "Must be at most %1 characters": "Doit contenir %1 caractères maximum",
+  "Network name": "Nom du réseau",
+  "Network name required": "Nom de réseau requis",
+  "Open Guides": "Ouvrir les Guides",
+  "Open a document to continue presenting": "Ouvrez un document pour continuer à présenter",
+  "Pair your paper tablet to verify your account": "Jumelez votre tablette papier pour confirmer votre compte",
+  "Password": "Mot de passe",
+  "Password contains invalid characters": "Le mot de passe contient des caractères invalides",
+  "Password must be at least 8 characters": "Le mot de passe doit comporter au moins 8 caractères",
+  "Password must be at most 63 characters": "Le mot de passe ne doit pas dépasser 63 caractères",
+  "Password required": "Mot de passe requis",
+  "Phase 2 authentication": "Authentification Phase 2",
+  "Restart": "Redémarrer",
+  "Retry": "Réessayer",
+  "Screen Share is no longer active": "Le partage d’écran est désactivé",
+  "Security": "Sécurité",
+  "Security updates installed": "Mises à jour de sécurité installées",
+  "Start pairing": "Commencer le jumelage",
+  "Started %1": "Commencé %1",
+  "Storage is almost full": "Stockage presque plein",
+  "This field is required": "Ce champ est requis",
+  "Unable to sync": "Impossible de synchroniser",
+  "Unable to sync or connect to cloud": "Impossible de synchroniser ou de se connecter au cloud",
+  "Unsupported configuration": "Configuration incompatible",
+  "Update installed.": "Mise à jour installée",
+  "Upgrade": "Mettre à jour",
+  "Your paper tablet is not paired to cloud": "Votre tablette papier n’est pas jumelée avec le cloud",
+  "Your subscription has been updated": "Votre abonnement a été mis à jour"
+ },
+ "QrDialogWindow": {
+  "Close": "Fermer",
+  "Scan the QR-code to access your notes online. You can log in to edit the converted text, change the expiration date, or delete the page. Share your work with others by copying the link.": "Scannez le code QR pour accéder à vos notes en ligne. Connectez-vous pour modifier vos notes converties en texte numérique, changer la date d’expiration ou supprimer la page. Copiez le lien pour partager votre travail.",
+  "Sharing your work": "Partager votre travail"
+ },
+ "ReauthDialog": {
+  "Pair device": "Jumeler l’appareil",
+  "Pair to verify": "Jumelez votre appareil pour confirmer",
+  "Pair your reMarkable account%1%2 to your paper tablet, or unpair to connect with with a different account. Visit my.remarkable.com to manage your account and devices.": "Jumelez votre compte reMarkable %1%2 avec votre tablette papier, ou déjumelez-le pour vous connecter avec un autre compte. Rendez-vous sur my.remarkable.com pour gérer votre compte et vos appareils.",
+  "Unpair": "Déjumeler"
+ },
+ "RecentMenu": {
+  "Favorites": "Favoris",
+  "No favorited documents": "Aucun document favori",
+  "No recent documents": "Aucun document récent",
+  "Recent": "Récents"
+ },
+ "RedoButton": {
+  "Redo": "Refaire"
+ },
+ "ReleaseNotesWindow": {
+  "Back": "Retour"
+ },
+ "RenameEntity": {
+  "Cancel": "Annuler",
+  "Created %1": "Création : %1",
+  "Details": "Détails",
+  "ID: %1": "Identifiant : %1",
+  "Last modified %1": "Dernière modification : %1",
+  "Name": "Nom",
+  "Not syncing. Cloud limit reached.": "Impossible de synchroniser. Limite de stockage cloud atteinte.",
+  "Rename": "Renommer",
+  "Save": "Sauvegarder",
+  "Syncing error: %1": "Erreur de synchronisation : %1"
+ },
+ "ResetDeviceDialog": {
+  "All of your data will be erased from the device.": "Toutes vos données seront supprimées de l’appareil.",
+  "Any unsynced changes will be erased from the device.": "Toute modification non synchronisée sera supprimée de l’appareil.",
+  "Are you sure you want to reset without\nsyncing your latest changes?": "Souhaitez-vous vraiment réinitialiser sans\nsynchroniser vos dernières modifications&#160;?",
+  "Are you sure you want to reset your\nreMarkable to its factory settings?": "Souhaitez-vous vraiment réinitialiser votre\ntablette&#160;papier&#160;reMarkable et rétablir ses paramètres d’usine&#160;?",
+  "Cancel": "Annuler",
+  "Confirm": "Confirmer",
+  "Confirm factory reset": "Confirmez la réinitialisation",
+  "Factory reset": "Réinitialisation",
+  "Factory reset stopped": "Réinitialisation arrêtée",
+  "Force reset": "Forcer la réinitialisation",
+  "Please connect to Wi-Fi and try again.": "<b></b>Connectez-vous au Wi-&#8288;Fi et réessayez.",
+  "Reset stopped": "Réinitialisation arrêtée",
+  "Reset without syncing": "Réinitialiser sans synchroniser",
+  "Reset your device to factory settings. By doing this all files and settings on your reMarkable will be erased, and your device will be restored to its original state.": "Rétablissez les paramètres d’usine de votre appareil. Tous les fichiers et paramètres de votre tablette papier reMarkable seront supprimés, et votre appareil sera réinitialisé à son état d’origine.",
+  "Resetting...": "Réinitialisation en cours…",
+  "Syncing": "Synchronisation en cours",
+  "Unable to sync. Please try again.": "Impossible de synchroniser. Veuillez réessayer."
+ },
+ "ResetPasscodeWindow": {
+  "Success!": "C’est tout bon !"
+ },
+ "RetailCellItem": {
+  "Retail mode": "Mode démo"
+ },
+ "RetailDemoDialog": {
+  "A factory reset is required to exit retail mode. This will restore your device to its original settings.": "Une réinitialisation est requise pour quitter le mode démo. Cette action rétablira les paramètres d’usine de votre appareil.",
+  "Any unsynced changes will be erased from the device.": "Toute modification non synchronisée sera supprimée de l’appareil.",
+  "By entering this mode, you will lose all content currently on your device and no longer have access to files backed up to the cloud.": "En activant ce mode, vous perdrez tout le contenu actuellement sur votre appareil et n’aurez plus accès aux fichiers sauvegardés dans le cloud.",
+  "Cancel": "Annuler",
+  "Enter retail mode": "Activer le mode démo",
+  "Entering requires passcode to be disabled, and setting a dedicated retail passcode.": "Pour entrer dans ce mode, le code d’accès doit être désactivé et un code d’accès spécifique au mode démo doit être créé.",
+  "Please be aware that retail mode is designed for demo purposes only and not recommended for any other use.": "Veuillez noter que le mode démo est conçu uniquement à des fins de démonstration et n’est pas recommandé pour tout autre usage.",
+  "Remove passcode": "Retirer le code d’accès",
+  "Reset without syncing": "Réinitialiser sans synchroniser",
+  "Retail mode": "Mode démo",
+  "Syncing...": "Synchronisation en cours…",
+  "Unable to sync": "Impossible de synchroniser",
+  "You cannot enter with an Enterprise account.": "Vous ne pouvez pas accéder à ce mode avec un compte Entreprise."
+ },
+ "RetailDemoIndicator": {
+  "Retail demo": "Mode démo"
+ },
+ "RetailRestrictedDialog": {
+  "Enter passcode": "Saisissez votre code d’accès",
+  "Incorrect passcode. Try again.": "Code d’accès incorrect. Veuillez réessayer."
+ },
+ "RetailSetupInfo": {
+  "Back": "Retour",
+  "Enter retail": "Activer",
+  "Reseller": "Revendeur",
+  "Store id": "Identifiant du magasin",
+  "Store information": "Détails du magasin"
+ },
+ "RetailSetupLanguage": {
+  "Back": "Retour",
+  "Choose your language to begin.": "Pour commencer, veuillez choisir votre langue.",
+  "Next": "Suivant",
+  "Welcome to retail": "Configuration du mode démo"
+ },
+ "RetailSshAboutText": {
+  "<p>To do so, this device acts as an USB ethernet device, and you can connect using the SSH protocol. On a non-demo device the username, password and IP addresses can be found here.</p>": "<p>Pour ce faire, cet appareil fonctionne comme un périphérique Ethernet USB, et vous permet de vous connecter via le protocole SSH. Sur un appareil sans mode démo, le nom d’utilisateur, le mot de passe et les adresses IP apparaîtront ici.</p>"
+ },
+ "Scene": {
+  "Layer %1": "Calque %1"
+ },
+ "ScreenInfoPageBase": {
+  "Did you see that?": "Vous avez remarqué ?",
+  "Next": "Suivant",
+  "Refresh again": "Rafraîchir à nouveau",
+  "Traces of previous images appear occasionally, so your display refreshes to clear them. This is completely normal for a digital&#160;paper&#160;display.": "Des traces d’images précédentes apparaissent de temps en temps, et votre écran doit se rafraîchir pour les effacer. Ce processus est totalement normal pour un écran papier numérique."
+ },
+ "ScreenShare": {
+  "Canceled by app": "Annulé par l’application"
+ },
+ "ScreenShareButton": {
+  "Present with Screen Share": "Présenter avec le partage d’écran",
+  "Stop sharing your screen": "Arrêter le partage d’écran"
+ },
+ "SeabirdIntroPage": {
+  "A keyboard just as focused as you are": "Concentration maximale avec un clavier à votre image",
+  "Choose a style of key combinations. Your preference can be updated in Settings anytime.": "Choisissez un type de raccourcis clavier. Vous pouvez changer votre préférence à tout moment dans les paramètres.",
+  "Choose preferences": "Sélectionnez vos préférences",
+  "Choose the right language for you from the list below. You can always change this again later in Settings.": "Sélectionnez votre langue dans la liste ci-dessous. Vous pourrez la changer à tout moment dans les paramètres.",
+  "Hei! Your Type Folio has a Nordic&#160;layout": "Hei! Votre clavier Type Folio a une disposition nordique",
+  "Keyboard shortcuts": "Raccourcis clavier",
+  "Next": "Suivant",
+  "You've successfully connected a Type Folio. Set up the keyboard exactly how you like it.": "Le Type Folio a été correctement connecté. Vous pouvez désormais configurer le clavier selon vos préférences."
+ },
+ "SeabirdLanguage": {
+  "Type Folio language": "Langue du Type Folio"
+ },
+ "SeabirdPreference": {
+  "The shortcuts menu will open when you press and hold this key for 3 seconds": "Appuyez sur cette touche pendant 3 secondes pour ouvrir le menu des raccourcis."
+ },
+ "SearchButton": {
+  "Search": "Rechercher"
+ },
+ "SearchFilterDropdown": {
+  "Filters": "Filtres"
+ },
+ "SearchIndexPanel": {
+  "Handwriting search": "Recherche dans l’écriture",
+  "Keeps an index of the notes and text you've searched for.": "Garde un index des notes et textes recherchés.",
+  "Reset": "Réinitialiser",
+  "The search index for handwriting has been reset.": "L’index de recherche dans l’écriture manuscrite a été réinitialisé."
+ },
+ "SearchNotificationBar": {
+  "All handwritten notes are now searchable": "Vous pouvez désormais faire des recherches dans toutes vos notes manuscrites",
+  "Disk is almost full. Free up disk space to make more handwritten notes searchable.": "Le disque est presque plein. Faites de la place pour pouvoir faire des recherches dans plus de notes manuscrites.",
+  "Making handwriting searchable might take a while": "Activer la recherche dans l’écriture manuscrite peut prendre du temps",
+  "Unable to make handwritten notes searchable": "Impossible d’activer l’option de recherche dans les notes manuscrites"
+ },
+ "SearchResultsHeader": {
+  "Cancel": "Annuler",
+  "Clear": "Supprimer",
+  "Page only": "Page actuelle",
+  "Search": "Rechercher",
+  "Search here": "Rechercher ici",
+  "Searching page %1 of %2": "Recherche dans la page %1 sur %2"
+ },
+ "SearchView": {
+  "%n matches": [
+   "%n résultat",
+   "%n résultats"
+  ],
+  "All": "Tout",
+  "Alphabetical (A-Z)": "Nom (A-Z)",
+  "Alphabetical (Z-A)": "Nom (Z-A)",
+  "Back": "Retour",
+  "Clear": "Supprimer",
+  "Date created": "Date de création",
+  "Favorites": "Favoris",
+  "Folders": "Dossiers",
+  "Handwriting": "Écriture",
+  "Handwriting search": "Recherche dans l’écriture",
+  "Last modified": "Dernière modification",
+  "Notebooks": "Carnets",
+  "Relevance": "Pertinence",
+  "Search": "Rechercher",
+  "Searchable content filter": "Filtre de contenu offrant l’option de recherche"
+ },
+ "SecondaryPenMenu": {
+  "Secondary pen": "Stylo secondaire"
+ },
+ "SecuredPasswordInput": {
+  "Password": "Mot de passe",
+  "The password has %1 security": "Le niveau de sécurité du mot de passe est %1",
+  "high": "élevé",
+  "low": "bas",
+  "medium": "moyen"
+ },
+ "Security": {
+  "Security settings": "Paramètres de sécurité"
+ },
+ "SecurityCredentialsWindow": {
+  "Back": "Retour",
+  "Contact info": "Coordonnées",
+  "Name": "Nom",
+  "Personal information": "Données personnelles",
+  "Save": "Sauvegarder"
+ },
+ "SecurityPanelEncryption": {
+  "Change password": "Changez le mot de passe",
+  "Choose whether your disk is encrypted or not.": "Choisissez si votre disque est chiffré ou non.",
+  "Data protection": "Protection des données",
+  "Disk encryption": "Chiffrement du disque",
+  "Security level": "Niveau de sécurité"
+ },
+ "SecurityPanelPasscode": {
+  "Change passcode": "Changer le code d’accès",
+  "Passcode": "Code d’accès",
+  "Protect your notebooks and documents with a code.": "Protégez vos carnets et documents avec un code."
+ },
+ "SecurityPanelPersonalInfo": {
+  "Edit personal information": "Modifier les données personnelles",
+  "Identify your paper tablet in standby by adding contact details.": "Ajoutez vos données personnelles pour identifier votre tablette papier en mode veille.",
+  "Personal information": "Données personnelles"
+ },
+ "SelectedPagesWarningHeader": {
+  "Cancel": "Annuler",
+  "Convert": "Convertir",
+  "Delete": "Supprimer",
+  "Duplicate": "Dupliquer",
+  "Move": "Déplacer",
+  "You can only convert note pages to text": "Seules les pages de notes peuvent être converties en texte",
+  "You can only delete note pages": "Seules les pages de notes peuvent être supprimées",
+  "You can only duplicate note pages": "Seules les pages de notes peuvent être dupliquées",
+  "You can only move note pages": "Seules les pages de notes peuvent être déplacées"
+ },
+ "SelectionButton": {
+  "Selection tool": "Outil de sélection"
+ },
+ "SelectionComponent": {
+  "Back": "Retour"
+ },
+ "SendMail": {
+  " to ": " vers ",
+  "Document from my reMarkable: %1": "Document de ma tablette papier reMarkable : %1",
+  "Email sent": "E-mail envoyé",
+  "Export it in the desktop app.": "Exportez votre fichier dans l’application bureau",
+  "Sending...": "Envoi en cours…",
+  "Sent from my reMarkable paper tablet<br>Get yours at www.remarkable.com<br><br>PS: You cannot reply to this email<br>": "Envoyé depuis ma tablette papier reMarkable <br>Retrouvez les produits reMarkable sur www.remarkable.com<br><br>PS : vous ne pouvez pas répondre à cet e-&#8288;mail<br>",
+  "The file is too large to send.": "Le fichier est trop gros pour être envoyé.",
+  "To export it use the desktop app.": "Utilisez l’application bureau pour exporter votre fichier.",
+  "Unable to send": "Envoi impossible",
+  "Unable to send this file size": "Impossible d’envoyer un fichier de cette taille"
+ },
+ "SetPasscode": {
+  "Enter your new passcode": "Saisissez votre nouveau code d’accès",
+  "Enter your passcode": "Saisissez votre code d’accès",
+  "Incorrect passcode. Try again.": "Code d’accès incorrect. Veuillez réessayer.",
+  "Verify your new passcode": "Confirmez votre nouveau code d’accès"
+ },
+ "SetRetailPasscode": {
+  "Incorrect passcode. Try again.": "Code d’accès incorrect. Veuillez réessayer.",
+  "Set retail passcode": "Créez un code d’accès pour le mode démo",
+  "Verify retail passcode": "Confirmez le code d’accès du mode démo"
+ },
+ "Settings": {
+  "Back": "Retour"
+ },
+ "SettingsCheckBoxItem": {
+  "Off": "Désactivé",
+  "On": "Activé"
+ },
+ "SettingsHelpAbout": {
+  "About": "À propos",
+  "Compliance statements": "Déclarations de conformité",
+  "Copyrights and licenses": "Copyrights et licences"
+ },
+ "SettingsHelpClockWidget": {
+  "System time": "Heure système"
+ },
+ "SettingsInfoWindow": {
+  "Back": "Retour",
+  "Scan the QR-code to <b>https://support.remarkable.com</b> for more information": "Scannez le code QR de la page <b>https://support.remarkable.com</b> pour plus de renseignements.",
+  "Set date and time": "Configurez la date et l’heure",
+  "Sync and updating issues": "Erreurs de synchronisation et de mise à jour",
+  "System time": "Heure système",
+  "To update software and sync with the cloud, make sure that system date and time is set correctly to Coordinated Universal Time (UTC).": "Pour mettre le logiciel à jour et synchroniser avec le cloud, vérifiez que la date et l’heure du système sont correctement réglées sur le Temps universel coordonné (TUC)."
+ },
+ "SettingsMenu": {
+  "Ebook settings": "Paramètres de l’ebook",
+  "Notebook settings": "Paramètres du carnet",
+  "PDF settings": "Paramètres du PDF"
+ },
+ "SettingsModel": {
+  "Accessibility": "Accessibilité",
+  "Display": "Affichage",
+  "General": "Général",
+  "Help": "Aide",
+  "Security": "Sécurité",
+  "Wi-Fi": "Wi-&#8288;Fi"
+ },
+ "SettingsWindow": {
+  "Back": "Retour",
+  "Choose your preferred style of key combinations.": "Choisissez un type de raccourcis clavier :",
+  "Keyboard": "Clavier",
+  "Serial number": "Numéro de série",
+  "Shortcuts": "Raccourcis",
+  "Specifications": "Spécifications",
+  "The shortcuts menu will open when you press and hold <b>%1</b> for <b>3&nbsp;seconds</b>.": "Appuyez sur <b>%1</b> pendant <b>3 secondes</b> pour ouvrir le menu des raccourcis.",
+  "Version: %1": "Version : %1"
+ },
+ "Setup": {
+  "Back": "Retour",
+  "Confirm": "Confirmer",
+  "Skip": "Passer"
+ },
+ "SetupBasePage": {
+  "Skip": "Passer"
+ },
+ "SetupLanguagePage": {
+  "Choose your language to begin.": "Pour commencer, veuillez choisir votre langue.",
+  "English": "Anglais",
+  "German (beta)": "Allemand (bêta)",
+  "Next": "Suivant",
+  "Welcome to your<br/>%1": "Bienvenue sur votre <br/>%1"
+ },
+ "SetupPageBase": {
+  "Enter passcode": "Saisissez votre code d’accès",
+  "Incorrect passcode. Try again.": "Code d’accès incorrect. Veuillez réessayer.",
+  "Installing update": "Mise à jour en cours",
+  "Latest software %1installed%2": "Dernière version du logiciel %1installée%2",
+  "Next": "Suivant",
+  "Re-enter the passcode to confirm it.": "Saisissez le code d’accès à nouveau pour confirmer.",
+  "Set a passcode to keep your paper&#160;tablet&#160;secure.": "Ajoutez un code d’accès pour sécuriser votre tablette papier.",
+  "Something %1went wrong%2": "Une %1erreur%2 s’est produite",
+  "Try again": "Réessayez",
+  "Verify passcode": "Confirmez le code d’accès",
+  "We were unable to update your device. Please try again. If this issue persists, please contact us at support.remarkable.com.": "Votre appareil n’a pas pu être mis à jour. Veuillez réessayer. Si le problème persiste, vous pouvez nous contacter sur support.remarkable.com",
+  "We're installing the latest features and&#160;improvements. This&#160;could&#160;take a&#160;few&#160;minutes.": "Nous installons les dernières fonctionnalités et améliorations. Cela pourrait prendre quelques minutes.",
+  "You can set a passcode in Security settings at any time.": "Vous pouvez définir un code d’accès dans les paramètres de sécurité à tout moment.",
+  "Your paper tablet is on version %1": "Votre tablette papier est en version %1"
+ },
+ "SetupPasswordInput": {
+  "Incorrect password. Please try again.": "Mot de passe incorrect. Veuillez réessayer.",
+  "Secure your data with minimum 8 characters, to power on your encrypted device. Include both upper and lower case letters.": "Sécurisez vos données et l’accès à votre appareil chiffré avec un mot de passe de 8 caractères minimum et composé de lettres majuscules et minuscules.",
+  "Set a new password": "Créez un nouveau mot de passe",
+  "Set a password": "Créez un mot de passe",
+  "Setting password...": "Création du mot de passe en cours…",
+  "Unable to change password": "Impossible de changer le mot de passe",
+  "Verify your password": "Confirmez votre mot de passe"
+ },
+ "SetupRecoveryKeyDialog": {
+  "Confirm": "Confirmer",
+  "Recovery code": "Code de récupération",
+  "Recovery for lost password": "Récupération d’un mot de passe oublié",
+  "Store this alphabetic code somewhere safe (or take a picture) just in case you forget it and don't want to do a factory reset.": "Gardez ce code alphabétique dans un endroit sécurisé (ou prenez-le en photo), si vous ne souhaitez pas réinitialiser votre appareil en cas d’oubli de votre mot de passe."
+ },
+ "SetupSeabirdWindow": {
+  "Get started": "Commencer",
+  "Now you can bring focused typing and editing powers to your notes. Combine digital text with handwritten elements and capture new ideas using our mobile and desktop apps.": "Donnez une nouvelle dimension à votre prise de notes : alliez vos textes numériques à des éléments manuscrits, et capturez vos idées avec nos applications mobile et bureau.",
+  "Start typing without distractions": "Commencez à taper sans distractions"
+ },
+ "ShareByUrlButton": {
+  "Convert and share": "Convertir et partager"
+ },
+ "ShareEmailDialog": {
+  "Add email address": "<b></b>Ajouter une adresse e-&#8288;mail",
+  "Add message": "Ajouter un message",
+  "All pages": "Toutes les pages",
+  "Attachment name": "Nom de la pièce jointe",
+  "Cancel": "Annuler",
+  "Clear all": "Effacer tout",
+  "Confirm": "Confirmer",
+  "Edit email": "<b></b>Modifier l’adresse e-&#8288;mail",
+  "Enter email addresses": "<b></b>Saisir l’adresse e-&#8288;mail",
+  "Export width": "Orientation",
+  "Grayscale pens": "Crayons gris",
+  "Keep password protection": "Conserver la protection par mot de passe",
+  "Landscape": "Paysage",
+  "Recently used": "Récemment utilisées",
+  "Rename": "Renommer",
+  "Save": "Sauvegarder",
+  "Select pages to send": "Sélectionner les pages à envoyer",
+  "Selected": "Sélection",
+  "Send": "Envoyer",
+  "Send by email": "<b></b>Envoyer par e-&#8288;mail",
+  "Send to": "Envoyer à",
+  "Text in email": "<b></b>Texte dans l’e-&#8288;mail"
+ },
+ "ShareMenu": {
+  "Share": "Partager"
+ },
+ "ShortcutCheatSheet": {
+  "Add quick sheets": "Ajouter des feuilles volantes",
+  "Body text": "Corps de texte",
+  "Bullet points": "Puces",
+  "Checkbox": "Case à cocher",
+  "Close document or folder": "Fermer le document ou dossier",
+  "Copy": "Copier",
+  "Create a new folder": "Créer un nouveau dossier",
+  "Create a new notebook": "Créer un nouveau carnet",
+  "Cut": "Couper",
+  "Editing": "Modifier",
+  "Move between sections and items": "Se déplacer entre les sections et éléments",
+  "Next paragraph": "Paragraphe suivant",
+  "Next word": "Mot suivant",
+  "Open document or folder": "Ouvrir un document ou dossier",
+  "Open or close drawer": "Ouvrir ou fermer un panneau",
+  "Open settings": "Ouvrir les paramètres",
+  "Paste": "Coller",
+  "Paste without formatting": "Coller sans formater",
+  "Redo": "Refaire",
+  "Search": "Rechercher",
+  "Select all": "Tout sélectionner",
+  "Select or deselect": "Sélectionner ou désélectionner",
+  "Start/end of page": "Début/fin de page",
+  "Subheading": "Sous-titre",
+  "Symbol menu": "Menu des symboles",
+  "Title": "Titre",
+  "Undo": "Annuler"
+ },
+ "Sidebar": {
+  "Authorization removed": "Autorisation retirée",
+  "Currently offline": "Actuellement hors ligne",
+  "Favorites": "Favoris",
+  "Filter by": "Filtrer par",
+  "Google Drive": "Google Drive",
+  "Import files": "Importer fichiers",
+  "My files": "Mes fichiers",
+  "Notebooks": "Carnets",
+  "Notebooks || filter": "Carnets",
+  "PDFs": "Fichiers PDF",
+  "PDFs || filter": "Fichiers PDF",
+  "Settings": "Paramètres",
+  "Something went wrong": "Une erreur s’est produite",
+  "Storage integrations": "Stockage cloud",
+  "Tags": "Étiquettes",
+  "Trash": "Corbeille"
+ },
+ "SidebarFoldoutItem": {
+  "Undefined": "Indéterminé"
+ },
+ "SleepWindowBannerWindow": {
+  "Press power button to continue": "Appuyez sur le bouton de marche pour continuer"
+ },
+ "SoftwareSettingsWindow": {
+  "Back": "Retour",
+  "Make sure to manually update your device regularly": "Assurez-vous de mettre votre appareil à jour manuellement de façon régulière",
+  "Software": "Logiciel"
+ },
+ "SoftwareUpdateDialog": {
+  "Cancel": "Annuler",
+  "Check for updates": "Vérifier les mises à jour",
+  "This document is not supported by your current software version.": "Ce document n’est pas compatible avec la version actuelle de votre logiciel.",
+  "Update software to view": "Mise à jour du logiciel requise pour afficher"
+ },
+ "SortDropdown": {
+  "Large grid": "Grande grille",
+  "List": "Liste",
+  "Medium grid": "Grille moyenne",
+  "Small grid": "Petite grille",
+  "Sort by": "Trier par"
+ },
+ "SplashScreenWindow": {
+  "Get started": "Commencer",
+  "Read full release notes": "Lire l’ensemble des notes de version"
+ },
+ "SshPassword": {
+  "Back": "Retour",
+  "Change your developer password": "Changez votre mot de passe de développeur",
+  "Password": "Mot de passe"
+ },
+ "Storage": {
+  "%1 GB of %2 GB used": "%1 GB sur %2 GB utilisés",
+  "Access your device files in a web browser. Requires a cable&#160;connection.": "Accédez aux fichiers de votre appareil sur un navigateur web. Connexion par câble requise.",
+  "Back": "Retour",
+  "Disk is almost full": "Disque presque plein",
+  "Disk is full": "Disque plein",
+  "Disk space": "Mémoire du disque",
+  "Open the address: <b>http://10.11.99.1</b> in a web browser.": "Ouvrez l’adresse : <b>http://10.11.99.1</b> dans un navigateur web.",
+  "Storage": "Stockage",
+  "USB web interface": "Interface web via USB",
+  "When the storage on your device has reached its maximum capacity, your device switches to read-only mode. To continue working as normal, free up space by deleting files or archiving content from your tablet to the cloud using the action bar in My files.": "Quand le stockage de votre appareil atteint sa capacité maximale, votre appareil passe en mode lecture seule. Pour continuer à travailler normalement, faites de la place en supprimant des fichiers ou en archivant du contenu de votre tablette vers le cloud à l’aide de la barre d’action dans Mes fichiers.",
+  "Your device is now in read-only mode. To continue working as normal, free up space by deleting files or archiving content from your tablet to the cloud using the action bar in My files.": "Votre appareil est désormais en mode lecture seule. Pour continuer à travailler normalement, faites de la place en supprimant des fichiers ou en archivant du contenu de votre tablette vers le cloud à l’aide de la barre d’action dans Mes fichiers."
+ },
+ "StorageCellItem": {
+  "%1 GB of %2 GB": "%1 GB sur %2 GB",
+  "Storage": "Stockage"
+ },
+ "StringUtils": {
+  "%n day(s) ago": [
+   "il y a %n jour",
+   "il y a %n jours"
+  ],
+  "%n hour(s) ago": [
+   "il y a %n heure",
+   "il y a %n heures"
+  ],
+  "%n minute(s) ago": [
+   "il y a %n minute",
+   "il y a %n minutes"
+  ],
+  "%n month(s) ago": [
+   "il y a %n mois",
+   "il y a %n mois"
+  ],
+  "%n year(s) ago": [
+   "il y a %n an",
+   "il y a %n ans"
+  ],
+  "in %n day(s)": [
+   "dans %n jour",
+   "dans %n jours"
+  ],
+  "in %n hour(s)": [
+   "dans %n heure",
+   "dans %n heures"
+  ],
+  "in %n minute(s)": [
+   "dans %n minute",
+   "dans %n minutes"
+  ],
+  "in %n month(s)": [
+   "dans %n mois",
+   "dans %n mois"
+  ],
+  "in %n year(s)": [
+   "dans %n an",
+   "dans %n ans"
+  ],
+  "just now": "il y a quelques instants"
+ },
+ "Strings": {
+  "This feature is not available in retail mode.": "Cette fonctionnalité n’est pas disponible en mode démo."
+ },
+ "SummaryPageBase": {
+  "Get started": "Commencer",
+  "You're good to go": "Tout est prêt",
+  "Your paper tablet is all set up and ready to use.": "Votre tablette papier est configurée et prête à être utilisée."
+ },
+ "SyncProgressBar": {
+  "Sync completed": "Synchronisation terminée",
+  "Syncing": "Synchronisation en cours",
+  "Syncing (%1 of %2)": "Synchronisation en cours (%1 sur %2)"
+ },
+ "TabControl": {
+  "Close": "Fermer"
+ },
+ "TableOfContent": {
+  "Back": "Retour",
+  "Table of contents": "Sommaire"
+ },
+ "TagExplorerView": {
+  "All": "Tout"
+ },
+ "TagFilter": {
+  "View all": "Afficher tout"
+ },
+ "TagSelectionPopup": {
+  "New tag": "Nouvelle étiquette",
+  "View all": "Afficher tout"
+ },
+ "TagsFilter": {
+  "View all": "Afficher tout"
+ },
+ "TagsMenu": {
+  "Tags": "Étiquettes"
+ },
+ "TagsSelector": {
+  "New tag": "Nouvelle étiquette",
+  "Tags": "Étiquettes",
+  "View all": "Afficher tout"
+ },
+ "TemplateSelector": {
+  "Access your rM Methods templates and import more by activating Connect. Manage your subscription and free trials at my.remarkable.com.": "Accédez à vos modèles reMarkable Methods et importez-en d’autres en activant Connect. Gérez votre abonnement et votre essai gratuit sur my.remarkable.com",
+  "Choose template": "Choisissez un modèle",
+  "Close": "Fermer",
+  "Connect templates": "Modèles Connect",
+  "Not supported by page width": "Non compatible avec la largeur de page"
+ },
+ "TemplateSelectorWindow": {
+  "Back": "Retour"
+ },
+ "Templates": {
+  "All": "Tout",
+  "Bass tabs": "Tab basse",
+  "Blank": "Vierge",
+  "Calligraphy large": "Calli - grand",
+  "Calligraphy medium": "Calli - moyen",
+  "Calligraphy small": "Calli - petit",
+  "Checklist double": "Checklist duo",
+  "Creative": "Créative",
+  "Day planner": "Agenda journée",
+  "Default": "Défaut",
+  "Dots bottom": "Points - bas",
+  "Dots large": "Points - grand",
+  "Dots small": "Points - petit",
+  "Dots top": "Points - haut",
+  "Four storyboards": "4 storyboards",
+  "Grid bottom": "Grille - bas",
+  "Grid large": "Grille - grand",
+  "Grid margin": "Grille marge",
+  "Grid margin large": "Grille marge 2",
+  "Grid medium": "Grille - moyen",
+  "Grid small": "Grille - petit",
+  "Grid top": "Grille - haut",
+  "Grids": "Grilles",
+  "Guitar chords": "Tab guitare",
+  "Guitar tabs": "Accord guitare",
+  "Hexagon large": "Hexa - grand",
+  "Hexagon medium": "Hexa - moyen",
+  "Hexagon small": "Hexa - petit",
+  "Isometric": "Isométrique",
+  "Lined bottom": "Lignes - bas",
+  "Lined heading": "Lignes en-tête",
+  "Lined large": "Lignes - grand",
+  "Lined medium": "Lignes - moyen",
+  "Lined small": "Lignes - petit",
+  "Lined top": "Lignes - haut",
+  "Lines": "Lignes",
+  "Margin large": "Marge - grand",
+  "Margin medium": "Marge - moyen",
+  "Margin small": "Marge - petit",
+  "Music": "Musique",
+  "One storyboard": "Storyboard",
+  "One storyboard 1": "Storyboard 1",
+  "One storyboard 2": "Storyboard 2",
+  "Piano sheet large": "Piano - petit",
+  "Piano sheet medium": "Piano - moyen",
+  "Piano sheet small": "Piano - grand",
+  "Planners": "Agendas",
+  "Two storyboards": "2 storyboards",
+  "US College": "Université US",
+  "US Legal": "Juridique US",
+  "Week planner": "Agenda hebdo",
+  "Week planner 1": "Agenda hebdo 1",
+  "Week planner 2": "Agenda hebdo 2",
+  "Week planner US": "Agenda hebdo US"
+ },
+ "TemplatesActions": {
+  "Cancel": "Annuler",
+  "Cancel || cancel delete": "Annuler",
+  "Delete": "Supprimer",
+  "Delete template %1?": "Supprimer le modèle %1 ?",
+  "If you delete this template it will be removed from the documents using it": "Si vous supprimez ce modèle, il sera retiré des documents qui l’utilisent"
+ },
+ "TextSelectionMenu": {
+  "Edit": "Modifier",
+  "Select": "Sélectionner",
+  "Select all": "Tout sélectionner"
+ },
+ "TextSettingsButton": {
+  "Text settings": "Paramètres du texte"
+ },
+ "TimedOutDialog": {
+  "Reset passcode": "Créez un nouveau code d’accès",
+  "Too many attempts": "Trop de tentatives infructueuses",
+  "Try again": "Réessayez",
+  "Wait %1 minutes to try again, or reset passcode.": "Attendez %1 minutes avant de réessayer, ou créez un nouveau code d’accès.",
+  "Wait 1 minute to try again, or reset passcode.": "Attendez 1 minute avant de réessayer, ou créez un nouveau code d’accès."
+ },
+ "ToolbarPositionChooser": {
+  "Choose your preferred toolbar position.": "Choisissez la position de la barre d’outils.",
+  "To reposition the toolbar while in a document, drag the hide/show button to any edge of the screen.": "Pour repositionner la barre d’outils depuis un document, faites glisser le bouton Masquer/Afficher vers un bord de l’écran.",
+  "Toolbar position": "Position de la barre d’outils"
+ },
+ "ToolbarPositionDropDown": {
+  "Bottom": "Bas",
+  "Landscape": "Paysage",
+  "Left": "Gauche",
+  "Right": "Droite",
+  "Top": "Haut"
+ },
+ "TrashAction": {
+  "%n item(s) were deleted": [
+   "%n élément supprimé",
+   "%n éléments supprimés"
+  ]
+ },
+ "TutorialWindow": {
+  "<b>Pinch</b> to zoom in and out, <b>tap</b> the scaling icon to reset": "<b>Pincez</b> pour zoomer en avant et en arrière, et <b>appuyez</b> sur l’icône de redimensionnement pour revenir à zéro",
+  "<b>Swipe upwards</b> for more space inside document": "<b>Faites glisser vers le haut</b> pour créer plus de place dans un document",
+  "Add quick sheets to jot down your thoughts": "Ajoutez des feuilles volantes pour noter rapidement vos idées.",
+  "Close": "Fermer",
+  "Find more detailed help in Guides and on Using reMarkable.": "Des instructions plus détaillées sont disponibles dans les rubriques Guides et Utiliser reMarkable.",
+  "Get an overview of your documents and ebooks": "Gagnez un aperçu de vos documents et ebooks.",
+  "Learn more": "En savoir plus",
+  "Make the most of your content by downloading our mobile and desktop apps.": "Téléchargez nos applications mobile et bureau pour profiter encore plus de votre contenu.",
+  "Navigate your notes, browse pages and switch between files, using your fingers. Find the full overview in Guides.": "Naviguez dans vos notes, parcourez vos pages et passez d’un fichier à un autre en utilisant vos doigts. Retrouvez notre catalogue de gestes tactiles dans la rubrique Guides.",
+  "Next": "Suivant",
+  "Note-taking apps": "Applications de prise de notes",
+  "Organize your content into folders": "Organisez votre contenu dans des dossiers.",
+  "Pages of notebooks can be as long or short as you need, allowing you to focus and stay uninterrupted as you work.": "Les pages de vos carnets peuvent être aussi longues ou courtes que vous le souhaitez, pour vous permettre de vous concentrer sur votre travail sans interruption.",
+  "Record ideas, write, and sketch in notebooks": "Notez vos idées, écrivez et faites des croquis dans vos carnets.",
+  "Take focused notes anywhere with a Connect subscription": "Concentrez-vous sur votre prise de notes où que vous soyez avec un abonnement Connect.",
+  "Take notes in different styles with your Marker. Type text in three different sizes, as well as bold and italics. ": "Prenez des notes dans différents styles avec votre Marker. Tapez vos textes numériques en 3 tailles différentes, et en gras ou en italique.",
+  "These next four steps will show you how to use and navigate your paper tablet, introducing you to some important features.": "Les quatre étapes suivantes vous montreront comment utiliser votre tablette papier et naviguer dans votre contenu avec des fonctionnalités clés.",
+  "To perform actions, <b>press and hold</b> the item for 2 seconds": "Pour réaliser des actions, <b>appuyez</b> sur l’élément pendant 2 secondes",
+  "Touch gestures": "Gestes tactiles",
+  "Types of documents": "Types de documents",
+  "Upload PDFs and EPUBs in the app": "Chargez des fichiers PDF et EPUB dans l’application.",
+  "Use the plus icon below to create new items.": "Utilisez l’icône Plus ci-dessous pour créer de nouveaux éléments.",
+  "Ways of working": "Travailler avec reMarkable",
+  "Writing and reading": "Lire et écrire"
+ },
+ "TypingMenu": {
+  "Add text": "Ajouter du texte",
+  "Automatic reflow": "Alignement automatique",
+  "Edit text": "Modifier le texte",
+  "Typed text": "Texte numérique",
+  "Typing": "Texte"
+ },
+ "UndoButton": {
+  "Undo": "Annuler"
+ },
+ "Unenroll": {
+  "Back": "Retour",
+  "Cancel": "Annuler",
+  "Complete": "Terminer",
+  "Manage account": "Gérer mon compte",
+  "Manage network": "Gérer le réseau",
+  "Please connect to Wi-Fi to unenroll": "<b></b>Connectez-vous au Wi-&#8288;Fi pour vous désinscrire.",
+  "Please try again later. If the problem persists, visit our support pages at support.reMarkable.com.": "Veuillez réessayer plus tard. Si le problème persiste, veuillez consulter notre rubrique d’assistance sur support.remarkable.com",
+  "Something went wrong": "Une erreur s’est produite",
+  "Unenroll": "Me désinscrire",
+  "Unenrolled from the reMarkable&#160;beta&#160;program": "Votre désinscription au programme bêta reMarkable est confirmée",
+  "Unenrolling": "Désinscription",
+  "Unenrolling from the beta program requires a paired device": "Un appareil jumelé est requis pour vous désinscrire au programme bêta reMarkable.",
+  "Unenrolling from the reMarkable&#160;beta&#160;program": "Désinscription au programme bêta reMarkable",
+  "When you're not part of the&#160;reMarkable&#160;beta&#160;program, you'll stay on your current version until the next official release is public and available for download.": "Quand vous ne participez pas au programme bêta reMarkable, vous restez sur votre version actuelle jusqu’à ce que la prochaine version officielle soit publiée et disponible en téléchargement.",
+  "You can reenroll at any time through <b>Settings > General > Software.</b>": "Vous pouvez vous réinscrire à tout moment dans la rubrique <b>Paramètres > Général > Logiciel.</b>"
+ },
+ "UnlockScreen": {
+  "Enter passcode": "Saisissez votre code d’accès",
+  "Incorrect passcode. Try again or contact Support.": "Code d’accès incorrect. Réessayez ou contactez le service d’assistance.",
+  "Wrong passcode. Try again.": "Code d’accès incorrect. Veuillez réessayer."
+ },
+ "UnlockWindow": {
+  "A reset is required to unlock your device.": "Une réinitialisation est requise pour déverrouiller votre appareil",
+  "Enter passcode": "Saisissez votre code d’accès",
+  "Final attempt before you need to reset": "Dernière tentative avant la réinitialisation.",
+  "Incorrect passcode. Try again.": "Code d’accès incorrect. Veuillez réessayer.",
+  "Reset passcode": "Créez un nouveau code d’accès"
+ },
+ "UnpairedDialogWindow": {
+  "Close": "Fermer",
+  "Create meeting note": "Créer une fiche de réunion",
+  "Hide create meeting note button": "Masquer Créer une fiche de réunion",
+  "Pair your device": "Jumelez votre appareil",
+  "Start focused, stay engaged, and get organized with create meeting note.": "Plus d’organisation et d’efficacité avec l’option Créer une fiche de réunion.",
+  "You'll need a paired account and a Connect subscription to use this feature.": "Un compte jumelé et un abonnement Connect sont requis pour accéder à cette fonctionnalité."
+ },
+ "UnpairingDialog": {
+  "%n document(s) are currently archived. You will not be able to retrieve or open them on your paper&#160;tablet once you unpair.": [
+   "%n document est actuellement archivé. Vous ne pourrez ni le récupérer ni l’ouvrir sur votre tablette papier après le déjumelage.",
+   "%n documents sont actuellement archivés. Vous ne pourrez ni les récupérer ni les ouvrir sur votre tablette papier après le déjumelage."
+  ],
+  "Any new changes made since your last sync are at risk of being lost.": "Vous risquez de perdre toute modification effectuée depuis votre dernière synchronisation.",
+  "Back": "Retour",
+  "Cancel": "Annuler",
+  "Changes will sync automatically before your reMarkable account is unpaired. No files will be deleted on your device.": "Les modifications seront automatiquement synchronisées avant le déjumelage de votre compte reMarkable. Aucun fichier ne sera supprimé de votre appareil.",
+  "Confirm": "Confirmer",
+  "Force unpair": "Forcer le déjumelage",
+  "Forced unpairing without syncing": "Déjumelage forcé sans synchronisation",
+  "If your device is unpaired with the&#160;reMarkable&#160;cloud now, you risk losing unsynced files.": "Si votre appareil n’est plus jumelé au cloud reMarkable, vous risquez de perdre vos fichiers non synchronisés.",
+  "Please connect to Wi-Fi and try again.": "<b></b>Connectez-vous au Wi-&#8288;Fi et réessayez",
+  "Syncing": "Synchronisation en cours",
+  "Unable to sync. Please try again.": "Impossible de synchroniser. Veuillez réessayer.",
+  "Unpairing from the cloud": "Déjumelage du cloud",
+  "Unpairing stopped": "Déjumelage arrêté",
+  "Your device has been unpaired": "Votre appareil n’est plus jumelé"
+ },
+ "UpdatePanel": {
+  "Check for updates": "Vérifier les mises à jour",
+  "Release notes": "Notes de version"
+ },
+ "UpdateProgress": {
+  "Please connect to Wi-Fi to update.": "<b></b>Connectez-vous au Wi-&#8288;Fi pour effectuer la mise à jour.",
+  "Tap to restart and update to version %1 of your reMarkable.": "Appuyez pour redémarrer et mettre votre tablette papier reMarkable à jour en passant à la version %1.",
+  "Your device is up to date.": "Votre appareil est à jour."
+ },
+ "Values": {
+  "%1 items": "%1 éléments",
+  "1 item": "1 élément"
+ },
+ "Wifi": {
+  "Join other network": "Rejoignez un autre réseau",
+  "Wi-Fi": "Wi-&#8288;Fi",
+  "Wi-Fi settings": "Paramètres Wi-&#8288;Fi"
+ },
+ "WifiCell": {
+  "Connect": "Me connecter",
+  "Disconnect": "Me déconnecter",
+  "Edit": "Modifier",
+  "Forget": "Oublier",
+  "Try again": "Réessayer"
+ },
+ "WifiInfo": {
+  "No Wi-Fi": "<b></b>Pas de connexion Wi-&#8288;Fi"
+ },
+ "WifiList": {
+  "Choose a network...": "Choisissez un réseau…",
+  "Connected to": "Connexion active :",
+  "Connecting to...": "Connexion à…",
+  "Connecting...": "Connexion en cours…",
+  "Networks": "Réseaux",
+  "Searching for networks...": "Recherche de réseaux en cours…"
+ },
+ "WifiSetupPage": {
+  "Connect to Wi-Fi": "<b></b>Connectez-vous au Wi-&#8288;Fi",
+  "Next": "Suivant",
+  "Wi-Fi": "Wi-&#8288;Fi",
+  "Wi-Fi is required to get the latest software. Update now (recommended), or later in Settings.": "<b></b>Une connexion Wi-&#8288;Fi est requise pour installer la dernière version du logiciel. Procédez à la mise à jour maintenant (recommandé), ou plus tard dans les paramètres."
+ },
+ "WritingTool": {
+  "Color": "Couleur",
+  "Snap to text": "Ajuster au texte",
+  "Writing tools and styles": "Outils et styles d’écriture"
+ },
+ "retail::Downloader": {
+  "%1 is up to date, no download needed.": "%1 est à jour, aucun téléchargement requis",
+  "Could not write to %1": "Impossible de sauvegarder sur %1",
+  "Download failed with code: %1 %2": "Échec du téléchargement avec le code : %1 %2",
+  "Download failed with unexpected error.": "Échec du téléchargement en raison d’une erreur inattendue",
+  "Downloading '%1' to '%2'": "Téléchargement de %1 vers %2"
+ },
+ "rmsync::BuildServerTreeAction": {
+  "Failed building server state, you might need to update.": "Impossible de créer l’état du serveur. Une mise à jour est peut-être nécessaire.",
+  "Failed building server state.": "Impossible de créer l’état du serveur.",
+  "Server index is empty": "L’index du serveur est vide"
+ },
+ "rmsync::InvalidAction": {
+  "rmsync aborted to release entry locks": "rmync annulée pour libérer les verrous d’entrée"
+ },
+ "rmsync::LoadPreviousTreeAction": {
+  "rmsync aborted due to missing user id": "rmync annulée car identifiant utilisateur introuvable"
+ },
+ "rmsync::NetworkAction": {
+  "Network failure: %1": "Échec réseau : %1",
+  "Redirect failure: %1: %2": "Échec de la redirection : %1: %2",
+  "Server has more recent updates, re-syncing.": "Le serveur a des mises à jour récentes : nouvelle synchronisation en cours.",
+  "Unable to get URL: %1: %2": "Impossible d’accéder à l’URL : %1: %2",
+  "Unable to open file: %1": "Impossible d’ouvrir le fichier : %1",
+  "Unable to sync document content": "Impossible de synchroniser le contenu du document",
+  "Unable to validate downloaded content": "Impossible de valider le contenu téléchargé"
+ },
+ "rmsync::NetworkJob": {
+  "Unable to sync. Update your software to version %1 or later.": "Impossible de synchroniser. Veuillez mettre votre logiciel à jour avec la version %1 ou une version plus récente.",
+  "Unable to sync. Update your software.": "Impossible de synchroniser. Veuillez mettre votre logiciel à jour."
+ },
+ "rmsync::RequestMissingHashesAction": {
+  "rmsync aborted to release entry locks": "rmync annulée pour libérer les verrous d’entrée"
+ },
+ "rmsync::Synchronizer": {
+  "Unable to sync. Free up disk space.": "Impossible de synchroniser. Veuillez libérer de l’espace de stockage."
+ },
+ "rmsync::TransfersAndRemovalCommon": {
+  "Failed syncing file system": "Impossible de synchroniser le système fichier",
+  "Unable to store downloaded file": "Impossible d’enregistrer le fichier téléchargé"
+ },
+ "rmsync::UpdateServerRootHashAction": {
+  "rmsync aborted to release archived entry locks": "rmync annulée pour libérer les verrous d’entrée archivés"
+ },
+ "rmsync::UpdateServerRootSchemaAction": {
+  "rmsync aborted to release archived entry locks": "rmync annulée pour libérer les verrous d’entrée archivés"
+ },
+ "sleep-window-opaque": {
+  "reMarkable is sleeping": "Votre reMarkable est en veille"
+ },
+ "xofm::libs::explorer::ExportManager": {
+  "Exporting %1 files...": "Exportation de %1 fichiers…",
+  "Exporting file...": "Exportation du fichier…",
+  "Importing %1 files...": "Importation de %1 fichiers…",
+  "Importing file...": "Importation du fichier…",
+  "Please wait for export to finish": "Veuillez attendre la fin de l’exportation",
+  "Please wait for import to finish": "Veuillez attendre la fin de l’importation"
+ },
+ "xofm::libs::explorer::TreeExplorer": {
+  "My files": "Mes fichiers"
+ },
+ "xofm::libs::integrations::storage::EntityOpen": {
+  "To import a document, press and hold it for 2 seconds": "Pour importer un document, appuyez dessus pendant 2 secondes"
+ },
+ "xofm::libs::integrations::storage::StorageIntegration": {
+  "Original folder not found": "Dossier d’origine introuvable"
+ },
+ "xofm::libs::library::Library": {
+  "Meeting Notes": "Fiches de réunion"
+ },
+ "xofm::libs::library::LibraryController": {
+  "%1 copy": "Copie %1"
+ },
+ "xofm::libs::library::constants": {
+  "My files": "Mes fichiers",
+  "Templates": "Modèles",
+  "Trash": "Corbeille"
+ },
+ "xofm::libs::localization::LanguageSettings": {
+  "Other (%1)": "Autre (%1)"
+ },
+ "xofm::libs::onboarding::ToolTipConfiguration": {
+  "<b>Swipe two fingers</b> from the <b>top edge</b>, to view recent and favorite items. Find all the gestures in Guides.": "<b>Faites glisser 2 doigts </b> depuis le <b>haut de l’écran</b> pour voir vos éléments récents et favoris. Retrouvez tous les gestes dans les Guides.",
+  "<b>Tap</b> or <b>swipe down</b> from the <b>top-right</b> corner, to see battery level, Wi-Fi, present with Screen Share, or put it in flight mode, even when in a document.": "<b>Appuyez</b> ou <b>faites glisser</b> depuis le coin <b>en haut à droite</b> pour voir le niveau de batterie, partager votre écran ou passer en mode avion, même depuis un document ouvert.",
+  "Circle your content to rotate, move, cut, or copy it. Use your Marker to hold and drag on typed text. You can also convert notes, and tap to paste.": "Entourez votre contenu pour le déplacer, couper, copier ou faire pivoter. Appuyez sur du texte avec votre Marker pour le déplacer. Vous pouvez aussi convertir vos notes et taper avec le Marker pour les copier.",
+  "Create descriptive tags for your pages, files, and folders to find them faster.": "Créez des étiquettes pour décrire vos pages, fichiers et dossiers, et les retrouver plus vite.",
+  "Edit the name or rotate the view of the open document. Search in PDFs, EPUBs, or your typed text.": "Modifiez le nom ou l’orientation d’un document ouvert. Faites des recherches dans des fichiers PDF ou EPUB, ou dans vos textes numériques.",
+  "Express yourself with the Marker and fine-tune pen strokes with thickness and color. These settings are stored in the notebook.": "Exprimez-vous avec le Marker et modifiez l’épaisseur et la couleur de vos coups de crayon. Ces paramètres sont sauvegardés dans le carnet.",
+  "Find ways to present your work, compose emails, and make your handwriting digital.": "Découvrez comment présenter votre travail, composer des e-&#8288;mails et numériser votre écriture manuscrite.",
+  "Format as title, subheading, body, list, or checkboxes.": "Formatez comme titre, sous-titre, corps de texte, liste ou cases à cocher.",
+  "See search results that match your notes, both handwritten or typed, digital text and scribbles.": "Obtenez des résultats de recherche correspondant à vos notes manuscrites ou tapées, vos textes numériques et vos brouillons.",
+  "Tap the page with two fingers to take back your last change or use this button.": "Appuyez sur la page avec 2 doigts pour annuler votre dernière modification, ou utilisez ce bouton.",
+  "Tap the plus icon to create new notebooks or folders.": "Appuyez sur l’icône Plus pour créer de nouveaux carnets ou dossiers.",
+  "To do this with your reMarkable Methods workbook you need Connect. Visit my.remarkable.com to subscribe.": "Un abonnement Connect est requis pour réaliser cette action avec reMarkable Methods. Abonnez-vous sur my.remarkable.com",
+  "To select an item to tag, favorite, rename, duplicate, send, move, or delete, <b>press and hold</b> it for <b>2</b> seconds.": "Pour étiqueter, renommer, dupliquer, envoyer, déplacer, supprimer un élément ou l’ajouter à vos favoris, <b>appuyez</b> dessus pendant <b>2</b> secondes.",
+  "Use the on-screen keyboard to write notes in a clear typeface, with the column width you prefer.": "Utilisez le clavier virtuel pour taper des notes dans une police claire, avec la largeur de colonne de votre choix.",
+  "Use this button or tap the page once with three fingers to make something reappear.": "Utilisez ce bouton ou appuyez une fois sur la page avec 3 doigts pour faire réapparaître un élément.",
+  "Use your Marker to erase pen strokes. You can also select whole sections or remove everything on the current layer or page.": "Utilisez votre Marker pour effacer des coups de crayon. Supprimez des sections entières, ou la totalité du calque ou de la page en cours.",
+  "When you’re in a rush, long-press the plus icon to create a new quick sheet.": "Pour gagner du temps, créez une nouvelle feuille volante en appuyant sur l’icône Plus.",
+  "Work in up to five layers that don't affect the others. Choose from a stack of template layouts for to-do lists, sketching, and more.": "Superposez jusqu’à 5 calques indépendants les uns des autres. Choisissez parmi une collection de modèles pour vos listes de tâches, croquis et plus."
+ },
+ "xofm::libs::syncinterface::Checker": {
+  "Checking internet connection...": "Vérification de la connexion internet…",
+  "Checking sync...": "Vérification de la synchronisation…",
+  "It looks like there are a few issues with the server:\n%1\n\nTry again in a little bit.": "Des erreurs de serveur ont été détectées&#160;:\n%1\n\nVeuillez réessayer un peu plus&#160;tard.",
+  "No syncing errors found. If you still experience problems, try restarting your device.": "Aucune erreur de synchronisation trouvée. Si le problème persiste, essayez de redémarrer votre appareil.",
+  "Not syncing.\nTry restarting if the problem persists": "Impossible de synchroniser. \nSi le problème persiste, essayez de redémarrer votre appareil.",
+  "Syncing %1 of %2": "%1 sur %2 en cours de synchronisation",
+  "There might be an issue with the date/time information on your device. Please check System time and try again": "Il y a peut-être un problème avec la date et/ou l’heure sur votre appareil. Vérifiez l’heure système et réessayez.",
+  "Unable to connect to Wi-Fi. \nCheck your network settings and try again.": "<b></b>Impossible de se connecter au Wi-&#8288;Fi.\nVérifiez vos paramètres réseau et réessayez.",
+  "Unable to establish a secure connection to our servers. Please try again, or connect to a different network": "Impossible d’établir une connexion sécurisée à nos serveurs. Veuillez réessayer, ou connectez-vous à un autre réseau.",
+  "Unable to sync. \nTry restarting if the problem persists": "Impossible de synchroniser. \nSi le problème persiste, essayez de redémarrer votre appareil.",
+  "Waiting for sync": "Synchronisation en attente",
+  "You're connected to Wi-Fi, but not the internet.\nCheck your Wi-Fi settings and try again.": "<b></b>Votre appareil est connecté au Wi-&#8288;Fi, mais pas à internet.\nVérifiez les paramètres de votre Wi-&#8288;Fi et réessayez.",
+  "You're not connected to Wi-Fi": "<b></b>Votre appareil n’est pas connecté au Wi-&#8288;Fi",
+  "You're not connected to the cloud. Check if your app is paired to a reMarkable account.": "Votre appareil n’est pas connecté au cloud. Vérifiez si votre application est jumelée avec un compte reMarkable.",
+  "You're not connected to the cloud. Check if your paper tablet is paired to a reMarkable account.": "Votre appareil n’est pas connecté au cloud. Vérifiez si votre tablette papier est jumelée avec un compte reMarkable.",
+  "Your content is not ready. \nTry restarting if the problem persists.": "Votre contenu n’est pas prêt. \nSi le problème persiste, essayez de redémarrer votre appareil."
+ },
+ "xofm::libs::toolbar::FilterStateModel": {
+  "Adaptive": "Mode adaptatif",
+  "Full page": "Page entière",
+  "Off": "Désactivé"
+ },
+ "xofm::libs::toolbar::PenColorModel": {
+  "Black": "Noir",
+  "Blue": "Bleu",
+  "Gray": "Gris",
+  "Green": "Vert",
+  "Pink": "Rose",
+  "Red": "Rouge",
+  "White": "Blanc",
+  "Yellow": "Jaune"
+ },
+ "xofm::libs::toolbar::PenThicknessModel": {
+  "Medium": "Moyen",
+  "Thick": "Épais",
+  "Thin": "Fin"
+ },
+ "xofm::libs::toolbar::TextWidthModel": {
+  "Auto column": "Alignement automatique",
+  "Medium column": "Colonne moyenne",
+  "Narrow column": "Colonne étroite",
+  "Wide column": "Colonne large"
+ },
+ "xofm::libs::toolbar::ToolModel": {
+  "Ballpoint pen": "Stylo-bille",
+  "Calligraphy pen": "Stylo de calligraphie",
+  "Eraser": "Effaceur",
+  "Fineliner": "Feutre fin",
+  "Highlighter": "Surligneur",
+  "Marker": "Marqueur",
+  "Mechanical pencil": "Portemine",
+  "Paintbrush": "Pinceau",
+  "Pencil": "Crayon à papier",
+  "Selection eraser": "Effaceur de sélection",
+  "Shader": "Outil d’ombrage"
+ },
+ "xofm::libs::user::UserInfo": {
+  "Not subscribed": "Pas d’abonnement"
+ },
+ "xofm::modules::compliance::LicenseInfo": {
+  "<h3>GPLv3 Compliance</h3>\n<p>The General Public License version 3 and the Lesser General Public License version 3 also requires you as an end-user to be able to access your device to be able to modify the copyrighted software licensed under these licenses running on it.</p><br/><p/>": "<h3>Conformité à la licence GPLv3</h3>\n<p>La Licence publique générale version&#160;3 (GPLv3) et la Licence publique générale limitée version&#160;3 (LGPLv3) exigent également que vous, en tant qu’utilisateur final, puissiez accéder à votre appareil afin de pouvoir modifier le logiciel protégé par copyright et soumis à ces licences qui y sont exécutées.</p><br/><p/>",
+  "Could not load EULA": "Impossible de charger le Contrat de licence utilisateur final",
+  "Could not load handwriting conversion license": "La licence pour la conversion de l’écriture manuscrite n’a pas pu être chargée",
+  "General information": "Informations générales",
+  "Handwriting conversion": "Conversion de l’écriture manuscrite",
+  "No specific licensing text.": "Pas de texte de licence spécifique."
+ },
+ "xofm::modules::integrations::calendar::Calendar": {
+  "Connect subscription expired, check <b>my.remarkable.com/integrations</b>": "Abonnement Connect expiré : rendez-vous sur <b>my.remarkable.com/integrations</b>",
+  "No active internet connection": "Pas de connexion internet active",
+  "No upcoming meetings": "Aucune réunion planifiée",
+  "Re-authentication needed in <b>my.remarkable.com/integrations</b>": "Veuillez vous authentifier à nouveau sur <b>my.remarkable.com/integrations</b>",
+  "Something went wrong": "Une erreur s’est produite"
+ },
+ "xofm::modules::integrations::calendar::EventController": {
+  "Failed to create document from invalid id": "Impossible de créer le document, identifiant invalide",
+  "Failed to set page content": "Impossible d’accéder à la page",
+  "Failed to write page to disk": "Impossible d’enregistrer la page sur le disque",
+  "Not enough disk space to create document": "Pas assez d’espace sur le disque pour créer un document",
+  "Restored %1 from Trash": "%1 récupéré dans la corbeille",
+  "Unable to create document": "Impossible de créer un document",
+  "Unable to restore folder '%1' from trash": "Impossible de récupérer le dossier %1 dans la corbeille",
+  "Unable to restore trashed meeting note": "Impossible de récupérer les fiches de réunion dans la corbeille"
+ },
+ "xofm::modules::softwareupdate::Updater": {
+  "Checking for update": "Vérification des mises à jour",
+  "Your device is up to date": "Votre appareil est à jour"
+ },
+ "xofm::modules::wificore::cslbackend::CslWifiManager": {
+  "Connection to %1 failed": "Impossible de se connecter à %1",
+  "Incorrect EAP method input": "Méthode EAP incorrecte",
+  "Incorrect Phase 2 method input": "Méthode Phase 2 incorrecte",
+  "Password too long": "Mot de passe trop long",
+  "Password too short": "Mot de passe trop court",
+  "SSID too long": "SSID trop long",
+  "SSID too short": "SSID trop court"
+ }
+}

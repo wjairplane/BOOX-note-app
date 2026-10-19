@@ -1,0 +1,543 @@
+file,lines,root_type,class,topic_guess,qsTr_strings,strings_found_in_app,app_status,sample_string
+00cb3d99.qml,9,Shortcut,glue/token,misc-component,0,0,n/a (token/glue),
+00cb404c.qml,54,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00cb44b0.qml,182,BaseView,screen,misc-component,1,1,present,Back; MAC: 
+00cb4a1b.qml,41,Column,screen/page,misc-component,2,0,MISSING,"<p>To do so, this device acts as an USB ethernet device, ; <"
+00cb4c58.qml,193,BaseView,screen,settings-pages,3,1,partial,Back; About this device
+00cbc0fc.qml,18,Shortcut,glue/token,misc-component,0,0,n/a (token/glue),
+00cbc1f4.qml,12,Shortcut,glue/token,misc-component,0,0,n/a (token/glue),
+00cbc2ba.qml,203,Column,screen/page,files-browser,4,4,present,Recent; Favorites
+00cbcb2c.qml,82,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00cbedef.qml,63,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00cc12fe.qml,25,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00cc13f8.qml,33,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00cc1548.qml,98,FocusScope,screen/page,security-passcode-password,4,1,partial,Open; Password protected PDF
+00cc18a8.qml,37,BaseView,screen,misc-component,1,1,present,Back
+00cc1a53.qml,28,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00cc1b64.qml,66,Background,screen/page,notifications-toasts,3,1,partial,Unable to open; This document contains data that is not supp
+00cc1de5.qml,83,Rectangle,screen/page,software-update,4,1,partial,Update software to view; This document is not supported by y
+00cc256d.qml,15,KYBD.Shortcut,glue/token,misc-component,0,0,n/a (token/glue),
+00cc2852.qml,62,BaseView,screen,security-passcode-password,6,3,present,Do you want to restart your reMarkable?; Do you want to turn
+00cc2ac3.qml,12,MinimalBatteryIndicator,component,misc-component,0,0,unknown (no UI strings; component),
+00cc5e0b.qml,8,ApplicationWindow,screen,misc-component,0,0,unknown (no UI strings; component),
+00cc5e7a.qml,7,Window,screen,misc-component,0,0,unknown (no UI strings; component),
+00cc627e.qml,17,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00cece9c.qml,38,BaseView,screen,cloud-account-pairing,2,1,present,Close; Connect required
+00ced0d0.qml,78,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00d82ba4.qml,217,Item,screen/page,files-browser,2,1,present,1 item; %1 items
+00d8363c.qml,7,Text,glue/token,misc-component,0,0,n/a (token/glue),
+00d836a1.qml,84,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00d839d6.qml,8,Text,glue/token,misc-component,0,0,n/a (token/glue),
+00d83a48.qml,7,Text,glue/token,misc-component,0,0,n/a (token/glue),
+00d83aa4.qml,8,Text,glue/token,misc-component,0,0,n/a (token/glue),
+00d83b9d.qml,6,Text,glue/token,misc-component,0,0,n/a (token/glue),
+00d83bf0.qml,7,Text,glue/token,misc-component,0,0,n/a (token/glue),
+00d83c4c.qml,7,Text,glue/token,misc-component,0,0,n/a (token/glue),
+00d83cae.qml,55,FocusScope,component,misc-component,0,0,unknown (no UI strings; component),
+00d83f8c.qml,48,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00d841aa.qml,207,ScrollArea,component,cloud-account-pairing,15,10,present,Make your mark; Fill this with notebooks and folders. When y
+00d84aab.qml,327,FocusScope,component,misc-component,0,0,unknown (no UI strings; component),
+00d85433.qml,84,ButtonBase,component,misc-component,1,0,MISSING,BETA
+00d85792.qml,74,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00d85a67.qml,42,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00d85bff.qml,81,ScrollContainer,component,misc-component,0,0,unknown (no UI strings; component),
+00d85f30.qml,18,Rectangle,glue/token,misc-component,0,0,n/a (token/glue),
+00d85fe4.qml,285,MouseArea,screen/page,misc-component,2,0,MISSING,Page %1; Chapter: %1
+00d86920.qml,97,FocusScope,component,misc-component,0,0,unknown (no UI strings; component),
+00d86d16.qml,32,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00d86e2f.qml,144,KeyboardNavigationHandler,component,misc-component,1,1,present,View all
+00d873e3.qml,62,Rectangle,component,misc-component,0,0,unknown (no UI strings; component),
+00d87649.qml,52,Rectangle,component,misc-component,0,0,unknown (no UI strings; component),
+00d87811.qml,15,ArkControls.Toggle,component,misc-component,0,0,unknown (no UI strings; component),
+00d878bd.qml,27,Rectangle,glue/token,misc-component,0,0,n/a (token/glue),
+00d87a40.qml,58,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00d87b78.qml,47,ButtonBase,component,misc-component,0,0,unknown (no UI strings; component),
+00d87da6.qml,33,KeyboardNavigationHandler,component,misc-component,0,0,unknown (no UI strings; component),
+00d88165.qml,31,Rectangle,component,misc-component,0,0,unknown (no UI strings; component),
+00d88276.qml,182,DeviceKeyboardNavigationHandler,component,misc-component,1,1,present,Close
+00d88833.qml,82,Rectangle,component,misc-component,0,0,unknown (no UI strings; component),
+00d88b91.qml,91,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00d88e2a.qml,76,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00d89132.qml,88,Item,screen/page,misc-component,2,0,MISSING,Show less; Show all
+00d89448.qml,10,IconButton,glue/token,misc-component,0,0,n/a (token/glue),
+00d894d7.qml,62,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00d89728.qml,79,Item,component,misc-component,1,1,present,Edit
+00d899ff.qml,80,FocusScope,component,misc-component,0,0,unknown (no UI strings; component),
+00d89ceb.qml,90,DeviceKeyboardNavigationHandler,component,misc-component,1,1,present,Close
+00d8a01c.qml,106,HeaderContainer,component,misc-component,0,0,unknown (no UI strings; component),
+00d8a3cb.qml,113,DeviceKeyboardNavigationHandler,component,misc-component,1,1,present,Cancel
+00d8a72b.qml,98,HeaderContainer,component,misc-component,1,1,present,Close
+00d8aaf4.qml,55,HeaderContainer,component,misc-component,1,1,present,Confirm
+00d8ad17.qml,71,ButtonBase,component,misc-component,0,0,unknown (no UI strings; component),
+00d8b006.qml,633,Background,screen/page,wifi-network,9,1,partial,Unable to retrieve without a cloud connection; This function
+00d8c561.qml,127,Background,component,misc-component,0,0,unknown (no UI strings; component),
+00d8c9ce.qml,77,Rectangle,component,misc-component,0,0,unknown (no UI strings; component),
+00d8ccea.qml,93,Rectangle,screen/page,cloud-account-pairing,3,0,MISSING (device/cloud-only: n/a on Android),Disk corrupted; Tap to attempt\nautomatic repair and restart
+00d8cfb1.qml,50,Background,screen/page,cloud-account-pairing,3,1,partial,Don't show this message again; Close
+00d8d23a.qml,14,QtObject,token,token:ark,0,0,n/a (token/glue),
+00d8d2ec.qml,16,QtObject,token,token:ark,0,0,n/a (token/glue),
+00d8d40a.qml,15,QtObject,token,token:ark,0,0,n/a (token/glue),
+00d8d4bf.qml,93,QtObject,token,token:ark,0,0,n/a (token/glue),
+00d8d745.qml,248,ContentItemBase,component,security-passcode-password,1,0,MISSING,Password protected PDF
+00d8df28.qml,128,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00d8e3ce.qml,61,ArkControls.Icon,component,misc-component,0,0,unknown (no UI strings; component),
+00d8e613.qml,266,GridView,component,files-browser,0,0,unknown (no UI strings; component),
+00d8f022.qml,142,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00d8f561.qml,327,ContentItemBase,component,cloud-account-pairing,2,0,MISSING (device/cloud-only: n/a on Android),Not syncing; 99+
+00d8fe5c.qml,131,ContentItemBase,component,misc-component,0,0,unknown (no UI strings; component),
+00d9025f.qml,155,MouseArea,screen/page,files-browser,5,0,MISSING,Not compatible; %n items
+00d906ff.qml,196,DeviceKeyboardNavigationHandler,screen/page,tags,6,6,present,Notebooks; PDFs
+00d90e6e.qml,165,Item,screen/page,page-overview-pages,2,2,present,All; Pages
+00d913d3.qml,182,ListView,component,misc-component,0,0,unknown (no UI strings; component),
+00d91a0f.qml,183,DeviceKeyboardNavigationHandler,component,misc-component,1,1,present,View all
+00d92093.qml,573,FocusScope,screen/page,handwriting-conversion-search,19,16,present,All; Ebooks
+00d9351f.qml,408,DeviceKeyboardNavigationHandler,component,files-browser,1,0,MISSING,Long-press for actions
+00d94342.qml,110,ContentItemBase,component,misc-component,0,0,unknown (no UI strings; component),
+00d94661.qml,103,Background,screen/page,guides-help,1,1,present,"Help; For troubleshooting, support, and FAQ go to <b>https:/"
+00d94a01.qml,188,DeviceKeyboardNavigationHandler,screen/page,selection-clipboard,7,3,partial,Accessibility settings; Readability
+00d9509c.qml,218,DeviceKeyboardNavigationHandler,dialog,onboarding-setup,11,2,partial,Back; Language and keyboard
+00d9569b.qml,124,DeviceKeyboardNavigationHandler,component,settings-pages,1,0,MISSING,Security settings
+00d95ac8.qml,218,DeviceKeyboardNavigationHandler,screen/page,cloud-account-pairing,7,0,MISSING (device/cloud-only: n/a on Android),Cloud settings; The reMarkable cloud is a service you can us
+00d96365.qml,260,DeviceKeyboardNavigationHandler,screen/page,settings-pages,4,4,present,General settings; Flight mode
+00d96a54.qml,326,DeviceKeyboardNavigationHandler,component,misc-component,1,1,present,Back
+00d97445.qml,64,RowLayout,component,misc-component,2,2,present,Left; Right
+00d9765e.qml,83,Item,screen/page,misc-component,0,0,unknown (no UI strings; component),On; Off
+00d978e3.qml,172,DeviceKeyboardNavigationHandler,screen/page,cloud-account-pairing,9,4,partial,Back; Storage
+00d97fd4.qml,227,Background,screen/page,cloud-account-pairing,14,2,partial,Back; Account
+00d98841.qml,132,Background,screen/page,cloud-account-pairing,9,1,partial,Back; Account
+00d98d51.qml,170,DeviceKeyboardNavigationHandler,screen/page,settings-pages,10,3,partial,5 minutes; 20 minutes
+00d99369.qml,111,DeviceKeyboardNavigationHandler,component,settings-pages,1,1,present,Display settings
+00d99708.qml,18,IconButton,glue/token,misc-component,0,0,n/a (token/glue),
+00d9983d.qml,370,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00d9a387.qml,52,Item,screen/page,text-typing-keyboard,3,1,partial,Title; Subheading
+00d9a5f6.qml,42,Rectangle,component,misc-component,0,0,unknown (no UI strings; component),
+00d9a7dd.qml,55,GridView,component,misc-component,0,0,unknown (no UI strings; component),
+00d9aa25.qml,154,Background,screen/page,misc-component,2,1,present,Table of contents; Back
+00d9af9d.qml,109,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00d9b294.qml,644,Background,screen/page,wifi-network,10,6,present,Unable to find original document.; Back
+00d9c3b9.qml,101,Popup,dialog,tags,3,3,present,Enter tag name; Save
+00d9c76c.qml,75,Item,component,text-typing-keyboard,1,0,MISSING,Justification
+00d9ca54.qml,82,Loader,component,handwriting-conversion-search,9,5,present,Cancel; You can only convert note pages to text
+00d9cc7b.qml,72,GlyphSelection,component,misc-component,1,1,present,Copy
+00d9cef6.qml,72,PagesItem,component,misc-component,0,0,unknown (no UI strings; component),
+00d9d1b8.qml,491,Item,screen/page,cloud-account-pairing,13,5,partial,Unable to add page while file is being exported; Send by ema
+00d9e147.qml,531,Background,screen/page,cloud-account-pairing,4,2,present,Not supported by page width; Choose template
+00d9f14b.qml,97,Item,screen/page,handwriting-conversion-search,2,1,present,Converted text added to clipboard; Undo
+00d9f50b.qml,62,FocusFrame,component,misc-component,1,0,MISSING,%1 (Current)
+00d9f812.qml,205,Background,screen/page,misc-component,4,4,present,Filter; Orientation
+00d9fd92.qml,123,PageSlider,component,misc-component,0,0,unknown (no UI strings; component),
+00da01c3.qml,134,Item,component,selection-clipboard,1,1,present,Select below
+00da06f0.qml,88,Rectangle,component,selection-clipboard,1,0,MISSING,Clear clipboard
+00da0a73.qml,133,Popup,dialog,zoom-view,3,1,partial,Zoom and pan to adjust the page; Custom view
+00da0e96.qml,131,Rectangle,component,misc-component,0,0,unknown (no UI strings; component),
+00da1310.qml,27,MouseArea,component,misc-component,0,0,unknown (no UI strings; component),
+00da141b.qml,56,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00da16b3.qml,69,Item,screen/page,text-typing-keyboard,1,0,MISSING,Font size; A
+00da194f.qml,82,Item,component,text-typing-keyboard,1,0,MISSING,Page margins
+00da1c2e.qml,83,Item,component,text-typing-keyboard,1,1,present,Font
+00da1f6c.qml,1950,FocusScope,component,selection-clipboard,1,0,MISSING,Text copied to clipboard. Go to a notepage to paste.
+00da5947.qml,345,Popup,dialog,tags,2,2,present,View all; New tag
+00da6487.qml,517,TouchArea,component,misc-component,0,0,unknown (no UI strings; component),
+00da7523.qml,112,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00da792b.qml,160,Item,component,selection-clipboard,0,0,unknown (no UI strings; component),
+00da7e9b.qml,27,TouchAreaSwipeFilter,component,misc-component,0,0,unknown (no UI strings; component),
+00da8054.qml,47,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00da817a.qml,32,ArkControls.NotificationBar,component,misc-component,0,0,unknown (no UI strings; component),
+00da8507.qml,82,PagesItem,component,misc-component,0,0,unknown (no UI strings; component),
+00da87d5.qml,83,ShapesOverlay,component,misc-component,0,0,unknown (no UI strings; component),
+00da8aeb.qml,200,Rectangle,component,text-typing-keyboard,0,0,unknown (no UI strings; component),
+00da9382.qml,35,ButtonBase,component,misc-component,0,0,unknown (no UI strings; component),
+00da94dc.qml,51,ActionBar,component,templates,4,2,present,Cancel; Delete
+00da96df.qml,2674,FocusScope,screen/page,wifi-network,24,2,partial,Tap with Marker to paste; Unable to add page while file is b
+00dae11b.qml,172,Loader,component,selection-clipboard,3,2,present,Select; Select all
+00dae71c.qml,190,Background,screen/page,text-typing-keyboard,6,4,present,Text settings; Save
+00daebb5.qml,167,MouseArea,component,misc-component,0,0,unknown (no UI strings; component),
+00daf19e.qml,93,Item,screen/page,handwriting-conversion-search,2,1,present,Converted text added as new page; Undo
+00daf5b7.qml,81,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00daf9df.qml,7,Action,glue/token,misc-component,0,0,n/a (token/glue),
+00dafa31.qml,99,Rectangle,component,misc-component,0,0,unknown (no UI strings; component),
+00dafe90.qml,82,Item,component,text-typing-keyboard,1,0,MISSING,Line spacing
+00db017b.qml,310,HeaderActions,component,search,7,3,partial,Searching page %1 of %2; Cancel
+00db0b2f.qml,97,FoldoutOverlay,menu/toolbar,cloud-account-pairing,6,1,partial,Favorite; Tag
+00db0e2a.qml,16,SidebarItem,component,misc-component,0,0,unknown (no UI strings; component),
+00db0ef0.qml,43,FoldoutOverlay,menu/toolbar,misc-component,2,0,MISSING,With edits; Original document
+00db1073.qml,80,SidebarFoldoutContentItem,menu/toolbar,misc-component,1,0,MISSING,Undefined
+00db1399.qml,136,DeviceKeyboardNavigationHandler,component,misc-component,0,0,unknown (no UI strings; component),
+00db1818.qml,51,ColumnLayout,screen/page,cloud-account-pairing,3,0,MISSING (device/cloud-only: n/a on Android),Export to Integration; Export to %1
+00db1a7f.qml,559,DeviceKeyboardNavigationHandler,screen/page,share-export,18,11,present,Google Drive; Dropbox
+00db282e.qml,34,ArkControls.Foldout,menu/toolbar,search,2,2,present,New notebook; Search
+00db2957.qml,327,DeviceKeyboardNavigationHandler,screen/page,tags,6,0,MISSING,Unselect all; Select all
+00db32b5.qml,21,ArkControls.Foldout,menu/toolbar,misc-component,0,0,unknown (no UI strings; component),
+00db3383.qml,35,SidebarItem,component,misc-component,0,0,unknown (no UI strings; component),
+00db34ea.qml,457,DeviceKeyboardNavigationHandler,screen/page,files-browser,5,5,present,Sort by; Large grid
+00db40c6.qml,24,ArkControls.Foldout,menu/toolbar,files-browser,1,0,MISSING,Move out
+00db41d5.qml,1116,HeaderContainer,component,wifi-network,34,17,present,Original folder found; Connect to Wi-Fi to export documents
+00db5d94.qml,298,Item,screen/page,search,7,7,present,Create new; Notebook
+00db6543.qml,246,Item,component,files-browser,1,0,MISSING,Filters
+00db6c4a.qml,88,FoldoutOverlay,menu/toolbar,handwriting-conversion-search,3,1,partial,PDF; Convert to Notebook
+00db6f84.qml,19,IconButton,glue/token,misc-component,0,0,n/a (token/glue),
+00db706f.qml,204,Loader,component,page-overview-pages,10,4,partial,You can only move out note pages; Failed to move pages
+00db7910.qml,71,FoldoutOverlay,menu/toolbar,handwriting-conversion-search,4,3,present,Tag; Add page before
+00db7b16.qml,923,FocusScope,screen/page,handwriting-conversion-search,19,7,partial,All; Notebooks
+00db949c.qml,72,Item,component,misc-component,0,0,unknown (no UI strings; component),+
+00db97e0.qml,30,ArkControls.ActionBar,component,misc-component,1,1,present,Cancel
+00db9910.qml,278,Item,screen/page,files-browser,6,5,present,Large grid; Medium grid
+00dba000.qml,250,MouseArea,component,misc-component,0,0,unknown (no UI strings; component),
+00dba796.qml,37,FoldoutOverlay,menu/toolbar,search,2,2,present,New folder; Search
+00dba8db.qml,8,QtObject,token,token:ark,0,0,n/a (token/glue),
+00dba9aa.qml,41,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00dbab3e.qml,22,Rectangle,component,retail-demo,1,0,MISSING (device/cloud-only: n/a on Android),Retail demo
+00dbda24.qml,30,QtObject,token,token:ark,0,0,n/a (token/glue),
+00dbdbec.qml,436,FocusScope,component,misc-component,0,0,unknown (no UI strings; component),
+00dbe7d5.qml,151,Image,component,software-update,2,0,MISSING (device/cloud-only: n/a on Android),Update software to view; Unable to view
+00dbec67.qml,46,Rectangle,component,misc-component,0,0,unknown (no UI strings; component),
+00dbee87.qml,136,MouseArea,component,misc-component,0,0,unknown (no UI strings; component),
+00dbf4cf.qml,96,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00dbf869.qml,19,Rectangle,glue/token,misc-component,0,0,n/a (token/glue),
+00dbf955.qml,111,Item,screen/page,cloud-account-pairing,11,0,MISSING (device/cloud-only: n/a on Android),Unable to view page. Low on memory.; Unable to view page
+00dbfccf.qml,25,QtObject,token,token:ark,0,0,n/a (token/glue),
+00dbfde0.qml,15,Item,component,retail-demo,1,0,MISSING (device/cloud-only: n/a on Android),This feature is not available in retail mode.
+00dbff61.qml,33,QtObject,token,token:ark,0,0,n/a (token/glue),
+00dc00f6.qml,42,QtObject,token,token:ark,0,0,n/a (token/glue),
+00dc02dd.qml,195,Item,screen/page,wifi-network,8,2,partial,Converting to text (%1); Cancel
+00dc0798.qml,49,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00dc09ce.qml,77,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00dc0d0a.qml,10,QtObject,token,token:ark,0,0,n/a (token/glue),
+00dc0d86.qml,28,Item,glue/token,misc-component,0,0,n/a (token/glue),
+00dc107b.qml,164,QtObject,component,tags,0,0,unknown (no UI strings; component),You can sort your pages after combination of tags. \nSelect 
+00dc1709.qml,29,Row,glue/token,misc-component,0,0,n/a (token/glue),
+00dc183a.qml,43,Rectangle,component,cloud-account-pairing,1,0,MISSING (device/cloud-only: n/a on Android),Not syncing
+00dc1a2f.qml,63,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00dc1c8e.qml,43,FocusScope,component,misc-component,0,0,unknown (no UI strings; component),
+00dc1e42.qml,30,QtObject,component,misc-component,1,1,present,%1 %2; Bytes
+00dc1fbf.qml,487,Item,component,selection-clipboard,0,0,unknown (no UI strings; component),
+00dc2df0.qml,144,ArkControls.ContextualMenu,menu/toolbar,misc-component,0,0,unknown (no UI strings; component),
+00decf1f.qml,54,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00ded851.qml,10,Shortcut,glue/token,misc-component,0,0,n/a (token/glue),
+00df0a49.qml,35,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00df0bca.qml,94,BaseView,screen,misc-component,2,1,present,Not enough free space to create document; Notebook
+00df0fd0.qml,219,InputBlocker,dialog,templates,9,9,present,New notebook; Cancel
+00df16fd.qml,41,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00df18b5.qml,62,BaseView,screen,files-browser,1,1,present,Folder
+00df1b4d.qml,48,BaseView,screen,files-browser,4,4,present,"Delete permanently?; If you delete the items, you won't be a"
+00df1d27.qml,195,InputBlocker,dialog,cloud-account-pairing,18,10,present,Notebook settings; PDF settings
+00df22c9.qml,119,InputBlocker,dialog,cloud-account-pairing,10,5,present,Rename; Cancel
+00df26bd.qml,176,Action,component,files-browser,10,7,present,Not enough free space to create quick sheet; Unable to add p
+00df2d1b.qml,132,InputBlocker,dialog,tags,5,5,present,New folder; Cancel
+00df3185.qml,23,Action,component,misc-component,1,0,MISSING,%n item(s) were deleted
+00df3308.qml,34,MouseArea,component,misc-component,0,0,unknown (no UI strings; component),
+00df472c.qml,21,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00df480a.qml,109,BaseView,screen,cloud-account-pairing,20,10,present,Learn more; Close
+00df4d1d.qml,36,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00df4f1a.qml,80,BaseView,screen,handwriting-conversion-search,4,2,present,Handwriting conversion language; Handwriting language
+00df78eb.qml,172,Background,screen/page,share-export,3,0,MISSING,You have reached the maxium amount of emails; You have alrea
+00df7e9b.qml,614,InputBlocker,dialog,security-passcode-password,27,10,partial,Page %1; All pages
+00df8e06.qml,50,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00e2e6e7.qml,18,CellItemWrapper,settings-row,software-update,2,1,present,Software; Version %1
+00e2e7cc.qml,126,BaseView,screen,software-update,3,2,present,Back; Software
+00e2ec01.qml,18,ArkControls.InfoMessage,component,misc-component,1,0,MISSING,Tap to restart device to complete update.
+00e2ed85.qml,48,BaseView,screen,cloud-account-pairing,2,0,MISSING (device/cloud-only: n/a on Android),You have an outdated version of the software. Enable updates
+00e2f02b.qml,31,ArkControls.Panel,settings-row,misc-component,3,0,MISSING,Updates; Company policy enforces automatic software updates
+00e2f248.qml,98,ArkControls.InfoMessage,component,wifi-network,3,0,MISSING (device/cloud-only: n/a on Android),Please connect to Wi-Fi to update.; Your device is up to dat
+00e2f527.qml,238,SetupBasePage,screen,software-update,6,1,partial,Installing update; We're installing the latest features and&
+00e2fd4c.qml,64,ArkControls.Panel,settings-row,software-update,3,0,MISSING (device/cloud-only: n/a on Android),Version %1; Release notes
+00e2ffe6.qml,32,ArkControls.Panel,settings-row,misc-component,1,0,MISSING,Advanced
+00e3199e.qml,11,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00e31a3e.qml,15,CellItemWrapper,settings-row,settings-pages,2,1,present,Battery; %1 \%
+00e31b12.qml,164,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00e31ff2.qml,19,CellItemWrapper,settings-row,settings-pages,2,1,present,Storage; %1 GB of %2 GB
+00e32120.qml,16,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00e321fc.qml,39,SetupBasePage,screen,misc-component,2,1,present,Choose your writing&#160;hand; Next
+00e323da.qml,10,Shortcut,glue/token,misc-component,0,0,n/a (token/glue),
+00e3246a.qml,18,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00e3254c.qml,51,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00e327a5.qml,30,ArkControls.Cell,settings-row,settings-pages,3,2,present,About; Compliance statements
+00e328c1.qml,12,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00e32954.qml,27,ArkControls.Panel,settings-row,settings-pages,2,0,MISSING,Visible content; Show your open document or overview when in
+00e32ae8.qml,17,Shortcut,glue/token,misc-component,0,0,n/a (token/glue),
+00e32be3.qml,9,Shortcut,glue/token,misc-component,0,0,n/a (token/glue),
+00e32c86.qml,12,CellItemWrapper,settings-row,text-typing-keyboard,1,0,MISSING,Language and keyboard
+00e32d35.qml,16,ColumnLayout,component,misc-component,0,0,unknown (no UI strings; component),
+00e32dfc.qml,20,GridLayout,component,misc-component,0,0,unknown (no UI strings; component),
+00e32eea.qml,19,QuickSettingsToggle,component,misc-component,0,0,unknown (no UI strings; component),
+00e47e74.qml,82,InputBlocker,dialog,misc-component,1,1,present,Close
+00e48194.qml,57,MouseArea,component,misc-component,0,0,unknown (no UI strings; component),
+00e483c5.qml,18,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00e484bb.qml,308,Item,component,text-typing-keyboard,1,1,present,Close
+00e48e6e.qml,131,Rectangle,component,misc-component,0,0,unknown (no UI strings; component),
+00e588ed.qml,298,Background,screen/page,wifi-network,7,2,partial,Back; Connect to Wi-Fi
+00e5918c.qml,106,Item,screen/page,wifi-network,3,2,present,Wi-Fi settings; Wi-Fi
+00e59533.qml,85,SetupBasePage,screen,wifi-network,3,2,present,Wi-Fi is required to get the latest software. Update now (re
+00e598e2.qml,46,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00e59ada.qml,62,Item,component,wifi-network,1,1,present,No Wi-Fi
+00e59d9a.qml,29,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00e59e99.qml,97,Column,screen/page,wifi-network,5,2,partial,Try again; Edit
+00e5a1a4.qml,236,ColumnLayout,screen/page,wifi-network,6,0,MISSING (device/cloud-only: n/a on Android),Connected to; Connecting to...
+00ea5340.qml,50,ToolbarTool,menu/toolbar,zoom-view,1,0,MISSING,Increase contrast
+00ea5574.qml,23,ToolbarTool,menu/toolbar,page-overview-pages,2,2,present,Add page; Add note page
+00ea5685.qml,42,ToolbarTool,menu/toolbar,share-export,1,0,MISSING,Export to storage integrations
+00ea5853.qml,60,ToolbarTool,menu/toolbar,misc-component,1,1,present,Undo; Undo
+00ea5b1d.qml,57,PenTool,menu/toolbar,selection-clipboard,1,1,present,Selection tool; Selection tool
+00ea5deb.qml,9,WritingTool,menu/toolbar,pen-eraser-tools,1,0,MISSING,Secondary pen
+00ea5e6e.qml,146,PenTool,menu/toolbar,pen-eraser-tools,2,2,present,Eraser; Erase all strokes
+00ea63db.qml,165,Loader,component,misc-component,0,0,unknown (no UI strings; component),
+00ea6a93.qml,19,ToolbarTool,menu/toolbar,misc-component,0,0,unknown (no UI strings; component),
+00ea6b75.qml,19,ToolbarTool,menu/toolbar,share-export,2,0,MISSING,Stop sharing your screen; Present with Screen Share
+00ea6ca2.qml,19,ToolbarTool,menu/toolbar,zoom-view,2,0,MISSING,Set to landscape; Set to portrait
+00ea6de9.qml,99,ToolbarTool,menu/toolbar,share-export,1,1,present,Share
+00ea70e6.qml,254,ToolbarTool,menu/toolbar,misc-component,3,2,present,PDF settings; Ebook settings
+00ea77e1.qml,9,WritingTool,menu/toolbar,pen-eraser-tools,1,0,MISSING,Primary pen
+00ea7863.qml,11,ToolModel,menu/toolbar,misc-component,0,0,unknown (no UI strings; component),
+00ea78d5.qml,25,ToolbarTool,menu/toolbar,misc-component,3,2,present,PDF settings; Ebook settings
+00ea79f5.qml,29,ToolbarTool,menu/toolbar,misc-component,1,1,present,Enable shapes
+00ea7ba1.qml,19,ToolbarTool,menu/toolbar,share-export,1,0,MISSING,Send to %1
+00ea7ca9.qml,20,ToolbarTool,menu/toolbar,handwriting-conversion-search,1,0,MISSING,Convert to text
+00ea7da3.qml,60,ToolbarTool,menu/toolbar,misc-component,1,1,present,Redo; Redo
+00ea8069.qml,40,ToolbarTool,menu/toolbar,page-overview-pages,1,1,present,Page overview
+00ea8265.qml,19,ToolbarTool,menu/toolbar,search,1,1,present,Search
+00ea8347.qml,74,ToolbarTool,menu/toolbar,zoom-view,4,4,present,Adjust view; Fit to width
+00ea8590.qml,21,ToolbarTool,menu/toolbar,handwriting-conversion-search,1,0,MISSING,Convert and share
+00ea86ad.qml,43,ToolbarTool,menu/toolbar,tags,1,1,present,Tags; Tags
+00ea8903.qml,320,Item,component,misc-component,0,0,unknown (no UI strings; component),
+00ea8fa8.qml,20,ToolbarTool,menu/toolbar,text-typing-keyboard,1,0,MISSING,Text settings
+00ea90a7.qml,154,ToolbarTool,menu/toolbar,text-typing-keyboard,5,1,partial,Typing; Edit text
+00ea9671.qml,24,ToolbarTool,menu/toolbar,misc-component,0,0,unknown (no UI strings; component),
+00ea97ed.qml,673,FocusScope,component,misc-component,0,0,unknown (no UI strings; component),
+00eaab6e.qml,80,Control,component,misc-component,0,0,unknown (no UI strings; component),
+00eaaeba.qml,308,ToolbarTool,menu/toolbar,templates,7,6,present,Layers; Text
+00eab96d.qml,23,ToolbarTool,menu/toolbar,share-export,1,0,MISSING,Export to %1
+00eaba89.qml,480,PenTool,menu/toolbar,text-typing-keyboard,3,1,partial,Color; Snap to text
+00eac8f4.qml,80,ToolbarTool,menu/toolbar,misc-component,1,0,MISSING,More tools
+00eacbf8.qml,64,ToolbarTool,menu/toolbar,zoom-view,1,1,present,Adjust view
+00ead72f.qml,82,FocusScope,screen/page,misc-component,5,5,present,Top; Bottom
+00eada56.qml,57,ArkControls.Panel,settings-row,settings-pages,2,2,present,Toolbar position; Choose your preferred toolbar position.
+00eaf65e.qml,10,Item,glue/token,misc-component,0,0,n/a (token/glue),
+00eb1bde.qml,23,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00eb1d0a.qml,23,BaseView,screen,security-passcode-password,2,0,MISSING,Download localized library; Enter passcode to confirm
+00eb1e49.qml,26,BaseView,screen,retail-demo,2,0,MISSING (device/cloud-only: n/a on Android),Exit retail mode; Enter passcode to confirm
+00eb1fcf.qml,54,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00eb21b4.qml,9,TextParagraph,glue/token,misc-component,0,0,n/a (token/glue),
+00eb22b2.qml,93,BaseView,screen,retail-demo,0,0,unknown (no UI strings; component),
+00eb25f2.qml,18,CellItemWrapper,settings-row,retail-demo,1,0,MISSING (device/cloud-only: n/a on Android),Retail mode
+00eb26ce.qml,130,Background,screen/page,retail-demo,5,1,partial,Store information; Back
+00eb2bb2.qml,24,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00eb2cd8.qml,188,FocusScope,dialog,cloud-account-pairing,9,1,partial,"By entering this mode, you will lose all content currently o"
+00eb32e3.qml,25,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00eb3401.qml,14,CellItemWrapper,settings-row,misc-component,1,0,MISSING,Download new library
+00eb34c4.qml,16,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00eb3591.qml,36,Background,screen/page,retail-demo,4,2,present,Back; Welcome to retail
+00eb69a3.qml,26,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00eb6ab5.qml,11,Shortcut,glue/token,misc-component,0,0,n/a (token/glue),
+00eb6b5b.qml,75,Item,screen/page,misc-component,3,0,MISSING,Personal information; Identify your paper tablet in standby 
+00eb6e53.qml,80,BaseView,screen,security-passcode-password,5,0,MISSING,Enter passcode; A reset is required to unlock your device.
+00eb7205.qml,42,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00eb73dd.qml,33,BaseView,screen,security-passcode-password,2,0,MISSING,Your passcode is turned off; Your passcode has been updated
+00eb7583.qml,125,InputBlocker,dialog,security-passcode-password,5,0,MISSING,"Too many attempts; Wait 1 minute to try again, or reset pass"
+00eb7947.qml,110,Item,screen/page,security-passcode-password,3,0,MISSING,Passcode; Protect your notebooks and documents with a code.
+00eb7d2b.qml,78,SetupBasePage,screen,security-passcode-password,6,0,MISSING,Verify passcode; Enter passcode
+00eb80fa.qml,95,BaseView,screen,misc-component,5,3,present,Personal information; Back
+00eb847c.qml,18,BaseView,screen,misc-component,1,0,MISSING,Success!
+00eb8555.qml,51,OnboardingPage,screen,cloud-account-pairing,3,0,MISSING (device/cloud-only: n/a on Android),Keeping work secure; Set passcode
+00eb8899.qml,207,Background,screen/page,wifi-network,13,2,partial,Back; Unenrolling from the reMarkable&#160;beta&#160;program
+00eb8ef3.qml,19,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00eb8fcf.qml,12,CellItemWrapper,settings-row,beta-program,1,0,MISSING (device/cloud-only: n/a on Android),reMarkable beta program
+00eb9086.qml,92,Rectangle,screen/page,beta-program,2,1,present,Back; End user agreement reMarkable beta program
+00eb9467.qml,13,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00eb9508.qml,21,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00eb95f9.qml,155,Background,screen/page,wifi-network,13,2,partial,"Back; Beta releases may contain bugs or inaccuracies, as the"
+00eb9bf4.qml,18,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00eb9ed4.qml,50,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00ebfbfc.qml,238,SetupBasePage,screen,wifi-network,12,1,partial,Pair your device; Pair your device later
+00ec0518.qml,42,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),", %1"
+00ec06fc.qml,35,CellItemWrapper,settings-row,cloud-account-pairing,3,0,MISSING (device/cloud-only: n/a on Android),Account; Pair with the reMarkable cloud
+00ec08cd.qml,34,ArkControls.InfoMessage,component,cloud-account-pairing,3,0,MISSING (device/cloud-only: n/a on Android),Pair your paper tablet to sync content to the cloud and use 
+00ec0acd.qml,36,BaseView,screen,cloud-account-pairing,2,0,MISSING (device/cloud-only: n/a on Android),"Verify your account; As a security measure, we need you to p"
+00ec0d07.qml,236,Item,screen/page,wifi-network,12,3,partial,", %1; Unpairing from the cloud"
+00ec123b.qml,82,SetupBasePage,screen,cloud-account-pairing,2,1,present,Pair your device later; Next
+00ec1545.qml,37,DialogScreen,screen,cloud-account-pairing,3,0,MISSING (device/cloud-only: n/a on Android),Pair to verify; Pair your reMarkable account%1%2 to your pap
+00ec1701.qml,35,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00ec1871.qml,30,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00ec19ff.qml,47,BaseView,screen,cloud-account-pairing,2,0,MISSING (device/cloud-only: n/a on Android),Verify your account; We've increased the security for your r
+00ec1cb0.qml,97,BaseView,screen,cloud-account-pairing,5,0,MISSING (device/cloud-only: n/a on Android),Pairing required; Verify your account by email
+00ec213c.qml,10,OAuthSetupPage,screen,misc-component,0,0,unknown (no UI strings; component),
+00ec21dd.qml,16,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00ec22a9.qml,28,Item,screen/page,cloud-account-pairing,2,0,MISSING (device/cloud-only: n/a on Android),Pair your device later; Create an account and pair your devi
+00ec2457.qml,43,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+00ec2615.qml,10,OneTimeCodeSetupPage,screen,misc-component,0,0,unknown (no UI strings; component),
+00ec2de0.qml,30,ListView,component,misc-component,0,0,unknown (no UI strings; component),
+00ec31d7.qml,30,SetupBasePage,screen,onboarding-setup,3,0,MISSING,You're good to go; Your paper tablet is all set up and ready
+00ec33c3.qml,29,SetupBasePage,screen,onboarding-setup,3,1,partial,Before you get started; You'll need a smartphone or computer
+00ec3596.qml,50,SetupBasePage,screen,onboarding-setup,3,1,partial,Welcome to your<br/>%1; Choose your language to begin.
+00ec37d8.qml,9,GettingStartedPageBase,screen,cloud-account-pairing,1,0,MISSING (device/cloud-only: n/a on Android),"Let's get you set up; To get started, please have your compu"
+00ec38d7.qml,74,BaseView,screen,onboarding-setup,0,0,unknown (no UI strings; component),
+00ec3c3b.qml,57,SetupBasePage,screen,onboarding-setup,3,1,partial,Did you see that?; Traces of previous images appear occasion
+00f78bbb.qml,32,BaseView,screen,misc-component,1,1,present,Back
+00f78d17.qml,65,BaseView,screen,onboarding-setup,2,0,MISSING,Get started; Read full release notes
+00f79025.qml,113,Rectangle,component,misc-component,0,0,unknown (no UI strings; component),
+00f79745.qml,18,QuickSettingsToggle,component,misc-component,0,0,unknown (no UI strings; component),
+00f79844.qml,55,BaseView,screen,meeting-notes-calendar,5,2,partial,Stream your notes and ideas directly on a big screen. Turn y
+0101f15d.qml,169,InputBlocker,dialog,handwriting-conversion-search,3,0,MISSING,Making handwriting searchable might take a while; All handwr
+0101f5fc.qml,56,ArkControls.NotificationBar,component,misc-component,0,0,unknown (no UI strings; component),
+0101f818.qml,143,InputBlocker,dialog,cloud-account-pairing,3,0,MISSING (device/cloud-only: n/a on Android),Syncing; Sync completed
+0101fcc8.qml,45,Control,component,misc-component,0,0,unknown (no UI strings; component),
+01022486.qml,149,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+01022944.qml,42,ArkControls.Panel,settings-row,handwriting-conversion-search,4,2,present,Handwriting search; Keeps an index of the notes and text you
+01022b5c.qml,23,Action,glue/token,search,0,0,n/a (token/glue),
+01022cc0.qml,53,BaseView,screen,cloud-account-pairing,1,0,MISSING (device/cloud-only: n/a on Android),Not subscribed; To search for keywords in your handwritten n
+01022f26.qml,557,InputBlocker,dialog,handwriting-conversion-search,19,16,present,All; Ebooks
+01024339.qml,141,Item,screen/page,misc-component,0,0,unknown (no UI strings; component),Jan; Feb
+010249b2.qml,63,Item,component,misc-component,0,0,unknown (no UI strings; component),:
+01024c39.qml,57,Rectangle,component,misc-component,0,0,unknown (no UI strings; component),
+01024e67.qml,158,ColumnLayout,component,misc-component,0,0,unknown (no UI strings; component),
+0102538a.qml,86,Rectangle,component,misc-component,0,0,unknown (no UI strings; component),
+01025709.qml,20,ArkControls.Cell,settings-row,settings-pages,1,0,MISSING,System time
+010257d5.qml,21,CellItemWrapper,settings-row,misc-component,0,0,unknown (no UI strings; component),
+0102590c.qml,296,BaseView,screen,settings-pages,6,3,present,Back; Coordinated Universal Time (UTC)
+0102618e.qml,111,BaseView,screen,cloud-account-pairing,5,1,partial,Back; System time
+01028b33.qml,57,BaseView,screen,handwriting-conversion-search,3,2,present,Cancel; Convert
+01028e0e.qml,51,BaseView,screen,handwriting-conversion-search,2,1,present,Sharing your work; Scan the QR-code to access your notes onl
+0102ae7c.qml,31,Repeater,component,misc-component,0,0,unknown (no UI strings; component),
+0102aff7.qml,43,ArkControls.OnboardingDialog.Content,component,misc-component,0,0,unknown (no UI strings; component),
+0102b18d.qml,227,InputBlocker,dialog,wifi-network,42,34,present,Gestures; Back
+0102b97f.qml,106,Rectangle,component,misc-component,0,0,unknown (no UI strings; component),
+0102bcac.qml,45,Rectangle,component,misc-component,0,0,unknown (no UI strings; component),
+0102be8c.qml,237,DeviceKeyboardNavigationHandler,screen/page,onboarding-setup,16,10,present,Guides; Back
+0102c749.qml,10,QtObject,token,token:ark,0,0,n/a (token/glue),
+0102c7ea.qml,63,ToolTip,component,misc-component,0,0,unknown (no UI strings; component),
+0102caac.qml,76,Control,component,misc-component,0,0,unknown (no UI strings; component),
+0102cde3.qml,129,InputBlocker,dialog,misc-component,4,3,present,Back; Close
+0102d245.qml,46,RowLayout,component,misc-component,0,0,unknown (no UI strings; component),
+0102d397.qml,185,Background,screen/page,text-typing-keyboard,27,9,partial,Editing; Title
+0102dd80.qml,17,ArkControls.OnboardingDialog.Content,component,misc-component,0,0,unknown (no UI strings; component),
+0102e04e.qml,27,BaseView,screen,security-passcode-password,2,0,MISSING,You're good to go; The security of paper tablet has been str
+0102e202.qml,12,TextParagraph,glue/token,misc-component,0,0,n/a (token/glue),
+0102e314.qml,73,BaseView,screen,misc-component,1,1,present,Next
+01030ec7.qml,40,BaseView,screen,share-export,2,0,MISSING,Content from %1; Integration
+01031110.qml,42,BaseView,screen,cloud-account-pairing,3,1,partial,Get access with Connect; Import Word files and Google Docs a
+010313b6.qml,30,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+010314e6.qml,52,BaseView,screen,share-export,2,1,present,Back; Integrations
+01034e2f.qml,30,PincodeDialogPage,screen,retail-demo,3,0,MISSING (device/cloud-only: n/a on Android),Set retail passcode; Verify retail passcode
+01034f63.qml,28,PincodeDialogPage,screen,security-passcode-password,2,0,MISSING,Enter passcode; Incorrect passcode. Try again.
+010352a5.qml,62,Item,component,misc-component,0,0,unknown (no UI strings; component),
+01035577.qml,101,Item,component,misc-component,0,0,unknown (no UI strings; component),
+01035b8f.qml,49,FocusScope,component,cloud-account-pairing,1,0,MISSING (device/cloud-only: n/a on Android),Verification code
+01035d9c.qml,218,Item,screen/page,cloud-account-pairing,15,2,partial,Pair your device; Unable to complete pairing
+01036593.qml,126,FocusScope,screen/page,misc-component,2,0,MISSING,Your code timed out; The code is valid for %1 minutes
+01039e78.qml,129,Action,component,meeting-notes-calendar,0,0,unknown (no UI strings; component),
+0103a39b.qml,79,BaseView,screen,cloud-account-pairing,6,1,partial,"Create meeting note; Start focused, stay engaged, and get or"
+0103a706.qml,45,BaseView,screen,meeting-notes-calendar,6,0,MISSING (device/cloud-only: n/a on Android),Create meeting note is ready to use:; Tap a meeting from the
+0103a90f.qml,73,BaseView,screen,cloud-account-pairing,5,1,partial,"Create meeting note; Start focused, stay engaged, and get or"
+0103ad3e.qml,95,InputBlocker,dialog,meeting-notes-calendar,1,0,MISSING (device/cloud-only: n/a on Android),Create a meeting note
+0103b0b0.qml,96,Item,component,misc-component,0,0,unknown (no UI strings; component), · 
+010434ec.qml,269,InputBlocker,dialog,tags,4,4,present,Alphabetical (Z-A); Alphabetical (A-Z)
+01043ddf.qml,152,FocusScope,screen/page,tags,3,3,present,Tags; View all
+01044516.qml,59,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+01044757.qml,56,BaseView,screen,tags,5,3,present,"If you delete these tags, they'll be removed from all tagged"
+01049798.qml,21,BaseView,screen,power-sleep,1,0,MISSING,Press power button to continue
+010498b2.qml,98,BaseView,screen,power-sleep,1,0,MISSING,reMarkable is sleeping
+01049fbf.qml,82,NotificationBar,component,notifications-toasts,0,0,unknown (no UI strings; component),Show Notification
+0104b474.qml,213,FocusScope,screen/page,wifi-network,17,2,partial,No cloud connection; Unable to back up content before resett
+0104bad4.qml,21,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+01051814.qml,50,Control,component,misc-component,0,0,unknown (no UI strings; component),
+010519d0.qml,135,InputBlocker,dialog,misc-component,1,1,present,Back
+01051e19.qml,115,InputBlocker,dialog,misc-component,1,1,present,Back
+010521cf.qml,74,Control,component,misc-component,0,0,unknown (no UI strings; component),
+010525d4.qml,267,FocusScope,screen/page,wifi-network,16,2,partial,Factory reset; Reset your device to factory settings. By doi
+01054994.qml,34,DialogScreen,screen,cloud-account-pairing,5,1,partial,Any recent changes will sync automatically before your reMar
+01054b99.qml,55,DialogScreen,screen,security-passcode-password,3,1,partial,Recovery for lost password; Store this alphabetic code somew
+01054dc6.qml,130,Item,screen/page,security-passcode-password,6,0,MISSING,Unable to change password; Set a new password
+01055266.qml,130,PasswordInputField,component,security-passcode-password,4,2,present,Password; low
+0105586b.qml,58,FocusScope,screen/page,security-passcode-password,2,0,MISSING,Enter recovery code; Set new passcode
+01055adb.qml,34,DialogScreen,screen,security-passcode-password,3,0,MISSING,Recover your paper tablet; Enter the recovery code that you 
+01055c6d.qml,62,Item,component,misc-component,0,0,unknown (no UI strings; component),
+01055e9b.qml,33,InformationDialog,dialog,cloud-account-pairing,6,0,MISSING (device/cloud-only: n/a on Android),"If you use your reMarkable 2 for work, being able to encrypt"
+010560f4.qml,99,FocusScope,screen/page,security-passcode-password,5,0,MISSING,Incorrect password. Please try again.; Checking password
+01056481.qml,94,Rectangle,component,misc-component,0,0,unknown (no UI strings; component),
+01056718.qml,133,FocusScope,screen/page,security-passcode-password,3,0,MISSING,Enter password; Wrong recovery code entered
+01056b77.qml,73,Item,screen/page,security-passcode-password,6,1,partial,Data protection; Choose whether your disk is encrypted or no
+01056e36.qml,31,SetupBasePage,screen,misc-component,0,0,unknown (no UI strings; component),
+01056f6e.qml,28,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+01057090.qml,43,BaseView,screen,security-passcode-password,3,0,MISSING,Something went wrong; Please try again by rebooting your dev
+010572a2.qml,54,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+010574c5.qml,68,BaseView,screen,misc-component,0,0,unknown (no UI strings; component),
+0105776e.qml,174,BaseView,screen,security-passcode-password,8,1,partial,Incorrect password. Please try again.; Unable to change pass
+01061c3b.qml,113,Column,screen/page,wifi-network,9,1,partial,Pairing with the cloud requires a Wi-Fi connection.; No acco
+0106213e.qml,12,ArkControls.CellItem,settings-row,misc-component,0,0,unknown (no UI strings; component),
+010621f0.qml,13,ArkControls.StateSwitch,component,misc-component,0,0,unknown (no UI strings; component),
+01062295.qml,78,Item,component,selection-clipboard,1,1,present,Back
+0106262a.qml,47,QtObject,token,token:ark,0,0,n/a (token/glue),
+0106309c.qml,49,StackView,component,misc-component,0,0,unknown (no UI strings; component),
+01063267.qml,343,Background,screen/page,notifications-toasts,3,3,present,Back; Confirm
+01063cda.qml,75,FocusScope,component,misc-component,1,1,present,Skip
+01065461.qml,152,SetupBasePage,screen,onboarding-setup,5,1,partial,A keyboard just as focused as you are; You've successfully c
+01065986.qml,132,Item,screen/page,misc-component,1,0,MISSING,PC; Mac
+01065d7b.qml,132,BaseView,screen,text-typing-keyboard,8,4,present,Back; Keyboard
+01066263.qml,73,BaseView,screen,onboarding-setup,2,0,MISSING,Start typing without distractions; Now you can bring focused
+0106654d.qml,40,Item,component,onboarding-setup,1,0,MISSING,Type Folio language
+01066724.qml,35,Item,component,misc-component,0,0,unknown (no UI strings; component),
+01066866.qml,107,FocusScope,component,misc-component,0,0,unknown (no UI strings; component),
+01066c38.qml,57,TextInput,component,misc-component,0,0,unknown (no UI strings; component),
+01066eab.qml,34,FocusScope,component,misc-component,0,0,unknown (no UI strings; component),
+01067038.qml,124,DeviceKeyboardNavigationHandler,component,misc-component,0,0,unknown (no UI strings; component),
+010673c5.qml,133,FocusScope,component,security-passcode-password,1,0,MISSING,Password
+01067a0b.qml,122,Rectangle,component,onboarding-setup,1,0,MISSING,Swipe to continue
+01067f7f.qml,102,FocusScope,component,misc-component,0,0,unknown (no UI strings; component),0
+0106829e.qml,120,InputBlocker,dialog,misc-component,1,1,present,Back
+01068715.qml,94,FocusScope,screen/page,security-passcode-password,4,0,MISSING,Enter your passcode; Enter your new passcode
+01068a3c.qml,207,FocusScope,screen/page,security-passcode-password,3,0,MISSING,Four digits; Six digits
+01069123.qml,58,FocusScope,dialog,security-passcode-password,3,0,MISSING,Enter passcode; Incorrect passcode. Try again or contact Sup
+01124d0c.qml,386,QtObject,token,token:ark,0,0,n/a (token/glue),
+01124f61.qml,76,QtObject,token,token:ark,0,0,n/a (token/glue),
+0112512b.qml,49,QtObject,token,token:ark,0,0,n/a (token/glue),
+011252c1.qml,386,QtObject,token,token:ark,0,0,n/a (token/glue),
+01125517.qml,74,QtObject,token,token:ark,0,0,n/a (token/glue),
+01125722.qml,52,QtObject,token,token:ark,0,0,n/a (token/glue),
+01125876.qml,135,QtObject,token,token:ark,0,0,n/a (token/glue),
+01125ae3.qml,75,QtObject,token,token:ark,0,0,n/a (token/glue),
+01125ca2.qml,36,QtObject,token,token:ark,0,0,n/a (token/glue),
+01125e0b.qml,56,QtObject,token,token:ark,0,0,n/a (token/glue),
+01125f7a.qml,32,QtObject,token,token:ark,0,0,n/a (token/glue),
+011260b3.qml,192,QtObject,token,token:ark,0,0,n/a (token/glue),
+011263c5.qml,88,QtObject,token,token:ark,0,0,n/a (token/glue),
+011265e2.qml,386,QtObject,token,token:ark,0,0,n/a (token/glue),
+0112683c.qml,70,QtObject,token,token:ark,0,0,n/a (token/glue),
+011269f8.qml,79,QtObject,token,token:ark,0,0,n/a (token/glue),
+01126bb7.qml,129,QtObject,token,token:ark,0,0,n/a (token/glue),
+01127211.qml,498,QtObject,token,token:ark,0,0,n/a (token/glue),
+011274b1.qml,53,QtObject,token,token:ark,0,0,n/a (token/glue),
+01127666.qml,92,QtObject,token,token:ark,0,0,n/a (token/glue),
+0112783a.qml,97,QtObject,token,token:ark,0,0,n/a (token/glue),
+01127a30.qml,38,QtObject,token,token:ark,0,0,n/a (token/glue),
+01127b33.qml,108,QtObject,token,token:ark,0,0,n/a (token/glue),
+01127d19.qml,91,QtObject,token,token:ark,0,0,n/a (token/glue),
+01127f03.qml,44,QtObject,token,token:ark,0,0,n/a (token/glue),
+011280a3.qml,41,QtObject,token,token:ark,0,0,n/a (token/glue),
+0112824b.qml,497,QtObject,token,token:ark,0,0,n/a (token/glue),
+011284ea.qml,340,QtObject,token,token:ark,0,0,n/a (token/glue),
+011288b3.qml,94,QtObject,token,token:ark,0,0,n/a (token/glue),
+01128aa2.qml,26,QtObject,token,token:ark,0,0,n/a (token/glue),
+01128ba4.qml,28,QtObject,token,token:ark,0,0,n/a (token/glue),
+01128e50.qml,80,QtObject,token,token:ark,0,0,n/a (token/glue),
+0112903e.qml,96,QtObject,token,token:ark,0,0,n/a (token/glue),
+01129205.qml,498,QtObject,token,token:ark,0,0,n/a (token/glue),
+011294a5.qml,39,QtObject,token,token:ark,0,0,n/a (token/glue),
+011295ae.qml,873,QtObject,token,token:ark,0,0,n/a (token/glue),
+01129de0.qml,66,QtObject,token,token:ark,0,0,n/a (token/glue),
+01129f73.qml,51,QtObject,token,token:ark,0,0,n/a (token/glue),
+01196d65.qml,162,T.Container,component,misc-component,0,0,unknown (no UI strings; component),
+011973e6.qml,134,ArkControls.FoldoutItem,menu/toolbar,misc-component,0,0,unknown (no UI strings; component),
+011978cb.qml,229,ArkControls.Slider,component,misc-component,0,0,unknown (no UI strings; component),
+0119b6b2.qml,192,Item,component,misc-component,0,0,unknown (no UI strings; component),
+0119c735.qml,117,Container,component,misc-component,0,0,unknown (no UI strings; component),
+0119cc10.qml,200,ButtonBase,component,misc-component,0,0,unknown (no UI strings; component),
+0119fe69.qml,135,QtQuickControls.MenuItem,menu/toolbar,misc-component,0,0,unknown (no UI strings; component),
+011a591f.qml,173,ArkControls.InfoMessage,component,misc-component,0,0,unknown (no UI strings; component),
+011a5f32.qml,177,QtObject,token,token:ark,0,0,n/a (token/glue),
+011a6464.qml,132,ArkControls.BatteryIcon,component,misc-component,0,0,unknown (no UI strings; component),
+011a929e.qml,101,QtObject,token,token:ark,0,0,n/a (token/glue),
+011a9615.qml,136,T.Pane,component,misc-component,0,0,unknown (no UI strings; component),
+011acb10.qml,137,QtQuickControls.MenuItem,menu/toolbar,misc-component,0,0,unknown (no UI strings; component),
+011ade50.qml,222,ArkControls.Slider,component,misc-component,0,0,unknown (no UI strings; component),
+011af314.qml,202,Item,component,misc-component,0,0,unknown (no UI strings; component),
+011b00a9.qml,248,T.Button,component,misc-component,0,0,unknown (no UI strings; component),
+011b0c69.qml,18,QtObject,token,token:ark,0,0,n/a (token/glue),

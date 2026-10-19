@@ -50,6 +50,9 @@ import java.io.File
 class ScreenshotTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
 
+    @org.junit.Before fun transparentRoot() { app.inkbridge.ui.RootBackground = androidx.compose.ui.graphics.Color.Transparent; rule.activity.window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)) }
+    @org.junit.After fun opaqueRoot() { app.inkbridge.ui.RootBackground = androidx.compose.ui.graphics.Color.White }
+
     /**
      * Draw the whole window into a PNG, plus any popup windows (menus) on top of it at their own positions.
      * (Compose's captureToImage waits for a draw callback Robolectric never sends.)
@@ -58,14 +61,16 @@ class ScreenshotTest {
         val decor = rule.activity.window.decorView
         val bmp = android.graphics.Bitmap.createBitmap(decor.width.coerceAtLeast(1), decor.height.coerceAtLeast(1), android.graphics.Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(bmp)
-        decor.draw(canvas)
+        canvas.drawColor(android.graphics.Color.WHITE)
         // The page itself lives on a SurfaceView, which a view capture leaves out: lay its bitmap over the capture, darkest wins
         // (so the toolbar and menus drawn by Compose stay on top of the white page).
         findSurface(decor)?.takeIf { !(name.startsWith("template_picker") || name.startsWith("overview") || name.startsWith("dialog_delete_page")) }?.let { v ->
             val bitmap = v.shownBitmap ?: return@let
             val at = IntArray(2).also { v.getLocationInWindow(it) }
-            canvas.drawBitmap(bitmap, at[0].toFloat(), at[1].toFloat(), android.graphics.Paint().apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DARKEN) })
+            canvas.drawBitmap(bitmap, at[0].toFloat(), at[1].toFloat(), null)
         }
+        // As on the device the page is underneath: everything Compose draws (toolbar, panels, menus) goes on top of it.
+        decor.draw(canvas)
         runCatching {
             val wmg = Class.forName("android.view.WindowManagerGlobal")
             val global = wmg.getMethod("getInstance").invoke(null)
@@ -254,7 +259,7 @@ class ScreenshotTest {
         // Delete moves to the trash at once and says so in the bottom notification bar.
         rule.onNodeWithText("Delete").performClick(); settle(); snapshot("notification_trashed")
         org.junit.Assert.assertEquals(1, app.library.trash.size)
-        rule.onNodeWithText("1 item was moved to Trash").assertExists()
+        rule.onNodeWithText("1 item(s) were moved to Trash").assertExists()
 
         // The trash: its own create-menu button, the empty-trash dialog, and restore/delete in the action bar.
         rule.onNodeWithContentDescription("Menu").performClick(); settle()
@@ -398,6 +403,9 @@ class ScreenshotTest {
         // Quick browse (the page slider): driven through the surface's edge swipe.
         val surface = findSurface(rule.activity.window.decorView)!!
         rule.runOnUiThread { surface.listenerForTest().onEdgeSwipe(FingerGestures.Edge.QUICK_BROWSE) }; settle(); snapshot("page_slider")
+        // Dragging along it: the monochrome thumbnail and "Page N" appear above the strip.
+        rule.onNodeWithContentDescription("Page slider").performTouchInput { down(androidx.compose.ui.geometry.Offset(width * 0.8f, height / 2f)) }; settle(); snapshot("page_slider_dragging")
+        rule.onNodeWithContentDescription("Page slider").performTouchInput { up() }; settle()
     }
 
     /** The firmware-style template picker on its own: all templates, the filter menu open, then Planners in landscape. */

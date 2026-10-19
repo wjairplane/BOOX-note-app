@@ -57,7 +57,8 @@ class TextContent(
                 if (k > 0) { sb.append('\n'); ids += p.startId; bold += false; italic += false }
                 val start = sb.length
                 for (s in p.spans) for ((j, c) in s.s.withIndex()) {
-                    sb.append(c); ids += s.ids[j]; bold += s.bold; italic += s.italic
+                    // U+2028 is a soft line break inside a paragraph; it is laid out as a space.
+                    sb.append(if (c == '\u2028') ' ' else c); ids += s.ids[j]; bold += s.bold; italic += s.italic
                 }
                 paras += ParaInfo(start, sb.length, p.style, p.startId)
             }

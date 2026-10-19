@@ -44,7 +44,7 @@ object TemplateCatalog {
                 landscape = landscape,
                 categories = (o["categories"] as? JsonArray).orEmpty().mapNotNull { (it as? JsonPrimitive)?.contentOrNull },
                 iconCode = (o["iconCode"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
-                available = filename == "Blank" || read("$filename.template") != null,
+                available = filename == "Blank" || read("$filename.template") != null || NativeTemplates.has(filename),
             )
         }
     }

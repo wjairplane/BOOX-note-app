@@ -47,6 +47,14 @@ class PageEditor private constructor(initial: List<Block>) {
      * Add a stroke drawn at page-space [input] points. Returns the new stroke, or null if the tool
      * isn't a pen or there was no input.
      */
+    /** The stroke [addStroke] would add for [input], without adding it (for drawing the stroke live while the pen is still down). */
+    fun previewLine(spec: PenSpec, input: List<InputPoint>): AddedStroke? {
+        val layer = activeLayer() ?: return null
+        val (ox, oy) = renderer.offsetOf(layer)
+        val line = StrokeBuilder.build(spec, input, ox, oy) ?: return null
+        return AddedStroke(line, ox, oy, CrdtId(0, 0))
+    }
+
     fun addStroke(spec: PenSpec, input: List<InputPoint>): AddedStroke? {
         val layer = activeLayer() ?: throw IllegalStateException("Page has no layer to draw on")
         val (ox, oy) = renderer.offsetOf(layer)
@@ -77,8 +85,60 @@ class PageEditor private constructor(initial: List<Block>) {
      */
     fun eraseAlong(path: List<Pair<Float, Float>>, radius: Float): Int {
         if (path.isEmpty()) return 0
-        val hit = renderer.placedLines().filter { touches(it, path, radius) }.map { it.itemId }.toSet()
-        return deleteStrokes(hit)
+        val hit = renderer.placedLines().filter { touches(it, path, radius) }
+        if (hit.isEmpty()) return 0
+        // The eraser takes out only the part of a stroke it passes over: what is left on either side stays as separate strokes.
+        val originals = HashSet<CrdtId>()
+        val pieces = LinkedHashMap<Group, MutableList<Line>>()
+        for (p in hit) {
+            val local = path.map { (x, y) -> (x - p.ox) to (y - p.oy) }
+            val parts = erasedParts(p.line, local, radius) ?: continue
+            originals += p.itemId
+            pieces.getOrPut(p.parent) { ArrayList() }.addAll(parts)
+        }
+        if (originals.isEmpty()) return 0
+        var next: List<Block> = blocks.map { b -> if (b is SceneItemBlock && b.blockType == SceneItemBlock.LINE && b.itemId in originals && b.value is Line) tombstone(b) else b }
+        for ((layer, lines) in pieces) if (lines.isNotEmpty()) next = appended(next, layer, lines).first
+        commit(next)
+        return originals.size
+    }
+
+    /** What is left of [line] after erasing within [radius] of [path] (both relative to the line's layer); null if nothing was touched. */
+    private fun erasedParts(line: Line, path: List<Pair<Float, Float>>, radius: Float): List<Line>? {
+        // Densify first so a long segment between two surviving points can still be cut in the middle.
+        val step = max(radius * 0.15f, 1f)
+        val pts = ArrayList<Point>()
+        for ((i, q) in line.points.withIndex()) {
+            val n = line.points.getOrNull(i + 1)
+            pts += q
+            if (n != null) {
+                val d = hypot(n.x - q.x, n.y - q.y)
+                val k = (d / step).toInt()
+                for (j in 1..k) {
+                    val t = j / (k + 1f)
+                    pts += Point(q.x + (n.x - q.x) * t, q.y + (n.y - q.y) * t, q.speed, q.direction, (q.width + (n.width - q.width) * t).roundToInt(), (q.pressure + (n.pressure - q.pressure) * t).roundToInt())
+                }
+            }
+        }
+        val erased = BooleanArray(pts.size) { i ->
+            val q = pts[i]
+            val r = radius
+            if (path.size == 1) hypot(q.x - path[0].first, q.y - path[0].second) <= r
+            else (0 until path.size - 1).any { distToSegment(q.x, q.y, path[it].first, path[it].second, path[it + 1].first, path[it + 1].second) <= r }
+        }
+        if (erased.none { it }) return null
+        val out = ArrayList<Line>()
+        var length = line.startingLength
+        var i = 0
+        while (i < pts.size) {
+            if (erased[i]) { if (i > 0) length += hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y); i++; continue }
+            val start = i
+            while (i < pts.size && !erased[i]) i++
+            val run = pts.subList(start, i)
+            if (run.size >= 2) out += Line(line.tool, line.color, run.toList(), line.thicknessScale, length, line.moveId, line.colorRgba, line.timestamp)
+            for (j in start + 1 until i) length += hypot(pts[j].x - pts[j - 1].x, pts[j].y - pts[j - 1].y)
+        }
+        return out
     }
 
     /** Erase the strokes with the given ids (one undo step). Returns how many were removed. */
