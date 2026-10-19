@@ -528,7 +528,7 @@ internal fun formatSize(bytes: Long): String = when {
     else -> String.format(java.util.Locale.US, "%.2f GB", bytes / 1e9)
 }
 
-/** A folder cell: 75 px high, a 15 px margin and 10 px spacing; the icon says whether it has content, then name, favourite and tag marks. */
+/** A folder cell (no separator line: the 1 px separator belongs to the list-view row, 00d8fe5c): 75 px high, a 15 px margin and 10 px spacing; the icon says whether it has content, then name, favourite and tag marks. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FolderCell(lib: Library, e: LibraryEntry, selected: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
@@ -545,7 +545,6 @@ private fun FolderCell(lib: Library, e: LibraryEntry, selected: Boolean, onClick
             if (e.tags.isNotEmpty()) InkIcons.TagInverted(tint = fg, size = Rm.IconSmall)
             Text(if (count == 1) "1 item" else "$count items", style = RmText.Caption, color = fg, maxLines = 1)
         }
-        Hairline(fg)
     }
 }
 
