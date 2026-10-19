@@ -152,42 +152,44 @@ fun PincodeDialogPage(
         val ok = onAttempt(p)
         input = ""; warn = !ok; pending = null
     }
-    Column(modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Spacer(Modifier.height(48.dp))
-        Text(title, style = RmText.TitleLg, textAlign = TextAlign.Center)
-        Box(Modifier.fillMaxWidth().height(160.dp), contentAlignment = Alignment.Center) {
-            if (lengths != null) {
-                Box(Modifier.width(780.dp)) { SegmentedRow(lengths.map { PasscodeText.lengthLabel(it) }, lengths.indexOf(length).coerceAtLeast(0), { onLength(lengths[it]) }) }
-            } else if (description.isNotEmpty()) Text(description, style = RmText.Body, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 132.dp))
-        }
-        val rowWidth = (48 * length + 24 * (length - 1)).dp
-        Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
-            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                repeat(length) { i ->
-                    val filled = input.length > i
-                    Box(Modifier.size(48.dp).background(if (filled) Ink.Black else Ink.White, CircleShape).border(Rm.Outline, Ink.Black, CircleShape), contentAlignment = Alignment.Center) {
-                        if (filled && showDigits) Text("${input[i]}", style = RmText.Label, color = Ink.White)
+    // As in the firmware (PincodeDialogPage): the title at the top, the entry block centred on the screen, the action button at the bottom.
+    Box(modifier.fillMaxSize()) {
+        Text(title, style = RmText.TitleLg, textAlign = TextAlign.Center, modifier = Modifier.align(Alignment.TopCenter).padding(top = 48.dp, start = 48.dp, end = 48.dp))
+        Column(Modifier.align(Alignment.Center).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(Modifier.fillMaxWidth().height(160.dp), contentAlignment = Alignment.Center) {
+                if (lengths != null) {
+                    Box(Modifier.width(780.dp)) { SegmentedRow(lengths.map { PasscodeText.lengthLabel(it) }, lengths.indexOf(length).coerceAtLeast(0), { onLength(lengths[it]) }) }
+                } else if (description.isNotEmpty()) Text(description, style = RmText.Body, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 132.dp))
+            }
+            val rowWidth = (48 * length + 24 * (length - 1)).dp
+            Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
+                Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                    repeat(length) { i ->
+                        val filled = input.length > i
+                        Box(Modifier.size(48.dp).background(if (filled) Ink.Black else Ink.White, CircleShape).border(Rm.Outline, Ink.Black, CircleShape), contentAlignment = Alignment.Center) {
+                            if (filled && showDigits) Text("${input[i]}", style = RmText.Label, color = Ink.White)
+                        }
                     }
                 }
+                Box(
+                    Modifier.offset(x = rowWidth / 2 + 56.dp).size(112.dp, 80.dp).tap { showDigits = !showDigits }.semantics { contentDescription = if (showDigits) "Hide passcode" else "Show passcode" },
+                    contentAlignment = Alignment.Center,
+                ) { if (showDigits) InkIcons.Eye() else InkIcons.EyeClosed() }
             }
-            Box(
-                Modifier.offset(x = rowWidth / 2 + 56.dp).size(112.dp, 80.dp).tap { showDigits = !showDigits }.semantics { contentDescription = if (showDigits) "Hide passcode" else "Show passcode" },
-                contentAlignment = Alignment.Center,
-            ) { if (showDigits) InkIcons.Eye() else InkIcons.EyeClosed() }
+            Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
+                if (warn && input.isEmpty()) Text(warning(), style = RmText.Label, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 132.dp))
+            }
+            PinKeyboard(
+                onKey = { c ->
+                    if (pending != null) return@PinKeyboard
+                    if (input.length >= length) input = ""
+                    input += c
+                    if (input.length < length) warn = false else pending = input
+                },
+                onBackspace = { if (pending == null) input = input.dropLast(1) },
+            )
         }
-        Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
-            if (warn && input.isEmpty()) Text(warning(), style = RmText.Label, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 132.dp))
-        }
-        PinKeyboard(
-            onKey = { c ->
-                if (pending != null) return@PinKeyboard
-                if (input.length >= length) input = ""
-                input += c
-                if (input.length < length) warn = false else pending = input
-            },
-            onBackspace = { if (pending == null) input = input.dropLast(1) },
-        )
-        below?.let { Spacer(Modifier.height(32.dp)); it() }
+        below?.let { Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp)) { it() } }
     }
 }
 
@@ -216,7 +218,7 @@ fun UnlockScreen(lock: AppLock, onReset: () -> Unit) {
                         if (ok) lock.unlock() else tick++
                         ok
                     },
-                    below = if (code.state == PinState.LOCKED) ({ EButton(PasscodeText.RESET, { confirmReset = true }) }) else null,
+                    below = if (code.state == PinState.LOCKED) ({ EButton(PasscodeText.RESET, { confirmReset = true }, Modifier.width(432.dp)) }) else null,
                 )
             }
         }

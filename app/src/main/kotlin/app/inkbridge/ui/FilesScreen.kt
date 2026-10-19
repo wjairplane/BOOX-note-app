@@ -171,6 +171,8 @@ fun FilesScreen(app: AppController, s: Screen.Files) {
                         GridCells.Fixed(prefs.gridSize.columns), contentPadding = PaddingValues(start = Rm.ViewMargin, end = Rm.ViewMargin, bottom = Rm.CreateMenuBottomMargin + Rm.CreateMenuHeight),
                     ) {
                         items(folders, key = { it.id }) { e -> FolderCell(lib, e, e.id in picked, onClick = { select(e) }, onLongClick = { longPress(e) }) }
+                        // The firmware shows the folders in a grid of their own above the documents: the documents start on a new row.
+                        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(0.dp)) }
                         items(notebooks, key = { it.id }) { e -> NotebookCell(app, e, e.id in picked, dimmed = isMoving, small = prefs.gridSize == GridSize.SMALL, onClick = { select(e) }, onLongClick = { longPress(e) }) }
                     }
                 } else {
