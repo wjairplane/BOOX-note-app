@@ -464,8 +464,11 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         if (r == null || r.isEmpty) { draw(); return }
         val surface = holder.surface ?: return
         if (!surface.isValid) return
-        val canvas = runCatching { holder.lockCanvas(r) }.getOrNull() ?: return
-        try { canvas.drawBitmap(bitmap ?: return, bitmapLeft, 0f, null) } finally { holder.unlockCanvasAndPost(canvas) }
+        // The same kind of canvas as draw(): a surface that was locked for hardware drawing refuses a software canvas (lockCanvas(dirty)),
+        // which left the live stroke unseen. A hardware canvas starts from an empty buffer, so the whole page is drawn; only [r] is sent to the panel.
+        val bmp = bitmap ?: return
+        val canvas = lock() ?: return
+        try { canvas.drawColor(Color.WHITE); canvas.drawBitmap(bmp, bitmapLeft, 0f, null) } finally { holder.unlockCanvasAndPost(canvas) }
         runCatching { EpdController.refreshScreenRegion(this, r.left, r.top, r.width(), r.height(), com.onyx.android.sdk.api.device.epd.UpdateMode.DU) }
     }
 
