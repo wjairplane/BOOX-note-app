@@ -64,7 +64,7 @@ Sources: QML = `ui/qml_all/<offset>.qml:<line>`; BIN = `xochitl` ARM binary vadd
 | Keyboard long press | 300 ms (`longPressDelay`); key repeat starts 250 ms, accelerates to min 30 ms | `00e484bb:14,232-248` | n/a |
 | Page-slider cancel | drag > 200 px above the slider cancels; snap to navigation points within `pageCount/40`; snapping only when > 50 pages | `00d85fe4:25-30,100-110` | see spec_pageslider.md |
 | Slider height | 100 | `00d85fe4:36` | |
-| Pen hold (draw-and-hold shape snap) | at least 10 points; hold position must stay within 0.5 scene px (timers restart on movement); hold durations are two `QElapsedTimer` thresholds at object +0x3c/+0x40 set in the constructor (not recovered) | BIN `DrawAndHoldGesture::evaluate` fn 0x150ed4 (`DrawAndHoldGesture` vtable 0xccc044) [V]/[U] | **600 ms, radius 10 px** (`HoldGesture.kt`) - guessed, not firmware |
+| Pen hold (draw-and-hold shape snap) | still **250 ms**, looked at no more often than every **100 ms**, moving at most **0.5** between looks; >= 10 points; chord >= 3 px | BIN `DrawAndHoldGesture` ctor `0x820d0c`, `evaluate` fn 0x150ed4 (shape_snap.md) [V] | `HoldGesture` (250 ms / 100 ms / 0.5 page units) |
 | Select-below hold | vertical threshold 15 px, arrow offset 5 px | `00da01c3:23-30` | `ShapeSnap.isHorizontalLine` 3:1 ratio: guessed |
 | Selection tap vs lasso | selection stroke whose bounding box max(w,h) < 30 scene px is a tap (selects an image at the point, else clears/lassos) | `00da1f6c:699-716` | `extent < 16f` view px (`PageSession.kt`) |
 | Selection auto-scroll tick | 50 ms | `00da1f6c:959` | n/a |

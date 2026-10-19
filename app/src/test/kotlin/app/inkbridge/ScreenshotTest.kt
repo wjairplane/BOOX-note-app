@@ -42,6 +42,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
+import app.inkbridge.rm.library.DocumentFactory
 
 /** Renders real screens on the JVM so layout can be checked without a device. PNGs go to build/ui-snapshots. */
 @RunWith(RobolectricTestRunner::class)
@@ -389,6 +390,57 @@ class ScreenshotTest {
         rule.onNodeWithContentDescription("Page 1").performTouchInput { longClick() }; settle(); snapshot("overview_selection")
         rule.onNodeWithContentDescription("Delete").performClick(); settle(); snapshot("dialog_delete_page")
         rule.onAllNodesWithText("Cancel").onLast().performClick(); settle()
+    }
+
+    /** The page overview's Go to page, page tags with the tag filter, and a PDF's table of contents. */
+    @Test fun pageOverviewExtras() {
+        val app = launch()
+        val nb = app.library.entries.first { it.name == "Meeting notes" }
+        rule.runOnUiThread { app.prefs.toolbarPosition = ToolbarPosition.LEFT; app.screen = Screen.Notebook(nb.id, 0) }; settle()
+        repeat(2) { rule.onNodeWithContentDescription("More").performClick(); settle(); rule.onNodeWithText("Add page").performClick(); settle() }
+        org.junit.Assert.assertEquals(3, app.library[nb.id]!!.pageIds.size)
+        rule.onNodeWithContentDescription("Page overview").performClick(); settle(); snapshot("overview_goto_header")
+        // Tag the first two pages "exam" (a new tag, typed in the header input), then the third "todo".
+        rule.onNodeWithContentDescription("Page 1").performTouchInput { longClick() }; settle()
+        rule.onNodeWithContentDescription("Page 2").performClick(); settle()
+        rule.onAllNodesWithContentDescription("More").onLast().performClick(); settle(); snapshot("overview_selection_menu")
+        rule.onNodeWithText("Tag").performClick(); settle()
+        rule.onNodeWithContentDescription("New tag").performClick(); settle()
+        rule.onNode(androidx.compose.ui.test.hasSetTextAction()).performTextInput("exam"); settle()
+        rule.onNodeWithText("Create").performClick(); settle(); snapshot("overview_tag_pages")
+        rule.onNodeWithText("Done").performClick(); settle()
+        org.junit.Assert.assertEquals(2, app.library[nb.id]!!.pageTags.size)
+        snapshot("overview_tagged")
+        // The tag filter: only tagged pages remain.
+        rule.onNodeWithText("exam").performClick(); settle(); snapshot("overview_filtered")
+        rule.onNodeWithText("exam").performClick(); settle()
+        rule.onNodeWithContentDescription("Go to page").performClick(); settle()
+        rule.onNode(androidx.compose.ui.test.hasSetTextAction()).performTextInput("3"); settle(); snapshot("overview_goto_page")
+        rule.onNodeWithText("Go").performClick(); settle()
+        org.junit.Assert.assertTrue(app.screen is Screen.Notebook)
+
+        // A PDF with an outline: the overview offers the table of contents.
+        PdfBackground.testSize = 612f to 792f
+        val d = app.store.dir
+        val pdfId = "11111111-2222-3333-4444-555555555555"
+        PdfStructure.init(rule.activity)
+        val doc = com.tom_roush.pdfbox.pdmodel.PDDocument()
+        val pgs = List(6) { com.tom_roush.pdfbox.pdmodel.PDPage(com.tom_roush.pdfbox.pdmodel.common.PDRectangle.LETTER).also { p -> doc.addPage(p) } }
+        val outline = com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline().also { doc.documentCatalog.documentOutline = it }
+        fun item(title: String, page: Int) = com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem().apply {
+            this.title = title; destination = com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageFitDestination().also { it.page = pgs[page] }
+        }
+        val c1 = item("1 Introduction", 0); val c11 = item("1.1 Background", 1); val c2 = item("2 Method", 2); val c3 = item("3 Results", 4); val c31 = item("3.1 Tables", 5)
+        outline.addLast(c1); c1.addLast(c11); outline.addLast(c2); outline.addLast(c3); c3.addLast(c31)
+        doc.save(File(d, "$pdfId.pdf")); doc.close()
+        DocumentFactory.createPdfDocument(d, "Study", 6, File(d, "$pdfId.pdf").length(), id = pdfId)
+        rule.runOnUiThread { app.reload() }; settle()
+        rule.runOnUiThread { app.screen = Screen.Notebook(pdfId, 3) }; settle()
+        rule.onNodeWithContentDescription("Page overview").performClick(); settle(); snapshot("overview_pdf")
+        rule.onNodeWithContentDescription("Table of contents").performClick(); settle(); snapshot("table_of_contents")
+        rule.onNodeWithContentDescription("2 Method").performClick(); settle()
+        snapshot("pdf_after_toc") // the notebook shows page 3 of 6 (the "2 Method" chapter)
+        PdfBackground.testSize = null
     }
 
     /** The panels the edge-swipe gestures open: quick settings, the document drawer, quick browse, and the zoom button. */

@@ -177,12 +177,18 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
 
     fun setTags(e: LibraryEntry, tags: List<String>) = io("Unable to change tags") { LibraryOps.setTags(store.dir, e.id, tags) }
 
+    /** Tag single pages (the firmware's "Tag" action in the page overview); each page's earlier tags are replaced. */
+    fun setPageTags(e: LibraryEntry, pageIndices: Collection<Int>, tags: List<String>) = io("Unable to change tags") {
+        LibraryOps.setPageTags(store.dir, e.id, pageIndices.mapNotNull { e.pageIds.getOrNull(it) }, tags)
+    }
+
     /** Rename a tag on every item that carries it (merging with an existing tag of that name). */
     fun renameTag(old: String, new: String) {
         val name = new.trim()
         if (name.isEmpty() || name == old) return
         io("Unable to rename tag") {
             for (e in store.load().entries.filter { old in it.tags }) LibraryOps.setTags(store.dir, e.id, e.tags.map { if (it == old) name else it })
+            for (e in store.load().entries.filter { en -> en.pageTags.values.any { old in it } }) LibraryOps.mapPageTags(store.dir, e.id) { if (it == old) name else it }
         }
     }
 
@@ -190,6 +196,7 @@ class AppController(val store: LibraryStore, val prefs: Prefs, private val scope
     fun deleteTags(names: Set<String>) =
         io("Unable to delete tags", notice = plural(names.size, "%n tag(s) were deleted")) {
             for (e in store.load().entries.filter { it.tags.any { t -> t in names } }) LibraryOps.setTags(store.dir, e.id, e.tags.filter { it !in names })
+            for (e in store.load().entries.filter { en -> en.pageTags.values.any { l -> l.any { it in names } } }) LibraryOps.mapPageTags(store.dir, e.id) { if (it in names) null else it }
         }
 
     fun newFolder(name: String, parentId: String, tags: List<String> = emptyList(), onCreated: ((String) -> Unit)? = null) {

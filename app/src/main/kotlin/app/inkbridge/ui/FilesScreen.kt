@@ -16,6 +16,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
+import kotlin.math.ceil
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.foundation.lazy.LazyColumn
@@ -491,28 +492,39 @@ private fun EmptyState(title: String, body: String, art: Int?) {
 /** The firmware's selected look: the whole cell turns black with white text. */
 private fun Modifier.cellBackground(selected: Boolean) = background(if (selected) Ink.Black else Ink.White)
 
-/** A notebook in the grid: a 15 px inset around a 3:4 thumbnail (312 x 416 in a 342 px cell), then the name and a caption. */
+/** A document in the grid (firmware DocumentGridItem): a 16 px inset around a thumbnail that fills the cell above the text block (see below), then the name and a caption. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun NotebookCell(app: AppController, e: LibraryEntry, selected: Boolean, dimmed: Boolean, small: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
     val fg = if (selected) Ink.White else Ink.Black
-    Column(Modifier.fillMaxWidth().alpha(if (dimmed) 0.4f else 1f).cellBackground(selected).combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(16.dp)) {
-        Box {
-            Thumb(app, e, Modifier.fillMaxWidth().aspectRatio(THUMB_ASPECT), selected)
-            // Tags sit in the thumbnail's top-left corner (ThumbnailTags, 15 px in).
-            if (e.tags.isNotEmpty()) Row(Modifier.align(Alignment.TopStart).padding(15.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                e.tags.take(2).forEach { TagPill(it, selected = false, onClick = {}, small = true, modifier = Modifier.widthIn(max = 120.dp)) }
-                if (e.tags.size > 2) TagPill("+${e.tags.size - 2}", selected = false, onClick = {}, small = true)
+    // Firmware ThumbnailGridSize + DocumentGridItem (0106262a, 00d8d745): the cell is W wide and ceil(W*4/3) + 80 high; the thumbnail is the
+    // cell inset by 16, 8 above the text block, which sits 16 above the bottom (a label line plus a caption line, kept even when hidden).
+    BoxWithConstraints(Modifier.fillMaxWidth().alpha(if (dimmed) 0.4f else 1f).cellBackground(selected).combinedClickable(onClick = onClick, onLongClick = onLongClick)) {
+        val cellW = maxWidth.value
+        val textH = LABEL_LINE + CAPTION_LINE
+        val thumbH = (ceil(cellW * 4f / 3f) + 80f - 16f - 8f - textH - 16f).coerceAtLeast(40f)
+        Column(Modifier.padding(16.dp)) {
+            Box {
+                Thumb(app, e, Modifier.fillMaxWidth().height(thumbH.dp), selected)
+                // Tags sit in the thumbnail's top-left corner (ThumbnailTags, 15 px in).
+                if (e.tags.isNotEmpty()) Row(Modifier.align(Alignment.TopStart).padding(15.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    e.tags.take(2).forEach { TagPill(it, selected = false, onClick = {}, small = true, modifier = Modifier.widthIn(max = 120.dp)) }
+                    if (e.tags.size > 2) TagPill("+${e.tags.size - 2}", selected = false, onClick = {}, small = true)
+                }
             }
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.height(LABEL_LINE.dp), verticalAlignment = Alignment.CenterVertically) {
+                MiddleText(e.name, RmText.Label, fg, Modifier.weight(1f, fill = false))
+                if (e.pinned) InkIcons.StarInverted(tint = fg, size = Rm.IconSmall, modifier = Modifier.padding(start = 8.dp))
+            }
+            Box(Modifier.height(CAPTION_LINE.dp)) { if (!small) Text(pageCaption(e), style = RmText.Caption, color = fg, maxLines = 1) }
         }
-        Spacer(Modifier.height(10.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            MiddleText(e.name, RmText.Label, fg, Modifier.weight(1f, fill = false))
-            if (e.pinned) InkIcons.StarInverted(tint = fg, size = Rm.IconSmall, modifier = Modifier.padding(start = 8.dp))
-        }
-        if (!small) Text(pageCaption(e), style = RmText.Caption, color = fg, maxLines = 1)
     }
 }
+
+/** Line heights of the label (25 px x 1.58) and caption (22 px x 1.45) styles under a thumbnail. */
+private const val LABEL_LINE = 39.5f
+private const val CAPTION_LINE = 31.9f
 
 /** The page a notebook was last on, kept inside its page range. */
 private fun lastPage(e: LibraryEntry) = e.lastOpenedPage.coerceIn(0, (e.pageIds.size - 1).coerceAtLeast(0))
@@ -528,23 +540,25 @@ internal fun formatSize(bytes: Long): String = when {
     else -> String.format(java.util.Locale.US, "%.2f GB", bytes / 1e9)
 }
 
-/** A folder cell (no separator line: the 1 px separator belongs to the list-view row, 00d8fe5c): 75 px high, a 15 px margin and 10 px spacing; the icon says whether it has content, then name, favourite and tag marks. */
+/**
+ * A folder cell (firmware ContentGridFolderItem, 00d94342): 75 px high, 15 px side margins and 10 px spacing; the icon says whether it has
+ * content, then the name, and at the right the favourite and tag marks. Unlike the list-view row (00d8fe5c) it has no separator line and no
+ * "N items" caption.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FolderCell(lib: Library, e: LibraryEntry, selected: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
     val fg = if (selected) Ink.White else Ink.Black
     val count = remember(lib, e.id) { lib.children(e.id).size }
-    Column(Modifier.fillMaxWidth().cellBackground(selected)) {
-        Row(
-            Modifier.fillMaxWidth().height(74.dp).combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(horizontal = 15.dp),
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            if (count > 0) InkIcons.FolderInverted(tint = fg) else InkIcons.FolderOutline(tint = fg)
-            MiddleText(e.name, RmText.Label, fg, Modifier.weight(1f))
-            if (e.pinned) InkIcons.StarInverted(tint = fg, size = Rm.IconSmall)
-            if (e.tags.isNotEmpty()) InkIcons.TagInverted(tint = fg, size = Rm.IconSmall)
-            Text(if (count == 1) "1 item" else "$count items", style = RmText.Caption, color = fg, maxLines = 1)
-        }
+    Row(
+        Modifier.fillMaxWidth().height(75.dp).cellBackground(selected).combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(horizontal = 15.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        if (count > 0) InkIcons.FolderInverted(tint = fg) else InkIcons.FolderOutline(tint = fg)
+        MiddleText(e.name, RmText.Label, fg, Modifier.weight(1f, fill = false))
+        Spacer(Modifier.weight(1f))
+        if (e.pinned) InkIcons.StarInverted(tint = fg, size = Rm.IconSmall)
+        if (e.tags.isNotEmpty()) InkIcons.TagInverted(tint = fg, size = Rm.IconSmall)
     }
 }
 
@@ -795,8 +809,6 @@ private fun TagsFilter(lib: Library, selected: Set<String>, tab: Int, onTab: (In
     if (all) Box(Modifier.fillMaxSize()) { TagsWindow(tags, selected, onToggle, { all = false }) }
 }
 
-/** Notebook thumbnails are 3:4 (312 x 416 px inside a 342 px cell). */
-private const val THUMB_ASPECT = 312f / 416f
 
 /**
  * A document's cover: the first page (or the page it was last closed on) under the firmware's own DocumentCover drawing

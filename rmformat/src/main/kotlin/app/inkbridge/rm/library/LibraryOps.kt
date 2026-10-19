@@ -50,6 +50,29 @@ object LibraryOps {
     }
 
     /**
+     * Set the tags of some pages: every `pageTags` record of those pages is replaced by one record per tag in [tags]
+     * (`{name, pageId, timestamp}`, as the tablet writes them); other pages keep theirs.
+     */
+    fun setPageTags(dir: File, id: String, pageIds: Collection<String>, tags: List<String>, now: Long = now()) = editContent(dir, id) { c ->
+        val keep = (c["pageTags"] as? JsonArray).orEmpty().filter { ((it as? JsonObject)?.get("pageId") as? JsonPrimitive)?.contentOrNull !in pageIds }
+        val names = tags.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        c + ("pageTags" to buildJsonArray {
+            keep.forEach { add(it) }
+            for (page in pageIds) for (n in names) add(buildJsonObject { put("name", n); put("pageId", page); put("timestamp", now) })
+        })
+    }
+
+    /** Rewrite every page tag name through [f] (null drops the record); used when a tag is renamed or deleted everywhere. */
+    fun mapPageTags(dir: File, id: String, f: (String) -> String?) = editContent(dir, id) { c ->
+        val out = (c["pageTags"] as? JsonArray).orEmpty().mapNotNull { r ->
+            val o = r as? JsonObject ?: return@mapNotNull null
+            val name = (o["name"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
+            f(name)?.let { JsonObject(o + ("name" to JsonPrimitive(it))) }
+        }.distinct()
+        c + ("pageTags" to JsonArray(out))
+    }
+
+    /**
      * Copy a notebook, PDF or folder (with everything inside it) next to the original, named "<name> (copy)".
      * Returns the id of the copy.
      */

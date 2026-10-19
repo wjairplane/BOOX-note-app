@@ -54,13 +54,14 @@ fun GuidesScreen(app: AppController) {
 
 /** The firmware's NavigationBar: a Back button (chevron and label) at the left, the title, a 2 px divider below. */
 @Composable
-fun NavigationBar(title: String, onBack: () -> Unit) {
+fun NavigationBar(title: String, onBack: () -> Unit, trailing: (@Composable RowScope.() -> Unit)? = null) {
     Column {
         Box(Modifier.fillMaxWidth().height(Rm.NavigationHeader)) {
             Row(Modifier.align(Alignment.CenterStart).heightIn(min = Rm.Control).tap(onClick = onBack).padding(horizontal = 32.dp).semantics { contentDescription = "Back" }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 InkIcons.ChevronLeft(); Text("Back", style = RmText.LabelLg)
             }
             Text(title, style = RmText.LabelLgStrong, modifier = Modifier.align(Alignment.Center))
+            if (trailing != null) Row(Modifier.align(Alignment.CenterEnd).padding(end = 16.dp), verticalAlignment = Alignment.CenterVertically, content = trailing)
         }
         Rule()
     }

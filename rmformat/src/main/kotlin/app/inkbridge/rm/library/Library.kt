@@ -34,6 +34,8 @@ data class LibraryEntry(
     val lastOpened: Long = 0L,
     /** Total size of the entry's files in bytes (pages and PDF source); 0 for folders and entries parsed without a directory. */
     val sizeBytes: Long = 0L,
+    /** Tags on single pages, from `.content` `pageTags` (`{name, pageId, timestamp}`): page id to tag names. */
+    val pageTags: Map<String, List<String>> = emptyMap(),
 ) {
     val isFolder get() = type == EntryType.FOLDER
 }
@@ -118,6 +120,12 @@ object LibraryScanner {
             lastOpenedPage = (content?.get("lastOpenedPage") as? JsonPrimitive)?.intOrNull
                 ?: (m["lastOpenedPage"] as? JsonPrimitive)?.intOrNull ?: 0,
             lastOpened = m.str("lastOpened")?.toLongOrNull() ?: 0L,
+            pageTags = (content?.get("pageTags") as? JsonArray).orEmpty().mapNotNull { t ->
+                val o = t as? JsonObject ?: return@mapNotNull null
+                val name = o.str("name") ?: return@mapNotNull null
+                val page = o.str("pageId") ?: return@mapNotNull null
+                page to name
+            }.groupBy({ it.first }, { it.second }).mapValues { it.value.distinct() },
         )
     }
 

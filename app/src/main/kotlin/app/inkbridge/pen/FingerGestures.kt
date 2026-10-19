@@ -25,6 +25,8 @@ class FingerGestures(private val pixelsPerCm: Float, private val host: Host) {
         /** Milliseconds since the pen last touched or hovered near the screen. */
         fun msSincePen(): Long
         fun onTap(fingers: Int)
+        /** One finger tapped (down and up quickly without moving) at ([x], [y]). */
+        fun onSingleTap(x: Float, y: Float) {}
         fun onPageSwipe(forward: Boolean)
         fun onJump(down: Boolean)
         fun onEdgeSwipe(edge: Edge)
@@ -158,6 +160,7 @@ class FingerGestures(private val pixelsPerCm: Float, private val host: Host) {
         val dx = e.x - startX; val dy = e.y - startY
         val horizontal = abs(dx) > abs(dy) * 1.5f
         val vertical = abs(dy) > abs(dx) * 1.5f
+        if (maxFingers == 1 && !moved && hypot(dx, dy) <= TAP_SLOP_CM * cm && e.eventTime - downTime < TAP_MS) { host.onSingleTap(e.x, e.y); return }
         when {
             horizontal && abs(dx) >= SHORT_SWIPE_CM * cm -> host.onPageSwipe(forward = dx < 0)
             vertical && abs(dy) >= JUMP_SWIPE_CM * cm -> host.onJump(down = dy < 0)

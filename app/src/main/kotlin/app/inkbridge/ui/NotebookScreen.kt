@@ -16,7 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -141,6 +141,8 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     var surface by remember { mutableStateOf<PenSurface?>(null) }
     var strokes by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf("") }
+    // After following a link: the page to go back to (the firmware's "Back to page N" notification, shown for 8 s).
+    var linkBack by remember { mutableStateOf<Int?>(null) }
     var pageError by remember { mutableStateOf<PageError?>(null) }
     var slider by remember { mutableStateOf(false) }
     // The typed-text tool: typing mode, its toolbar foldout, and a counter that asks the keyboard to show.
@@ -148,7 +150,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     var typingMenu by remember { mutableStateOf(false) }
     var keyboardRequest by remember { mutableIntStateOf(0) }
     // Notifications go away after five seconds, except the clipboard hint, which stays until it is dismissed.
-    LaunchedEffect(message) { if (message.isNotEmpty() && !message.startsWith("Copied to clipboard")) { kotlinx.coroutines.delay(5000); message = "" } }
+    LaunchedEffect(message) { if (message.isNotEmpty() && !message.startsWith("Copied to clipboard")) { kotlinx.coroutines.delay(if (linkBack != null) 8000 else 5000); message = ""; linkBack = null } }
     var notebookSettings by remember { mutableStateOf(false) }
     var tagsScreen by remember { mutableStateOf(false) }
     val foldoutOpen = panel || (eraserMenu && erasing) || layersMenu || menu || slider || notebookSettings || tagsScreen || app.overlay != null || typingMenu
@@ -278,7 +280,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                         }, selected = active) { tint -> InkIcons.Pen(s.tool, tint = tint) }
                         // The colour marker sits in the button's top corner (8 px in), not on the glyph: the right one, or the left with the toolbar on the right.
                         ColourDot(s.colorId, active, Modifier.align(if (pos == ToolbarPosition.RIGHT) Alignment.TopStart else Alignment.TopEnd).padding(8.dp))
-                        if (active) RmMenu(panel, { panel = false }, side, Rm.WritingFoldoutWidth) { PenMenu(slot, onChange = { prefs.setSlot(activeSlot, it) }) }
+                        if (active) RmMenu(panel, { panel = false }, side, Rm.WritingFoldoutWidth) { PenMenu(slot, onChange = { prefs.setSlot(activeSlot, it) }, snap = prefs.snapHighlighter, onSnap = { prefs.snapHighlighter = it }) }
                     }
                 }
                 // The eraser: tap to pick it, tap again for its foldout (tool, thickness, erase all).
@@ -442,7 +444,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 excludeRects = blockers.rects(),
                 blockers = blockers,
                 shapes = prefs.shapesEnabled,
-                penMode = prefs.penMode, latency = prefs.penLatency,
+                penMode = prefs.penMode, latency = prefs.penLatency, snapText = prefs.snapHighlighter,
                 onSelectBelow = { selecting = true; erasing = false; panel = false; eraserMenu = false },
                 onEdgeSwipe = { edge ->
                     panel = false; menu = false; eraserMenu = false; layersMenu = false
@@ -451,6 +453,16 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                         FingerGestures.Edge.QUICK_SETTINGS -> app.overlay = Overlay.QUICK_SETTINGS
                         FingerGestures.Edge.DRAWER -> app.overlay = Overlay.DRAWER
                         FingerGestures.Edge.QUICK_BROWSE -> if (doc.pageIds.size > 1) { save(session); slider = true; pageLabelVisible = false }
+                    }
+                },
+                onPageTap = { x, y ->
+                    // A tap on a link of the PDF page opens the page it points to and offers a way back (the same page: nothing to do).
+                    val target = session?.pdfLinkAt(x, y)?.let { t -> if (doc.redirectMap.isEmpty()) t else doc.redirectMap.indexOf(t) }
+                    if (target != null && target in doc.pageIds.indices && target != pageIndex) {
+                        val from = pageIndex
+                        goTo(target)
+                        linkBack = from
+                        message = "Page ${target + 1} of ${doc.pageIds.size}"
                     }
                 },
                 onFingerTap = { fingers ->
@@ -502,9 +514,9 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
             if (message.isNotEmpty()) {
                 val clipboardHint = message.startsWith("Copied to clipboard")
                 NotificationBar(
-                    message, { if (clipboardHint) StrokeClipboard.lines = emptyList(); message = "" },
-                    action = if (clipboardHint) "OK" else null,
-                    primary = !clipboardHint && !message.startsWith("Finished exporting"),
+                    message, { if (clipboardHint) StrokeClipboard.lines = emptyList(); linkBack?.let { goTo(it) }; message = ""; linkBack = null },
+                    action = if (clipboardHint) "OK" else linkBack?.let { "Back to page ${it + 1}" },
+                    primary = !clipboardHint && linkBack == null && !message.startsWith("Finished exporting"),
                     modifier = Modifier.align(Alignment.BottomCenter).padding(start = if (pos == ToolbarPosition.LEFT) TOOLBAR_THICKNESS else 0.dp, end = if (pos == ToolbarPosition.RIGHT) TOOLBAR_THICKNESS else 0.dp, bottom = if (pos == ToolbarPosition.BOTTOM) TOOLBAR_THICKNESS else 0.dp).blocksPen(blockers, "notification"),
                 )
             }
@@ -606,11 +618,12 @@ private fun PageArea(
     session: PageSession?, spec: PenSpec, drawing: Boolean, swipeEnabled: Boolean, fingerDraws: Boolean, eraserRadius: Float,
     selecting: Boolean, selectionRect: android.graphics.RectF?, onSelectionRect: (android.graphics.RectF?) -> Unit, onSelectionAction: (String) -> Unit,
     onSurface: (PenSurface?) -> Unit, onChanged: () -> Unit, onSwipe: (Boolean) -> Unit,
-    excludeRects: List<Rect>, onFingerTap: (Int) -> Unit, blockers: PenBlockers,
-    onEdgeSwipe: (FingerGestures.Edge) -> Unit, onSelectBelow: () -> Unit, shapes: Boolean, penMode: PenMode, latency: Boolean,
+    excludeRects: List<Rect>, onFingerTap: (Int) -> Unit, onPageTap: (Float, Float) -> Unit, blockers: PenBlockers,
+    onEdgeSwipe: (FingerGestures.Edge) -> Unit, onSelectBelow: () -> Unit, shapes: Boolean, penMode: PenMode, latency: Boolean, snapText: Boolean,
 ) {
     val currentOnEdge by rememberUpdatedState(onEdgeSwipe)
     val currentShapes by rememberUpdatedState(shapes)
+    val currentSnapText by rememberUpdatedState(snapText)
     val currentOnSelectBelow by rememberUpdatedState(onSelectBelow)
     val scope = rememberCoroutineScope()
     val currentOnSelectionRect by rememberUpdatedState(onSelectionRect)
@@ -623,6 +636,7 @@ private fun PageArea(
     val currentOnChanged by rememberUpdatedState(onChanged)
     val currentOnSwipe by rememberUpdatedState(onSwipe)
     val currentOnFingerTap by rememberUpdatedState(onFingerTap)
+    val currentOnPageTap by rememberUpdatedState(onPageTap)
 
     // The raw-drawing layer must be released whenever the app isn't in the foreground.
     DisposableEffect(lifecycle, surface) {
@@ -670,9 +684,14 @@ private fun PageArea(
                 PenSurface(ctx, exactAtStart = penMode != PenMode.HYBRID, listener = object : PenListener {
                     override fun onStroke(samples: List<PenSample>) {
                         val spec = surface?.currentSpec
-                        val body = if (spec != null && spec.tool != PenTool.ERASER && currentShapes) HoldGesture.body(samples) else null
-                        val shape = body?.let { ShapeSnap.detect(it.map { p -> p.x to p.y }) }
+                        val body = if (spec != null && spec.tool != PenTool.ERASER && currentShapes) HoldGesture.body(samples, HoldGesture.STILL_RADIUS * (currentSession?.transform?.scale ?: 1f)) else null
+                        val shape = body?.let { ShapeSnap.detect(it.map { p -> p.x to p.y }, currentSession?.transform?.scale ?: 1f) }
                         if (shape == null) {
+                            // "Snap to text": a highlighter stroke over PDF text becomes a clean highlight of that text.
+                            if (spec != null && spec.tool == PenTool.HIGHLIGHTER && currentSnapText) {
+                                val s = currentSession
+                                if (s != null && s.addSnappedHighlight(spec, samples)) { surface?.refresh(); currentOnChanged(); return }
+                            }
                             apply(samples) { s, sp -> s.addStroke(sp, samples) }
                             // Coloured, grey and highlighter strokes are repainted at quality once the pen has rested.
                             if (spec != null && spec.colorId != PenColorId.BLACK && spec.colorId != PenColorId.WHITE) surface?.scheduleQuality(currentSession?.lastStrokeBounds())
@@ -707,6 +726,7 @@ private fun PageArea(
                     }
                     override fun onSwipe(forward: Boolean) { currentOnSwipe(forward) }
                     override fun onFingerTap(fingers: Int) { currentOnFingerTap(fingers) }
+                    override fun onSingleTap(x: Float, y: Float) { currentOnPageTap(x, y) }
                     override fun onEdgeSwipe(edge: FingerGestures.Edge) { currentOnEdge(edge) }
                     override fun onJump(down: Boolean) {
                         val s = currentSession ?: return
@@ -839,7 +859,7 @@ private fun FoldoutGrid(count: Int, columns: Int, tileWidth: Dp?, cell: @Composa
  * a divider, the three thicknesses titled with the current one, a divider, then a 3-column grid of named colours.
  */
 @Composable
-private fun PenMenu(slot: ToolSlot, onChange: (ToolSlot) -> Unit) {
+private fun PenMenu(slot: ToolSlot, onChange: (ToolSlot) -> Unit, snap: Boolean = false, onSnap: (Boolean) -> Unit = {}) {
     val highlighter = slot.tool.usesHighlighterColors
     val pens = PenTool.PENS
     val thicknessNames = listOf("Thin", "Medium", "Thick")
@@ -869,6 +889,11 @@ private fun PenMenu(slot: ToolSlot, onChange: (ToolSlot) -> Unit) {
                 Spacer(Modifier.height(4.dp))
                 Text(PenSpec.colorName(c), color = fg, style = RmText.LabelSm)
             }
+        }
+        // The highlighter's "Snap to text" toggle under a divider (text highlighted cleanly instead of the freehand stroke).
+        if (highlighter) {
+            Rule()
+            Box(Modifier.padding(horizontal = Rm.FoldoutPad)) { SwitchRow("Snap to text", snap, onSnap) }
         }
     }
 }
@@ -906,15 +931,27 @@ private fun colorFor(tool: PenTool, slot: ToolSlot): Int {
  * the page number below (the current page has a thick bar under it), press and hold to select pages (the bar then offers Delete and
  * Add page before/after), and a round button for a new page at the bottom right.
  */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun PageOverview(app: AppController, doc: LibraryEntry, current: Int, onPick: (Int) -> Unit, onAdd: () -> Unit, onClose: () -> Unit) {
     var selected by remember { mutableStateOf(setOf<Int>()) }
     var confirmDelete by remember { mutableStateOf(false) }
     var more by remember { mutableStateOf(false) }
+    var goTo by remember { mutableStateOf(false) }
+    var showToc by remember { mutableStateOf(false) }
+    val toc by produceState(emptyList<TocEntry>(), doc.id, doc.pageIds.size) { value = withContext(Dispatchers.IO) { tocFor(doc, DocumentFactory.pdfFile(app.store.dir, doc)) } }
+    var tagging by remember { mutableStateOf(false) }
+    var filter by remember { mutableStateOf(setOf<String>()) }
+    // Page tags (`pageTags` in .content): the filter row lists the tags in use; a page shows when it has every chosen tag.
+    val tagsOf = { i: Int -> doc.pageTags[doc.pageIds.getOrNull(i)].orEmpty() }
+    val usedTags = remember(doc) { doc.pageIds.indices.flatMap(tagsOf).distinct().sortedBy { it.lowercase() } }
+    val shown = remember(doc, filter) { doc.pageIds.indices.filter { i -> filter.all { it in tagsOf(i) } } }
     androidx.activity.compose.BackHandler { if (selected.isNotEmpty()) selected = emptySet() else onClose() }
     Box(Modifier.fillMaxSize().background(Ink.White)) {
         Column(Modifier.fillMaxSize()) {
-            if (selected.isEmpty()) NavigationBar(doc.name, onClose)
+            if (selected.isEmpty()) NavigationBar(doc.name, onClose, trailing = if (toc.isEmpty()) null else {
+                { Box(Modifier.size(Rm.ToolButton).tap { showToc = true }.semantics { contentDescription = "Table of contents" }, contentAlignment = Alignment.Center) { InkIcons.ListView() } }
+            })
             else {
                 // Selection mode: the firmware's PagesActions replace the navigation bar.
                 Column {
@@ -925,9 +962,12 @@ private fun PageOverview(app: AppController, doc: LibraryEntry, current: Int, on
                             Box(Modifier.size(Rm.ToolButton).tap(enabled = selected.size < doc.pageIds.size) { confirmDelete = true }.semantics { contentDescription = "Delete" }, contentAlignment = Alignment.Center) {
                                 InkIcons.Trash(tint = if (selected.size < doc.pageIds.size) Ink.Black else Ink.Rule)
                             }
-                            Box {
-                                Box(Modifier.size(Rm.ToolButton).background(if (more) Ink.Black else Ink.White).tap { more = !more }.semantics { contentDescription = "More" }, contentAlignment = Alignment.Center) { InkIcons.More(tint = if (more) Ink.White else Ink.Black) }
-                                RmMenu(more, { more = false }, MenuSide.BELOW_END, Rm.FoldoutMinWidth) {
+                        }
+                        Box {
+                            Box(Modifier.size(Rm.ToolButton).background(if (more) Ink.Black else Ink.White).tap { more = !more }.semantics { contentDescription = "More" }, contentAlignment = Alignment.Center) { InkIcons.More(tint = if (more) Ink.White else Ink.Black) }
+                            RmMenu(more, { more = false }, MenuSide.BELOW_END, Rm.FoldoutMinWidth) {
+                                RmFoldoutItem("Tag", { more = false; tagging = true }) { InkIcons.Tag(tint = it) }
+                                if (doc.fileType == "notebook") {
                                     RmFoldoutItem("Add page before", { more = false; val i = selected.min(); selected = emptySet(); app.addPage(doc, i - 1) { onPick(it) } }) { InkIcons.PageAdd(tint = it) }
                                     RmFoldoutItem("Add page after", { more = false; val i = selected.max(); selected = emptySet(); app.addPage(doc, i) { onPick(it) } }) { InkIcons.PageAdd(tint = it) }
                                 }
@@ -937,8 +977,30 @@ private fun PageOverview(app: AppController, doc: LibraryEntry, current: Int, on
                     Rule()
                 }
             }
+            if (selected.isEmpty()) {
+                // The PagePicker header: "Go to page" at the left; with page tags in use, a row of tag pills and the "ALL PAGES (n)" / "TAGGED PAGES (n)" line.
+                Row(Modifier.fillMaxWidth().height(Rm.NavigationHeader / 2 + 20.dp).padding(horizontal = Rm.ViewMargin), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.heightIn(min = Rm.Control).tap { goTo = true }.padding(horizontal = 14.dp).semantics { contentDescription = "Go to page" }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        InkIcons.GoToPage(); Text("Go to page", style = RmText.LabelLg)
+                    }
+                }
+                if (usedTags.isNotEmpty()) Column(Modifier.fillMaxWidth().padding(horizontal = 30.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                    androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp), maxLines = 1) {
+                        usedTags.sortedBy { if (it in filter) 0 else 1 }.forEach { t -> TagPill(t, selected = t in filter, onClick = { filter = if (t in filter) filter - t else filter + t }) }
+                    }
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("${if (filter.isEmpty()) "ALL PAGES" else "TAGGED PAGES"} (${shown.size})", style = RmText.LabelSm, modifier = Modifier.weight(1f))
+                        if (shown.isNotEmpty()) Text("Select all", style = RmText.LabelSm, textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline, modifier = Modifier.tap { selected = shown.toSet() }.padding(8.dp))
+                    }
+                    Spacer(Modifier.height(10.dp))
+                }
+            }
+            if (usedTags.isNotEmpty() && filter.isNotEmpty() && shown.isEmpty()) {
+                // Firmware empty view "noTagsCombination".
+                Box(Modifier.fillMaxWidth().padding(top = 160.dp), contentAlignment = Alignment.TopCenter) { Text("No pages have this combination of tags.", style = RmText.Body) }
+            }
             LazyVerticalGrid(GridCells.Fixed(3), contentPadding = PaddingValues(Rm.NavigatorMargin), horizontalArrangement = Arrangement.spacedBy(30.dp), verticalArrangement = Arrangement.spacedBy(32.dp)) {
-                itemsIndexed(doc.pageIds) { i, _ ->
+                items(shown, key = { it }) { i ->
                     val isSelected = i in selected
                     Column(
                         Modifier.pointerInput(i, selected.isEmpty()) {
@@ -969,6 +1031,19 @@ private fun PageOverview(app: AppController, doc: LibraryEntry, current: Int, on
                 Modifier.align(Alignment.BottomEnd).padding(Rm.NavigatorMargin).size(112.dp).background(Ink.White, CircleShape).border(Rm.Outline, Ink.Black, CircleShape).tap(onClick = onAdd).semantics { contentDescription = "New page" },
                 contentAlignment = Alignment.Center,
             ) { InkIcons.PageAdd() }
+        }
+    }
+    if (showToc) Box(Modifier.fillMaxSize()) { TableOfContentsScreen(toc, current, onPick = { showToc = false; onPick(it) }, onBack = { showToc = false }) }
+    if (goTo) HeaderInputDialog(
+        "", "Go", onDismiss = { goTo = false }, maxLength = 6, numeric = true, label = "Page (1 - ${doc.pageIds.size})",
+        valid = { t -> t.toIntOrNull()?.let { it in 1..doc.pageIds.size } == true },
+    ) { t -> goTo = false; onPick(t.toInt() - 1) }
+    if (tagging) {
+        val pages = selected
+        val initial = pages.map { tagsOf(it).toSet() }.reduceOrNull { a, b -> a intersect b }.orEmpty()
+        var chosen by remember(pages) { mutableStateOf(initial) }
+        FormScreen("Tags", left = "Cancel", right = "Done", onDismiss = { tagging = false }, onRight = { app.setPageTags(doc, pages, chosen.toList()); tagging = false; selected = emptySet() }) {
+            TagsSelector(app, chosen) { chosen = it }
         }
     }
     if (confirmDelete) {

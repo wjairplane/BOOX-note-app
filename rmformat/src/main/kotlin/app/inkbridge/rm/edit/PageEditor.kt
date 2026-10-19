@@ -2,6 +2,7 @@ package app.inkbridge.rm.edit
 
 import app.inkbridge.rm.io.*
 import app.inkbridge.rm.render.PageRenderer
+import app.inkbridge.rm.render.PenPalette
 import app.inkbridge.rm.scene.*
 import app.inkbridge.rm.text.TextBuffer
 import kotlin.math.hypot
@@ -77,6 +78,28 @@ class PageEditor private constructor(initial: List<Block>) {
         return AddedStroke(line, ox, oy, id)
     }
 
+    // ---- text highlights ----
+
+    /**
+     * Add a highlight over text: [rects] are the highlighted boxes in page units (one per text line), [text] what they cover and [start] where
+     * that text begins in the page's text. The colour follows [spec] as for a highlighter stroke. Returns false if the page has no layer.
+     */
+    fun addGlyphHighlight(spec: PenSpec, text: String, start: Int?, rects: List<Rectangle>): Boolean {
+        if (rects.isEmpty()) return false
+        val layer = activeLayer() ?: return false
+        val (ox, oy) = renderer.offsetOf(layer)
+        val rgba = PenPalette.highlighter(spec.colorId)
+        val glyph = GlyphRange(start, text.length, text, PenColorId.HIGHLIGHT, rects.map { Rectangle(it.x - ox, it.y - oy, it.w, it.h) }, rgba)
+        val id = CrdtId(primaryAuthor(), nextCounter())
+        val block = SceneItemBlock(SceneItemBlock.GLYPH, layer.nodeId, id, lastIdIn(layer), CrdtId.END_MARKER, 0, glyph, GLYPH_ITEM_TYPE)
+            .also { it.minVersion = 0; it.currentVersion = 1 }
+        commit(blocks + block)
+        return true
+    }
+
+    /** The visible text highlights (for hit-testing). */
+    fun glyphHighlights(): List<PageRenderer.PlacedGlyph> = renderer.placedGlyphs()
+
     // ---- erasing ----
 
     /**
@@ -86,7 +109,9 @@ class PageEditor private constructor(initial: List<Block>) {
     fun eraseAlong(path: List<Pair<Float, Float>>, radius: Float): Int {
         if (path.isEmpty()) return 0
         val hit = renderer.placedLines().filter { touches(it, path, radius) }
-        if (hit.isEmpty()) return 0
+        // A text highlight goes whole when the eraser passes over any of its boxes.
+        val hitGlyphs = renderer.placedGlyphs().filter { g -> g.glyph.rectangles.any { r -> touchesRect(r, g.ox, g.oy, path, radius) } }.map { it.itemId }.toSet()
+        if (hit.isEmpty() && hitGlyphs.isEmpty()) return 0
         // The eraser takes out only the part of a stroke it passes over: what is left on either side stays as separate strokes.
         val originals = HashSet<CrdtId>()
         val pieces = LinkedHashMap<Group, MutableList<Line>>()
@@ -96,11 +121,29 @@ class PageEditor private constructor(initial: List<Block>) {
             originals += p.itemId
             pieces.getOrPut(p.parent) { ArrayList() }.addAll(parts)
         }
-        if (originals.isEmpty()) return 0
-        var next: List<Block> = blocks.map { b -> if (b is SceneItemBlock && b.blockType == SceneItemBlock.LINE && b.itemId in originals && b.value is Line) tombstone(b) else b }
+        if (originals.isEmpty() && hitGlyphs.isEmpty()) return 0
+        var next: List<Block> = blocks.map { b ->
+            if (b is SceneItemBlock && b.blockType == SceneItemBlock.LINE && b.itemId in originals && b.value is Line) tombstone(b)
+            else if (b is SceneItemBlock && b.blockType == SceneItemBlock.GLYPH && b.itemId in hitGlyphs && b.value is GlyphRange) tombstone(b)
+            else b
+        }
         for ((layer, lines) in pieces) if (lines.isNotEmpty()) next = appended(next, layer, lines).first
         commit(next)
-        return originals.size
+        return originals.size + hitGlyphs.size
+    }
+
+    private fun touchesRect(r: Rectangle, ox: Float, oy: Float, path: List<Pair<Float, Float>>, radius: Float): Boolean {
+        val l = (r.x + ox - radius).toFloat(); val t = (r.y + oy - radius).toFloat()
+        val rr = (r.x + ox + r.w + radius).toFloat(); val b = (r.y + oy + r.h + radius).toFloat()
+        fun inBox(x: Float, y: Float) = x in l..rr && y in t..b
+        if (path.size == 1) return inBox(path[0].first, path[0].second)
+        val step = max(radius * 0.5f, 1f)
+        for (i in 0 until path.size - 1) {
+            val (x0, y0) = path[i]; val (x1, y1) = path[i + 1]
+            val n = (hypot(x1 - x0, y1 - y0) / step).toInt() + 1
+            for (k in 0..n) if (inBox(x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n)) return true
+        }
+        return false
     }
 
     /** What is left of [line] after erasing within [radius] of [path] (both relative to the line's layer); null if nothing was touched. */
@@ -564,6 +607,7 @@ class PageEditor private constructor(initial: List<Block>) {
 
     companion object {
         private const val LINE_ITEM_TYPE = 3
+        private const val GLYPH_ITEM_TYPE = 1
         private const val MAX_UNDO = 100
 
         fun fromBytes(bytes: ByteArray): PageEditor = PageEditor(SceneStream.readBlocks(bytes))

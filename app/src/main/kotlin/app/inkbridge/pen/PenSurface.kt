@@ -38,6 +38,8 @@ interface PenListener {
     fun onEdgeSwipe(edge: FingerGestures.Edge) {}
     /** A quick tap with [fingers] (2 or 3) fingers: the tablet's undo / redo shortcuts. */
     fun onFingerTap(fingers: Int) {}
+    /** A one-finger tap at view pixel ([x], [y]) (links in PDFs). */
+    fun onSingleTap(x: Float, y: Float) {}
     /** A stroke made with the selection tool (a lasso, or a drag of the current selection). */
     fun onLasso(samples: List<PenSample>) {}
     /** A stroke made with "Erase selection": erase what the lasso encloses. */
@@ -137,6 +139,7 @@ class PenSurface(context: Context, private val listener: PenListener, exactAtSta
             override val viewHeight: Int get() = height
             override fun msSincePen(): Long = android.os.SystemClock.uptimeMillis() - lastPenMs
             override fun onTap(fingers: Int) = listener.onFingerTap(fingers)
+            override fun onSingleTap(x: Float, y: Float) = listener.onSingleTap(x, y)
             override fun onPageSwipe(forward: Boolean) { if (swipeEnabled) listener.onSwipe(forward) }
             override fun onJump(down: Boolean) = listener.onJump(down)
             override fun onEdgeSwipe(edge: FingerGestures.Edge) = listener.onEdgeSwipe(edge)

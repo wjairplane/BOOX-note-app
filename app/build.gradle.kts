@@ -12,8 +12,8 @@ android {
         applicationId = "app.inkbridge"
         minSdk = 29
         targetSdk = 35
-        versionCode = 9
-        versionName = "1.1.6"
+        versionCode = 10
+        versionName = "1.2.0"
 
         // The Note Air5 C is 64-bit ARM; the Onyx SDK only ships ARM native libraries anyway.
         ndk {
@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.onyx.pen)
     implementation(libs.hiddenapibypass)
+    implementation(libs.pdfbox.android)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)

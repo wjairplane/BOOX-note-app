@@ -43,6 +43,23 @@ class PageRenderer(private val tree: SceneTree) {
     /** Visible strokes in drawing order, with parent and offset (for hit-testing and editing). */
     fun placedLines(): List<PlacedLine> = buildList { collectLines(tree.root, 0f, 0f, this) }
 
+    /** A highlight made from text, with the offset of its parent group. */
+    class PlacedGlyph(val itemId: CrdtId, val parent: Group, val glyph: GlyphRange, val ox: Float, val oy: Float)
+
+    /** Visible text highlights in drawing order. */
+    fun placedGlyphs(): List<PlacedGlyph> = buildList { collectGlyphs(tree.root, 0f, 0f, this) }
+
+    private fun collectGlyphs(g: Group, ox: Float, oy: Float, out: MutableList<PlacedGlyph>) {
+        for (e in g.children.orderedItems()) when (val c = e.value) {
+            is Group -> if (c.visible.value) {
+                val (ax, ay) = anchorOffset(c)
+                collectGlyphs(c, ox + ax, oy + ay, out)
+            }
+            is GlyphRange -> out += PlacedGlyph(e.itemId, g, c, ox, oy)
+            else -> Unit
+        }
+    }
+
     private fun collectLines(g: Group, ox: Float, oy: Float, out: MutableList<PlacedLine>) {
         for (e in g.children.orderedItems()) when (val c = e.value) {
             is Group -> if (c.visible.value) {
@@ -181,7 +198,7 @@ class PageRenderer(private val tree: SceneTree) {
 
     private fun drawGlyph(g: GlyphRange, ox: Float, oy: Float, canvas: PageCanvas) {
         val rgba = PenPalette.lookup(g.color, g.colorRgba)
-        val c = argb(rgba, 0.35)
+        val c = argb(rgba, 0.5)
         for (r in g.rectangles) canvas.fillRect((r.x + ox).toFloat(), (r.y + oy).toFloat(), r.w.toFloat(), r.h.toFloat(), c)
     }
 

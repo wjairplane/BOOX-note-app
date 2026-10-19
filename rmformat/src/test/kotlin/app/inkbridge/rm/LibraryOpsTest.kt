@@ -123,6 +123,20 @@ class LibraryOpsTest {
         assertEquals(emptyList<String>(), scan(d)["n"]!!.tags)
     }
 
+    @Test fun pageTagsAreStoredPerPageAndFollowRenames() {
+        val d = dir()
+        LibraryOps.createNotebook(d, "N", id = "n", firstPageId = "p1")
+        LibraryOps.setPageTags(d, "n", listOf("p1", "p2"), listOf("exam", "todo"), now = 7)
+        LibraryOps.setPageTags(d, "n", listOf("p2"), listOf("todo"), now = 8) // replaces p2's tags only
+        assertEquals(mapOf("p1" to listOf("exam", "todo"), "p2" to listOf("todo")), scan(d)["n"]!!.pageTags)
+        val raw = File(d, "n.content").readText()
+        assertTrue(raw.contains("\"pageId\"") && raw.contains("\"name\""))
+        LibraryOps.mapPageTags(d, "n") { if (it == "todo") "done" else if (it == "exam") null else it }
+        assertEquals(mapOf("p1" to listOf("done"), "p2" to listOf("done")), scan(d)["n"]!!.pageTags)
+        LibraryOps.setPageTags(d, "n", listOf("p1", "p2"), emptyList())
+        assertTrue(scan(d)["n"]!!.pageTags.isEmpty())
+    }
+
     @Test fun duplicateCopiesNotebooksAndFoldersWithTheirContents() {
         val d = dir()
         LibraryOps.createFolder(d, "F", id = "f")

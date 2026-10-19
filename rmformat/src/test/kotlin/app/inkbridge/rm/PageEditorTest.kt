@@ -278,4 +278,22 @@ class PageEditorTest {
         val c = Java2DCanvas(ed.renderer.layout); ed.renderer.render(c)
         System.getProperty("rm.renderOut")?.let { File(it).mkdirs(); ImageIO.write(c.finish(), "png", File(it, "edited_Lines_v2.png")) }
     }
+
+    @Test fun textHighlightIsAddedRenderedErasedAndUndone() {
+        val ed = PageEditor.blank()
+        val rects = listOf(Rectangle(-200.0, 300.0, 300.0, 40.0), Rectangle(-200.0, 350.0, 120.0, 40.0))
+        assertTrue(ed.addGlyphHighlight(PenSpec(PenTool.HIGHLIGHTER, colorId = PenColorId.YELLOW), "Hello world and more", 0, rects))
+        val g = ed.glyphHighlights().single().glyph
+        assertEquals("Hello world and more", g.text); assertEquals(2, g.rectangles.size)
+        assertEquals(PenColorId.HIGHLIGHT, g.color); assertNotNull(g.colorRgba)
+        // It survives a write and read, and the file still parses as a scene.
+        val back = PageEditor.fromBytes(ed.toBytes())
+        assertEquals(1, back.glyphHighlights().size)
+        assertEquals("Hello world and more", back.glyphHighlights()[0].glyph.text)
+        // The eraser takes it away whole when it passes over a box; away from the boxes it stays.
+        assertEquals(0, ed.eraseAlong(listOf(500f to 900f, 520f to 900f), 20f))
+        assertEquals(1, ed.eraseAlong(listOf(-150f to 320f, -100f to 322f), 20f))
+        assertTrue(ed.glyphHighlights().isEmpty())
+        assertTrue(ed.undo()); assertEquals(1, ed.glyphHighlights().size)
+    }
 }

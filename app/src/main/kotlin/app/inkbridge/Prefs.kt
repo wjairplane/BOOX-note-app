@@ -94,6 +94,10 @@ class Prefs(context: Context) {
     /** "Enable shapes": hold at the end of a stroke to turn it into a clean shape. */
     var shapesEnabled: Boolean get() = _shapes; set(v) { _shapes = v; sp.edit().putBoolean("shapes", v).apply() }
 
+    private var _snapText by mutableStateOf(sp.getBoolean("snapHighlighter", false))
+    /** The highlighter's "Snap to text" (firmware `snapHighlighterToText`): highlight the text under the stroke instead of drawing it freehand. */
+    var snapHighlighter: Boolean get() = _snapText; set(v) { _snapText = v; sp.edit().putBoolean("snapHighlighter", v).apply() }
+
     private var _block by mutableStateOf(sp.getBoolean("blockDeviceGestures", true))
     /** Hold off the device's own edge gestures (BOOX status bar / back swipes) while the app is open. */
     var blockDeviceGestures: Boolean get() = _block; set(v) { _block = v; sp.edit().putBoolean("blockDeviceGestures", v).apply() }

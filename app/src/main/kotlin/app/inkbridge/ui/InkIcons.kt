@@ -129,6 +129,7 @@ object InkIcons {
     @Composable fun GridMedium(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_grid, modifier, tint, size)
     @Composable fun GridSmall(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_grid_small, modifier, tint, size)
     @Composable fun ListView(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_list, modifier, tint, size)
+    @Composable fun GoToPage(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_go_to_page, modifier, tint, size)
     @Composable fun FolderInverted(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_folder_inverted, modifier, tint, size)
     @Composable fun TagInverted(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_tag_inverted, modifier, tint, size)
     @Composable fun MoveHere(modifier: Modifier = Modifier, tint: Color = Ink.Black, size: Dp = Rm.Icon) = glyph(R.drawable.rm_move_here, modifier, tint, size)

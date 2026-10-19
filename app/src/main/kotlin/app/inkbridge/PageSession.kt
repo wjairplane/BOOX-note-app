@@ -312,6 +312,19 @@ class PageSession(
     @Synchronized fun moveLayer(id: CrdtId, up: Boolean): Boolean = editor.moveLayer(id, up).also { if (it) redrawAll() }
     @Synchronized fun mergeLayerDown(id: CrdtId): Boolean = editor.mergeLayerDown(id).also { if (it) { selection = emptySet(); redrawAll() } }
     @Synchronized fun backgroundVisible(): Boolean = editor.backgroundVisible
+
+    private var linksCache: List<PdfStructure.Link>? = null
+
+    /** The PDF page that a link under the view point ([vx], [vy]) leads to, or null (no link there, no PDF, or the PDF is hidden). */
+    @Synchronized fun pdfLinkAt(vx: Float, vy: Float): Int? {
+        val bg = background ?: return null
+        val t = transform ?: return null
+        if (!editor.backgroundVisible) return null
+        val pl = bg.placement
+        val x = pl.pageToPdfX(t.toPageX(vx)); val y = pl.pageToPdfY(t.toPageY(vy))
+        val links = linksCache ?: runCatching { bg.links() }.getOrDefault(emptyList()).also { linksCache = it }
+        return links.firstOrNull { it.contains(x, y) }?.page
+    }
     @Synchronized fun setBackgroundVisible(v: Boolean) { editor.setBackgroundVisible(v); baseValid = false; redrawAll() }
     @Synchronized fun deleteLayer(id: CrdtId): Boolean = editor.deleteLayer(id).also { if (it) { selection = emptySet(); redrawAll() } }
 
@@ -333,6 +346,32 @@ class PageSession(
             bmp.setPixels(shown, tp * bmp.width + l, bmp.width, l, tp, r - l, b - tp)
             layer.resetDirty()
         }
+        return true
+    }
+
+    private var textCache: List<PdfStructure.TextLine>? = null
+
+    /**
+     * The highlighter's "Snap to text": instead of the freehand stroke, highlight the text it ran along. Each line of the PDF page that
+     * the stroke crosses is highlighted from its first to its last character under the stroke, as one clean box per line. Returns false
+     * (and adds nothing) when the page has no text under the stroke, so the caller keeps the plain stroke.
+     */
+    @Synchronized
+    fun addSnappedHighlight(spec: PenSpec, samples: List<PenSample>): Boolean {
+        val bg = background ?: return false
+        val t = transform ?: return false
+        if (!editor.backgroundVisible || samples.size < 2) return false
+        val pl = bg.placement
+        val path = samples.map { pl.pageToPdfX(t.toPageX(it.x)) to pl.pageToPdfY(t.toPageY(it.y)) }
+        val lines = textCache ?: runCatching { bg.textLines() }.getOrDefault(emptyList()).also { textCache = it }
+        val picked = SnapToText.pick(lines, path)
+        if (picked.isEmpty()) return false
+        val rects = picked.map { r -> app.inkbridge.rm.scene.Rectangle(pl.pdfToPageX(r.left).toDouble(), pl.pdfToPageY(r.top).toDouble(), ((r.right - r.left) * pl.scale).toDouble(), ((r.bottom - r.top) * pl.scale).toDouble()) }
+        val text = picked.joinToString(" ") { it.text }
+        val start = lines.takeWhile { it !== picked.first().line }.sumOf { it.text.length + 1 }
+        if (!editor.addGlyphHighlight(spec, text, start, rects)) return false
+        lastStrokeRect = null
+        redrawAll()
         return true
     }
 
@@ -457,6 +496,9 @@ class PageSession(
     /** The rectangle the last stroke changed (kept until the next stroke). */
     @Volatile private var lastBounds: android.graphics.Rect? = null
     fun lastStrokeBounds(): android.graphics.Rect? = lastBounds
+
+    /** The text highlights on the page (tests). */
+    @Synchronized internal fun glyphHighlightsForTest() = editor.glyphHighlights()
 
     fun takeStrokeRect(): android.graphics.Rect? = lastStrokeRect.also { lastStrokeRect = null }
 
