@@ -75,6 +75,14 @@ import app.inkbridge.rm.render.PageRenderer
 import app.inkbridge.rm.render.PageTemplate
 import app.inkbridge.rm.render.PenPalette
 import app.inkbridge.rm.scene.SceneTree
+import app.inkbridge.R
+import app.inkbridge.TextPrefs
+import app.inkbridge.rm.text.TextSettings
+import app.inkbridge.text.TextController
+import app.inkbridge.text.TextEditLayer
+import app.inkbridge.text.TextIcons
+import app.inkbridge.text.TextSettingsPanel
+import app.inkbridge.text.TextTapDetector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -131,11 +139,16 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     var strokes by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf("") }
     var slider by remember { mutableStateOf(false) }
+    // The typed-text tool: typing mode, its toolbar foldout, the Text settings page, and a counter that asks the keyboard to show.
+    var typing by remember(doc.id) { mutableStateOf(false) }
+    var typingMenu by remember { mutableStateOf(false) }
+    var textSettingsOpen by remember { mutableStateOf(false) }
+    var keyboardRequest by remember { mutableIntStateOf(0) }
     // Notifications go away after five seconds, except the clipboard hint, which stays until it is dismissed.
     LaunchedEffect(message) { if (message.isNotEmpty() && !message.startsWith("Copied to clipboard")) { kotlinx.coroutines.delay(5000); message = "" } }
     var notebookSettings by remember { mutableStateOf(false) }
     var tagsScreen by remember { mutableStateOf(false) }
-    val foldoutOpen = panel || (eraserMenu && erasing) || layersMenu || menu || slider || notebookSettings || tagsScreen || app.overlay != null
+    val foldoutOpen = panel || (eraserMenu && erasing) || layersMenu || menu || slider || notebookSettings || tagsScreen || app.overlay != null || typingMenu || textSettingsOpen
 
     val slot = prefs.slot(activeSlot)
     val spec = if (selecting) PenSpec(PenTool.SELECTION) else if (erasing) PenSpec(if (eraseArea) PenTool.ERASE_AREA else PenTool.ERASER) else PenSpec(slot.tool, slot.colorId, slot.thickness)
@@ -167,6 +180,42 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
         selecting = false; selectionRect = null
         session?.clearSelection(); surface?.refresh()
     }
+
+    val textController = remember(session) { session?.let { s -> TextController(s) { TextPrefs.margin(context) } } }
+    fun enterTyping() {
+        leaveSelectionForTyping(selecting) { selecting = false; selectionRect = null; session?.clearSelection(); surface?.refresh() }
+        erasing = false; panel = false; eraserMenu = false; menu = false; layersMenu = false; typingMenu = false
+        typing = true
+        textController?.placeAtEnd()
+        keyboardRequest++
+    }
+    // A double tap on the text enters typing mode; in typing mode taps place the caret and select (1-4 taps).
+    val cmPx = remember { (context.resources.displayMetrics.xdpi.takeIf { it > 50f } ?: (160f * context.resources.displayMetrics.density)) / 2.54f }
+    val onTextTap by rememberUpdatedState<(Float, Float, Int) -> Unit> { x, y, n ->
+        val c = textController
+        if (c != null && canDraw && !foldoutOpen && !overview && !templatePicker) {
+            if (!typing) {
+                if (n == 2 && c.isInTextArea(x, y, 50f)) { enterTyping(); c.tap(x, y, 1, 0.35f * cmPx) }
+            } else if (c.isInTextArea(x, y, 50f)) {
+                c.tap(x, y, n, 0.35f * cmPx)
+                keyboardRequest++
+            }
+        }
+    }
+    val tapDetector = remember(cmPx) { TextTapDetector(cmPx) { x, y, n -> onTextTap(x, y, n) } }
+    DisposableEffect(surface, tapDetector) {
+        val v = surface
+        v?.setOnTouchListener { _, e -> tapDetector.onTouch(e); false }
+        onDispose { v?.setOnTouchListener(null) }
+    }
+    androidx.activity.compose.BackHandler(enabled = typing) { typing = false }
+    // The page's picture is out of date after a text edit; and the caret must stay inside the text after undo, redo or a page change.
+    LaunchedEffect(textController?.editCount) {
+        val c = textController; val v = surface; val s = session
+        if (c != null && v != null && s != null && c.editCount > 0) { pushView(v, s); revision++ }
+    }
+    LaunchedEffect(revision) { textController?.clamp() }
+    LaunchedEffect(textController) { if (typing) textController?.placeAtEnd() }
 
     fun goTo(i: Int) { if (i in doc.pageIds.indices && i != pageIndex) { save(session); selectionRect = null; newPagePrompt = false; pageIndex = i; if (prefs.refreshEveryStrokes > 0) surface?.fullRefresh() } }
     fun newPageAfterCurrent() { save(session); app.addPage(doc, pageIndex) { pageIndex = it } }
@@ -211,10 +260,10 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 // Two writing tools: tap the other one to switch, tap the active one to open its foldout.
                 for (i in 0..1) {
                     val s = prefs.slot(i)
-                    val active = !erasing && !selecting && activeSlot == i
+                    val active = !erasing && !selecting && !typing && !typingMenu && activeSlot == i
                     Box {
                         IconTile("Writing tool ${i + 1}: ${s.tool.label}", {
-                            if (active) panel = !panel else { leaveSelection(); activeSlot = i; erasing = false; panel = false; eraserMenu = false }
+                            if (active) panel = !panel else { leaveSelection(); activeSlot = i; erasing = false; typing = false; typingMenu = false; panel = false; eraserMenu = false }
                         }, selected = active) { tint ->
                             Box {
                                 InkIcons.Pen(s.tool, tint = tint)
@@ -226,7 +275,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 }
                 // The eraser: tap to pick it, tap again for its foldout (tool, thickness, erase all).
                 Box {
-                    IconTile("Eraser", { if (erasing) eraserMenu = !eraserMenu else { leaveSelection(); erasing = true; panel = false; eraserMenu = false } }, selected = erasing) { if (eraseArea) InkIcons.EraseSelection(tint = it) else InkIcons.Eraser(tint = it) }
+                    IconTile("Eraser", { if (erasing) eraserMenu = !eraserMenu else { leaveSelection(); erasing = true; typing = false; typingMenu = false; panel = false; eraserMenu = false } }, selected = erasing) { if (eraseArea) InkIcons.EraseSelection(tint = it) else InkIcons.Eraser(tint = it) }
                     RmMenu(eraserMenu && erasing, { eraserMenu = false }, side, Rm.EraserFoldoutMinWidth) {
                         EraserMenu(eraseArea, onTool = { eraseArea = it }, eraserThickness, onThickness = { eraserThickness = it }, onEraseAll = {
                             // "Erase all strokes" clears the current layer only, then goes back to the last pen.
@@ -236,7 +285,15 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                         })
                     }
                 }
-                IconTile("Selection tool", { selecting = true; erasing = false; panel = false; eraserMenu = false; menu = false }, selected = selecting) { InkIcons.SelectionTool(tint = it) }
+                IconTile("Selection tool", { selecting = true; erasing = false; typing = false; typingMenu = false; panel = false; eraserMenu = false; menu = false }, selected = selecting) { InkIcons.SelectionTool(tint = it) }
+                // Typed text: the foldout offers Add text / Edit text and the Text settings.
+                Box {
+                    IconTile("Typing", { typingMenu = !typingMenu; panel = false; eraserMenu = false; menu = false; layersMenu = false }, selected = typing || typingMenu) { TextIcons.Typing(tint = it) }
+                    RmMenu(typingMenu, { typingMenu = false }, side, Rm.FoldoutMinWidth) {
+                        if (!typing) RmFoldoutItem(if (textController?.hasText == true) "Edit text" else "Add text", { enterTyping() }, bottomDivider = true) { TextIcons.glyph(R.drawable.rm_keyboard, Modifier, it) }
+                        RmFoldoutItem("Text settings", { typingMenu = false; textSettingsOpen = true }) { InkIcons.Sliders(tint = it) }
+                    }
+                }
                 IconTile("Undo", { if (session?.undo() == true) { selectionRect = null; surface?.refresh(); revision++ } }, enabled = session?.canUndo == true) { InkIcons.Undo(tint = it) }
                 IconTile("Redo", { if (session?.redo() == true) { selectionRect = null; surface?.refresh(); revision++ } }, enabled = session?.canRedo == true) { InkIcons.Redo(tint = it) }
             }
@@ -335,8 +392,8 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
         Box(Modifier.fillMaxSize()) {
             if (!canDraw) Text("This kind of document can't be shown yet.", style = RmText.Body, modifier = Modifier.padding(32.dp))
             PageArea(
-                session = session, spec = spec, drawing = canDraw && !overview && !foldoutOpen && !templatePicker,
-                swipeEnabled = prefs.swipeToTurn, fingerDraws = prefs.fingerDrawing,
+                session = session, spec = spec, drawing = canDraw && !overview && !foldoutOpen && !templatePicker && !typing,
+                swipeEnabled = prefs.swipeToTurn && !typing, fingerDraws = prefs.fingerDrawing,
                 eraserRadius = ERASER_RADII[eraserThickness - 1],
                 selecting = selecting, selectionRect = selectionRect, onSelectionRect = { selectionRect = it },
                 onSelectionAction = { action ->
@@ -382,6 +439,37 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                     else if (fingers == 3 && session?.redo() == true) { selectionRect = null; surface?.refresh(); revision++ }
                 },
             )
+
+            // The typed-text tool's caret, selection and format menu, and the Text settings page.
+            val tc = textController
+            val s = session
+            if (typing && tc != null && s != null && !overview) TextEditLayer(
+                s, tc, revision, keyboardRequest,
+                startInset = if (pos == ToolbarPosition.LEFT && !collapsed) TOOLBAR_THICKNESS else 0.dp,
+                endInset = if (pos == ToolbarPosition.RIGHT && !collapsed) TOOLBAR_THICKNESS else 0.dp,
+                bottomInset = if (pos == ToolbarPosition.BOTTOM && !collapsed) TOOLBAR_THICKNESS else 0.dp,
+            )
+            if (textSettingsOpen && s != null) {
+                TextSettingsPanel(
+                    settings = TextSettings.current, margin = TextPrefs.margin(context), hasAnnotations = s.hasInk(),
+                    onChange = { ts, margin ->
+                        TextPrefs.save(context, ts)
+                        val marginChanged = margin != TextPrefs.margin(context)
+                        TextPrefs.saveMargin(context, margin)
+                        s.textSettingsChanged()
+                        if (marginChanged && s.textLayout != null) s.editText(false, margin) { it.setSideMargin(margin) }
+                        surface?.let { v -> pushView(v, s) }
+                        revision++
+                    },
+                    onClose = { textSettingsOpen = false },
+                    // Below the close button and beside the toolbar.
+                    modifier = Modifier.align(Alignment.TopCenter).padding(
+                        start = if (pos == ToolbarPosition.LEFT && !collapsed) TOOLBAR_THICKNESS else 0.dp,
+                        end = if (pos == ToolbarPosition.RIGHT && !collapsed) TOOLBAR_THICKNESS else 0.dp,
+                        top = TOOLBAR_THICKNESS,
+                    ),
+                )
+            }
 
             // The zoom button: while zoomed, a tap snaps back to the whole page.
             @Suppress("UNUSED_EXPRESSION") revision
@@ -926,3 +1014,6 @@ internal fun Modifier.blocksPen(blockers: PenBlockers, key: String): Modifier {
         blockers.set(key, Rect(b.left.toInt(), b.top.toInt(), b.right.toInt(), b.bottom.toInt()))
     }
 }
+
+/** Leave the selection tool (used when typing starts): [clear] does the work if a selection is active. */
+private inline fun leaveSelectionForTyping(selecting: Boolean, clear: () -> Unit) { if (selecting) clear() }

@@ -351,8 +351,37 @@ class PageSession(
         return true
     }
 
-    @Synchronized fun undo(): Boolean = editor.undo().also { if (it) { selection = emptySet(); redrawAll() } }
-    @Synchronized fun redo(): Boolean = editor.redo().also { if (it) { selection = emptySet(); redrawAll() } }
+    // The page's typed text is part of the base layer, so undoing or redoing a text edit redraws that too.
+    @Synchronized fun undo(): Boolean = editor.undo().also { if (it) { selection = emptySet(); baseValid = false; redrawAll() } }
+    @Synchronized fun redo(): Boolean = editor.redo().also { if (it) { selection = emptySet(); baseValid = false; redrawAll() } }
+
+    // ---- typed text (the text tool; see TextController) ----
+
+    /** The typed text laid out for the page, or null when the page has none. */
+    @get:Synchronized val textLayout: app.inkbridge.rm.text.TextLayout? get() = editor.renderer.textLayout
+
+    /** Edit the page's typed text (see [PageEditor.editText]) and redraw the page. Returns true if the text changed. */
+    @Synchronized
+    fun editText(merge: Boolean = false, sideMargin: Float = app.inkbridge.rm.text.TextSettings.DEFAULT_SIDE_MARGIN, edit: (app.inkbridge.rm.text.TextBuffer) -> Unit): Boolean {
+        if (!editor.editText(merge, sideMargin, edit)) return false
+        textLayoutChanged()
+        return true
+    }
+
+    /** The next text edit starts a new undo step even if it asks to be merged. */
+    @Synchronized fun endTextRun() = editor.endTextRun()
+
+    /** Does the page have handwriting (changing the text settings would then move the text away from it)? */
+    @Synchronized fun hasInk(): Boolean = editor.renderer.placedLines().isNotEmpty()
+
+    /** The text settings (font, size, spacing, justification) changed: set the page's text again. */
+    @Synchronized fun textSettingsChanged() { editor.refreshRenderer(); textLayoutChanged() }
+
+    private fun textLayoutChanged() {
+        if (bitmap == null) return
+        // Long text makes the page taller, which changes how it fits the view.
+        if (transform?.layout != editor.renderer.layout) rebuild(newBitmap = false) else { baseValid = false; redrawAll() }
+    }
 
     /** Write the page to its file (keeping a one-time `.orig` backup). No-op when nothing changed. */
     @Synchronized

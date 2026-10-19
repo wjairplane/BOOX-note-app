@@ -152,6 +152,15 @@ class TextBuffer private constructor(
         changed()
     }
 
+    /** Move and resize the text block: [sideMargin] on both sides of the page. */
+    fun setSideMargin(sideMargin: Float) {
+        val x = (-TextSettings.PAGE_WIDTH / 2 + sideMargin).toDouble()
+        val w = TextSettings.PAGE_WIDTH - 2 * sideMargin
+        if (x == posX && w == width) return
+        posX = x; width = w
+        changed()
+    }
+
     /** Make the paragraph [para] (index into [content].paragraphs) use [style]. */
     fun setParagraphStyle(para: Int, style: ParagraphStyle) {
         val key = content.paragraphs.getOrNull(para)?.key ?: return

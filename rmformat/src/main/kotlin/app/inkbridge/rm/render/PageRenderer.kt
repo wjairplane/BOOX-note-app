@@ -23,10 +23,10 @@ data class PageLayout(val xMin: Float, val xMax: Float, val yMin: Float, val yMa
  * Output is in page units with x relative to the page centre (see [layout] for the shift).
  */
 class PageRenderer(private val tree: SceneTree) {
-    private val anchorPos = buildAnchorPos(tree.rootText)
-
     /** The typed text set for this page with the settings in force when the renderer was made; null on a page without text. */
     val textLayout: TextLayout? by lazy { tree.rootText?.let { TextLayout.of(it, TextSettings.current) } }
+
+    private val anchorPos: Map<CrdtId, Float> by lazy { textLayout?.anchors() ?: buildAnchorPos(null) }
 
     /** Standard page area, grown if strokes extend past it (notebook pages can scroll vertically). */
     val layout: PageLayout by lazy {

@@ -147,6 +147,18 @@ class TextToolTest {
         assertTrue(layout.lines.zipWithNext().all { (a, b) -> b.baseline > a.baseline })
     }
 
+    @Test fun svgExportHasTheTextInItsFont() {
+        val e = PageEditor.blank()
+        e.editText { it.insert(0, "Hello & <world>\nsecond") }
+        e.editText { it.setParagraphStyle(0, ParagraphStyle.HEADING) }
+        e.editText { it.setFormat(8, 15, bold = null, italic = true) }
+        val svg = app.inkbridge.rm.export.PageExport.svg(e.renderer)
+        assertTrue(svg, svg.contains("Hello &amp;"))
+        assertTrue(svg.contains("font-family=\"reMarkable Sans"))
+        assertTrue(svg.contains("font-style=\"italic\""))
+        assertTrue(svg.contains("font-weight=\"bold\""))
+    }
+
     @Test fun settingsChangeTheLayout() {
         val e = PageEditor.blank()
         e.editText { it.insert(0, List(30) { "word" }.joinToString(" ")) }

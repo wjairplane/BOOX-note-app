@@ -161,6 +161,21 @@ class TextLayout private constructor(
         return null
     }
 
+    /** The y position of each text character and paragraph (the slot of its line), plus the page-wide top and bottom anchors. */
+    fun anchors(): Map<CrdtId, Float> {
+        val pos = HashMap<CrdtId, Float>()
+        pos[CrdtId(0, 281474976710654)] = firstBaseline
+        var last = firstBaseline
+        for (l in lines) {
+            val p = content.paragraphs[l.para]
+            if (l.firstOfParagraph) pos[p.key] = l.boxTop
+            for (i in l.start until l.end) content.ids.getOrNull(i)?.let { pos[it] = l.boxTop }
+            last = l.baseline
+        }
+        pos[CrdtId(0, 281474976710655)] = last
+        return pos
+    }
+
     // ---- drawing ----
 
     fun draw(canvas: PageCanvas) {
@@ -340,20 +355,6 @@ class TextLayout private constructor(
         }
 
         /** Y position of each text character / paragraph, used to place groups anchored to text lines. */
-        fun anchors(text: Text?, settings: TextSettings = TextSettings.current): Map<CrdtId, Float> {
-            val pos = HashMap<CrdtId, Float>()
-            val layout = of(text, settings)
-            pos[CrdtId(0, 281474976710654)] = layout.firstBaseline
-            var last = layout.firstBaseline
-            for (l in layout.lines) {
-                val p = layout.content.paragraphs[l.para]
-                if (l.firstOfParagraph) pos[p.key] = l.boxTop
-                for (i in l.start until l.end) layout.content.ids.getOrNull(i)?.let { pos[it] = l.boxTop }
-                // The paragraph break that starts the next paragraph sits at the end of this line's paragraph.
-                last = l.baseline
-            }
-            pos[CrdtId(0, 281474976710655)] = last
-            return pos
-        }
+        fun anchors(text: Text?, settings: TextSettings = TextSettings.current): Map<CrdtId, Float> = of(text, settings).anchors()
     }
 }

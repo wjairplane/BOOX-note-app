@@ -71,11 +71,19 @@ class AndroidPageCanvas(private val canvas: Canvas) : PageCanvas {
         canvas.drawText(s, x, y, textPaint)
     }
 
+    override fun styledText(s: String, x: Float, y: Float, size: Float, bold: Boolean, italic: Boolean, font: app.inkbridge.rm.text.TextFont, argb: Int) {
+        textPaint.color = argb
+        textPaint.textSize = size
+        textPaint.typeface = TextFonts.typeface(font, bold, italic)
+        canvas.drawText(s, x, y, textPaint)
+    }
+
     companion object {
         /** The reMarkable Sans used for page text such as template labels; plain sans until [installFonts] has run. */
         @Volatile private var sans: Typeface? = null
 
         fun installFonts(context: Context) {
+            TextFonts.install(context)
             if (sans == null) sans = runCatching { ResourcesCompat.getFont(context, R.font.rm_sans_regular) }.getOrNull()
         }
     }

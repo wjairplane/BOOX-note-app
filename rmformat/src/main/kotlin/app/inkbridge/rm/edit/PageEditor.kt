@@ -459,6 +459,12 @@ class PageEditor private constructor(initial: List<Block>) {
 
     // ---- typed text ----
 
+    /** Set the page again with the current text settings (the renderer keeps the layout it was made with). */
+    fun refreshRenderer() { renderer = PageRenderer(tree) }
+
+    /** The next text edit starts a new undo step even if it asks to be merged. */
+    fun endTextRun() { lastMergedTextEdit = null }
+
     /** The page's typed text, or null when it has none. */
     val rootText: Text? get() = tree.rootText
 
