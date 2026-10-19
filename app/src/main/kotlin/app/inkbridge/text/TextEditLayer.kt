@@ -186,8 +186,7 @@ fun TextEditLayer(
 
 private object TextLayoutDefaults {
     fun emptyCaret(session: PageSession): app.inkbridge.rm.text.Caret {
-        val s = app.inkbridge.rm.text.TextSettings.current
-        val l = app.inkbridge.rm.text.TextLayout.of(null, s)
+        val l = app.inkbridge.rm.text.TextLayout.of(null)
         return l.caret(0)
     }
 }
@@ -241,7 +240,7 @@ private fun FloatingFormatMenu(session: PageSession, c: TextController, density:
     val button = with(density) { 80.dp.roundToPx() }
     val gap = with(density) { 30.dp.roundToPx() }
     val top = if (b != null) t.toViewY(b[1]) else t.toViewY(TextLayoutDefaults.emptyCaret(session).top)
-    val left = if (b != null) t.toViewX(b[0]) else t.toViewX(app.inkbridge.rm.text.TextSettings.DEFAULT_SIDE_MARGIN - app.inkbridge.rm.text.TextSettings.PAGE_WIDTH / 2)
+    val left = if (b != null) t.toViewX(b[0]) else t.toViewX(app.inkbridge.rm.text.TextColumn.DEFAULT.posX.toFloat())
     val offsetY = if (c.paragraphStyle == ParagraphStyle.HEADING) 0 else with(density) { 20.dp.roundToPx() }
     val y = (top.toInt() - offsetY).coerceIn(with(density) { 20.dp.roundToPx() }, (t.viewHeight.toInt() - button).coerceAtLeast(0))
     val x = (left.toInt() - button - gap).coerceAtLeast(0)

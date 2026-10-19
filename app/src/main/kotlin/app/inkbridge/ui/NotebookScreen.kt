@@ -77,12 +77,10 @@ import app.inkbridge.rm.render.PageTemplate
 import app.inkbridge.rm.render.PenPalette
 import app.inkbridge.rm.scene.SceneTree
 import app.inkbridge.R
-import app.inkbridge.TextPrefs
-import app.inkbridge.rm.text.TextSettings
 import app.inkbridge.text.TextController
 import app.inkbridge.text.TextEditLayer
 import app.inkbridge.text.TextIcons
-import app.inkbridge.text.TextSettingsPanel
+import app.inkbridge.rm.text.TextColumn
 import app.inkbridge.text.TextTapDetector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -143,16 +141,15 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
     var message by remember { mutableStateOf("") }
     var pageError by remember { mutableStateOf<PageError?>(null) }
     var slider by remember { mutableStateOf(false) }
-    // The typed-text tool: typing mode, its toolbar foldout, the Text settings page, and a counter that asks the keyboard to show.
+    // The typed-text tool: typing mode, its toolbar foldout, and a counter that asks the keyboard to show.
     var typing by remember(doc.id) { mutableStateOf(false) }
     var typingMenu by remember { mutableStateOf(false) }
-    var textSettingsOpen by remember { mutableStateOf(false) }
     var keyboardRequest by remember { mutableIntStateOf(0) }
     // Notifications go away after five seconds, except the clipboard hint, which stays until it is dismissed.
     LaunchedEffect(message) { if (message.isNotEmpty() && !message.startsWith("Copied to clipboard")) { kotlinx.coroutines.delay(5000); message = "" } }
     var notebookSettings by remember { mutableStateOf(false) }
     var tagsScreen by remember { mutableStateOf(false) }
-    val foldoutOpen = panel || (eraserMenu && erasing) || layersMenu || menu || slider || notebookSettings || tagsScreen || app.overlay != null || typingMenu || textSettingsOpen
+    val foldoutOpen = panel || (eraserMenu && erasing) || layersMenu || menu || slider || notebookSettings || tagsScreen || app.overlay != null || typingMenu
 
     val slot = prefs.slot(activeSlot)
     val spec = if (selecting) PenSpec(PenTool.SELECTION) else if (erasing) PenSpec(if (eraseArea) PenTool.ERASE_AREA else PenTool.ERASER) else PenSpec(slot.tool, slot.colorId, slot.thickness)
@@ -193,7 +190,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
         session?.clearSelection(); surface?.refresh()
     }
 
-    val textController = remember(session) { session?.let { s -> TextController(s) { TextPrefs.margin(context) } } }
+    val textController = remember(session) { session?.let { s -> TextController(s) } }
     fun enterTyping() {
         leaveSelectionForTyping(selecting) { selecting = false; selectionRect = null; session?.clearSelection(); surface?.refresh() }
         erasing = false; panel = false; eraserMenu = false; menu = false; layersMenu = false; typingMenu = false
@@ -295,12 +292,23 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                     }
                 }
                 IconTile("Selection tool", { selecting = true; erasing = false; typing = false; typingMenu = false; panel = false; eraserMenu = false; menu = false }, selected = selecting) { InkIcons.SelectionTool(tint = it) }
-                // Typed text: the foldout offers Add text / Edit text and the Text settings.
+                // Typed text: the foldout offers Add text / Edit text and the three text columns.
                 Box {
                     IconTile("Typing", { typingMenu = !typingMenu; panel = false; eraserMenu = false; menu = false; layersMenu = false }, selected = typing || typingMenu) { TextIcons.Typing(tint = it) }
                     RmMenu(typingMenu, { typingMenu = false }, side, Rm.FoldoutMinWidth) {
                         if (!typing) RmFoldoutItem(if (textController?.hasText == true) "Edit text" else "Add text", { enterTyping() }, bottomDivider = true) { TextIcons.glyph(R.drawable.rm_keyboard, Modifier, it) }
-                        RmFoldoutItem("Text settings", { typingMenu = false; textSettingsOpen = true }) { InkIcons.Sliders(tint = it) }
+                        @Suppress("UNUSED_EXPRESSION") textController?.version
+                        FoldoutHeader(textController?.column?.label ?: "")
+                        FoldoutGrid(TextColumn.entries.size, TextColumn.entries.size, null) { i, mod ->
+                            val c = TextColumn.entries[i]
+                            Box(mod) {
+                                MenuTile(false, c.label, { textController?.setColumn(c) }, Modifier.fillMaxWidth()) { fg ->
+                                    TextIcons.glyph(when (c) { TextColumn.NARROW -> R.drawable.rm_column_narrow; TextColumn.MEDIUM -> R.drawable.rm_column_medium; TextColumn.WIDE -> R.drawable.rm_column_wide }, Modifier, fg)
+                                }
+                                // The chosen column carries a 4 px black bar along the bottom of its cell.
+                                if (textController?.column == c) Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(4.dp).background(Ink.Black))
+                            }
+                        }
                     }
                 }
                 IconTile("Undo", { if (session?.undo() == true) { selectionRect = null; surface?.refresh(); revision++ } }, enabled = session?.canUndo == true) { InkIcons.Undo(tint = it) }
@@ -459,27 +467,6 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 endInset = if (pos == ToolbarPosition.RIGHT && !collapsed) TOOLBAR_THICKNESS else 0.dp,
                 bottomInset = if (pos == ToolbarPosition.BOTTOM && !collapsed) TOOLBAR_THICKNESS else 0.dp,
             )
-            if (textSettingsOpen && s != null) {
-                TextSettingsPanel(
-                    settings = TextSettings.current, margin = TextPrefs.margin(context), hasAnnotations = s.hasInk(),
-                    onChange = { ts, margin ->
-                        TextPrefs.save(context, ts)
-                        val marginChanged = margin != TextPrefs.margin(context)
-                        TextPrefs.saveMargin(context, margin)
-                        s.textSettingsChanged()
-                        if (marginChanged && s.textLayout != null) s.editText(false, margin) { it.setSideMargin(margin) }
-                        surface?.let { v -> pushView(v, s) }
-                        revision++
-                    },
-                    onClose = { textSettingsOpen = false },
-                    // Below the close button and beside the toolbar.
-                    modifier = Modifier.align(Alignment.TopCenter).padding(
-                        start = if (pos == ToolbarPosition.LEFT && !collapsed) TOOLBAR_THICKNESS else 0.dp,
-                        end = if (pos == ToolbarPosition.RIGHT && !collapsed) TOOLBAR_THICKNESS else 0.dp,
-                        top = TOOLBAR_THICKNESS,
-                    ),
-                )
-            }
 
             // The zoom button: while zoomed, a tap snaps back to the whole page.
             @Suppress("UNUSED_EXPRESSION") revision

@@ -15,10 +15,14 @@ class LayoutLine(
     val end: Int,
     /** Baseline of the text. */
     val baseline: Float,
-    /** Where the baseline of the previous line was: the line's slot on the page, which strokes anchored to the text follow. */
+    /** Top of the slot the line (and, for the first line, its paragraph's top margin) takes; strokes anchored to the text follow it. */
     val boxTop: Float,
+    /** Top of the line itself and its height (the font's height, without the gap below). */
+    val top: Float,
+    val height: Float,
     val size: Float,
     val bold: Boolean,
+    val font: TextFont,
     val left: Float,
     val runs: List<LayoutRun>,
     val firstOfParagraph: Boolean,
@@ -26,12 +30,12 @@ class LayoutLine(
     val style: ParagraphStyle,
     /** Bullet / number text drawn in the left margin of the first line, if any. */
     val marker: String?,
+    /** Where the marker goes: its left edge, or its right edge for a number. */
     val markerX: Float,
     /** 0 = no check box, 1 = empty, 2 = checked. */
     val checkbox: Int,
 ) {
-    val top: Float get() = baseline - size * 0.95f
-    val bottom: Float get() = baseline + size * 0.32f
+    val bottom: Float get() = top + height
     val right: Float get() = runs.lastOrNull()?.let { it.x + it.width } ?: left
 }
 
@@ -44,7 +48,6 @@ class Caret(val x: Float, val top: Float, val bottom: Float)
  */
 class TextLayout private constructor(
     val content: TextContent,
-    val settings: TextSettings,
     val left: Float,
     val width: Float,
     val firstBaseline: Float,
@@ -70,9 +73,9 @@ class TextLayout private constructor(
         for (r in line.runs) {
             if (o <= r.start) return r.x
             if (o < r.end) {
-                val w = TextMetrics.width(r.text.substring(0, o - r.start), line.size, r.bold, r.italic, settings.font)
+                val w = TextMetrics.width(r.text.substring(0, o - r.start), line.size, r.bold, r.italic, line.font)
                 // Stretched (justified) spaces make a run wider than its text; spread the difference over the run.
-                val natural = TextMetrics.width(r.text, line.size, r.bold, r.italic, settings.font)
+                val natural = TextMetrics.width(r.text, line.size, r.bold, r.italic, line.font)
                 return r.x + if (natural > 0f) w * (r.width / natural) else w
             }
         }
@@ -81,7 +84,7 @@ class TextLayout private constructor(
 
     fun caret(offset: Int): Caret {
         val i = lineIndexOf(offset)
-        if (i < 0) return Caret(left, firstBaseline - settings.bodySize * 0.95f, firstBaseline + settings.bodySize * 0.32f)
+        if (i < 0) return Caret(left, firstBaseline - TextStyles.BODY_SIZE * TextStyles.ASCENT_FACTOR, firstBaseline + TextStyles.BODY_SIZE * (TextStyles.HEIGHT_FACTOR - TextStyles.ASCENT_FACTOR))
         val l = lines[i]
         return Caret(xOf(l, offset), l.top, l.bottom)
     }
@@ -148,7 +151,7 @@ class TextLayout private constructor(
 
     /** True when the point is inside the text block, with [margin] around it. */
     fun contains(x: Float, y: Float, margin: Float): Boolean {
-        val top = (lines.firstOrNull()?.top ?: (firstBaseline - settings.bodySize)) - margin
+        val top = (lines.firstOrNull()?.top ?: (firstBaseline - TextStyles.BODY_SIZE)) - margin
         return x >= left - margin && x <= right + margin && y >= top && y <= bottom + margin
     }
 
@@ -181,102 +184,126 @@ class TextLayout private constructor(
     fun draw(canvas: PageCanvas) {
         val black = 0xFF000000.toInt()
         for (l in lines) {
-            for (r in l.runs) if (r.text.isNotBlank()) canvas.styledText(r.text, r.x, l.baseline, l.size, r.bold, r.italic, settings.font, black)
+            for (r in l.runs) if (r.text.isNotBlank()) canvas.styledText(r.text, r.x, l.baseline, l.size, r.bold, r.italic, l.font, black)
+            // A ticked check box strikes its text through.
+            if (l.checkbox == 2 && l.runs.isNotEmpty() && l.end > l.start) {
+                val y = l.baseline - l.size * 0.3f
+                val line = floatArrayOf(l.runs.first().x, y, l.runs.last().let { it.x + it.width }, y)
+                canvas.polyline(line, 2, max(1.5f, l.size * 0.06f), black, PageCanvas.Cap.BUTT)
+            }
             if (l.firstOfParagraph) {
                 if (l.checkbox != 0) drawCheckbox(canvas, l, black)
-                else l.marker?.let { canvas.styledText(it, l.markerX, l.baseline, l.size, l.bold, false, settings.font, black) }
+                else l.marker?.let { m ->
+                    if (l.style == ParagraphStyle.NUMBERED) {
+                        val w = TextMetrics.width(m, l.size, false, false, l.font)
+                        canvas.styledText(m, l.markerX - w, l.baseline, l.size, false, false, l.font, black)
+                    } else canvas.styledText(m, l.markerX, l.baseline, l.size, false, false, l.font, black)
+                }
             }
         }
     }
 
+    /** The firmware's 40 x 40 check box, 2 px above the line's top. */
     private fun drawCheckbox(canvas: PageCanvas, l: LayoutLine, color: Int) {
-        val s = l.size * 0.72f
-        val x = l.markerX; val y = l.baseline - s
-        val w = max(2f, l.size * 0.07f)
-        val box = floatArrayOf(x, y, x + s, y, x + s, y + s, x, y + s, x, y)
+        val s = CHECKBOX_SIZE
+        val x = l.markerX + 3f; val y = l.top - 2f + 3f
+        val w = 3f
+        val e = s - 6f
+        val box = floatArrayOf(x, y, x + e, y, x + e, y + e, x, y + e, x, y)
         canvas.polyline(box, 5, w, color, PageCanvas.Cap.SQUARE)
         if (l.checkbox == 2) {
-            val tick = floatArrayOf(x + s * 0.2f, y + s * 0.52f, x + s * 0.43f, y + s * 0.76f, x + s * 0.85f, y + s * 0.2f)
-            canvas.polyline(tick, 3, w * 1.3f, color, PageCanvas.Cap.ROUND)
+            val tick = floatArrayOf(x + e * 0.2f, y + e * 0.52f, x + e * 0.43f, y + e * 0.76f, x + e * 0.85f, y + e * 0.22f)
+            canvas.polyline(tick, 3, w * 1.2f, color, PageCanvas.Cap.ROUND)
         }
     }
 
     companion object {
-        /** Offset of the first baseline above the text block's stored y, as the tablet's files place it. */
-        const val TEXT_TOP_Y = -88f
+        const val CHECKBOX_SIZE = 40f
 
-        private const val TITLE_SCALE = 64f / 36f
-
-        fun sizeOf(style: ParagraphStyle, settings: TextSettings): Float =
-            if (style == ParagraphStyle.HEADING) settings.bodySize * TITLE_SCALE else settings.bodySize
-
-        fun isBold(style: ParagraphStyle) = style == ParagraphStyle.HEADING || style == ParagraphStyle.BOLD
-
-        /** Distance from one line to the next inside a paragraph. */
-        fun pitch(style: ParagraphStyle, settings: TextSettings): Float = sizeOf(style, settings) * settings.lineSpacing.percent / 100f
-
-        /** The extra space a paragraph adds in front of its first line (on top of the line pitch). */
-        fun paragraphGap(style: ParagraphStyle, settings: TextSettings): Float = when (style) {
-            ParagraphStyle.HEADING -> 54f
-            ParagraphStyle.BULLET, ParagraphStyle.BULLET2, ParagraphStyle.NUMBERED,
-            ParagraphStyle.CHECKBOX, ParagraphStyle.CHECKBOX_CHECKED -> 0f
-            else -> 16f
-        } * settings.scale
-
-        private fun indentOf(style: ParagraphStyle, settings: TextSettings): Float = settings.bodySize * when (style) {
-            ParagraphStyle.BULLET, ParagraphStyle.NUMBERED, ParagraphStyle.CHECKBOX, ParagraphStyle.CHECKBOX_CHECKED -> 1.3f
-            ParagraphStyle.BULLET2 -> 2.6f
-            else -> 0f
+        /** Font of a paragraph style: Title in reMarkable Serif Small, Subheading in Sans Medium, the rest in Sans. */
+        fun fontOf(style: ParagraphStyle): TextFont = when (style) {
+            ParagraphStyle.HEADING -> TextFont.RM_SERIF
+            ParagraphStyle.BOLD -> TextFont.RM_SANS_MEDIUM
+            else -> TextFont.RM_SANS
         }
 
-        fun of(text: Text?, settings: TextSettings = TextSettings.current): TextLayout =
-            of(TextContent.from(text), text?.posX?.toFloat() ?: (-TextSettings.PAGE_WIDTH / 2 + TextSettings.DEFAULT_SIDE_MARGIN),
-                text?.posY?.toFloat() ?: TextBuffer.DEFAULT_POS_Y.toFloat(),
-                text?.width ?: (TextSettings.PAGE_WIDTH - 2 * TextSettings.DEFAULT_SIDE_MARGIN), settings)
+        /** Pixel size of a paragraph style: Title 64, Subheading (2) 36, everything else 32. */
+        fun sizeOf(style: ParagraphStyle): Float = when (style) {
+            ParagraphStyle.HEADING -> 64f
+            ParagraphStyle.BOLD -> 36f
+            else -> TextStyles.BODY_SIZE
+        }
 
-        fun of(content: TextContent, posX: Float, posY: Float, width: Float, settings: TextSettings): TextLayout {
-            val font = settings.font
+        /** The block's top margin: Title 88, Subheading 2 40, body and lists 24. */
+        fun topMargin(style: ParagraphStyle): Float = when (style) {
+            ParagraphStyle.HEADING -> 88f
+            ParagraphStyle.BOLD -> 40f
+            else -> 24f
+        }
+
+        private fun isBody(style: ParagraphStyle) = style != ParagraphStyle.HEADING && style != ParagraphStyle.BOLD
+
+        private fun levelOf(style: ParagraphStyle) = if (style == ParagraphStyle.BULLET2) 1 else 0
+
+        private fun isList(style: ParagraphStyle) = when (style) {
+            ParagraphStyle.BULLET, ParagraphStyle.BULLET2, ParagraphStyle.NUMBERED, ParagraphStyle.CHECKBOX, ParagraphStyle.CHECKBOX_CHECKED -> true
+            else -> false
+        }
+
+        fun of(text: Text?): TextLayout {
+            val col = TextColumn.DEFAULT
+            return of(TextContent.from(text), text?.posX?.toFloat() ?: col.posX.toFloat(), text?.posY?.toFloat() ?: TextStyles.POS_Y.toFloat(),
+                text?.width ?: col.width)
+        }
+
+        fun of(content: TextContent, posX: Float, posY: Float, width: Float): TextLayout {
             val lines = ArrayList<LayoutLine>()
-            var y = posY + TEXT_TOP_Y
+            val boxLeft = posX + TextStyles.DOCUMENT_MARGIN
+            val boxWidth = width - 2 * TextStyles.DOCUMENT_MARGIN
+            var y = posY + TextStyles.DOCUMENT_MARGIN
             var number = 0
             for ((k, p) in content.paragraphs.withIndex()) {
                 val style = p.style
-                val size = sizeOf(style, settings)
-                val bold = isBold(style)
-                val pitch = pitch(style, settings)
+                val size = sizeOf(style)
+                val font = fontOf(style)
+                val bold = false
+                val h = size * TextStyles.HEIGHT_FACTOR
+                val gap = if (isBody(style)) TextStyles.BODY_LINE_GAP else 0f
                 number = if (style == ParagraphStyle.NUMBERED) number + 1 else 0
-                val indent = indentOf(style, settings)
-                val textLeft = posX + indent
-                val avail = (width - indent).coerceAtLeast(size)
-                val breaks = breakLines(content, p, size, bold, avail, font)
+                val level = levelOf(style)
+                val indent = if (isList(style)) (level + 1) * TextStyles.LIST_INDENT else 0f
+                val textLeft = boxLeft + indent
+                val avail = (boxWidth - indent).coerceAtLeast(size)
+                val breaks = breakLines(content, p, size, false, avail, font)
                 var first = true
                 for ((li, br) in breaks.withIndex()) {
                     val boxTop = y
-                    y += pitch + if (first) paragraphGap(style, settings) else 0f
+                    if (first) y += topMargin(style)
+                    val top = y
+                    val baseline = top + size * TextStyles.ASCENT_FACTOR
+                    y = top + h + gap
                     val last = li == breaks.lastIndex
-                    val justify = settings.justify && !last
-                    val runs = buildRuns(content, br.first, br.second, size, bold, textLeft, avail, justify, font)
+                    val runs = buildRuns(content, br.first, br.second, size, false, textLeft, avail, false, font)
+                    val blockLeft = boxLeft + level * TextStyles.LIST_INDENT
                     val marker = when (style) {
-                        ParagraphStyle.BULLET -> "•"
-                        ParagraphStyle.BULLET2 -> "–"
+                        ParagraphStyle.BULLET -> "\u2022"
+                        ParagraphStyle.BULLET2 -> "\u25E6"
                         ParagraphStyle.NUMBERED -> "$number."
                         else -> null
                     }
                     val markerX = when (style) {
-                        ParagraphStyle.NUMBERED -> textLeft - TextMetrics.width("$number. ", size, false, false, font)
-                        ParagraphStyle.BULLET -> posX + size * 0.4f
-                        ParagraphStyle.BULLET2 -> posX + size * 1.7f
-                        ParagraphStyle.CHECKBOX, ParagraphStyle.CHECKBOX_CHECKED -> posX + size * 0.2f
-                        else -> posX
+                        ParagraphStyle.NUMBERED -> blockLeft + 29f
+                        ParagraphStyle.BULLET, ParagraphStyle.BULLET2 -> blockLeft + 20f
+                        else -> blockLeft
                     }
                     lines += LayoutLine(
-                        k, br.first, br.second, y, boxTop, size, bold, textLeft, runs, first, last, style, marker, markerX,
+                        k, br.first, br.second, baseline, boxTop, top, h, size, bold, font, textLeft, runs, first, last, style, marker, markerX,
                         when (style) { ParagraphStyle.CHECKBOX -> 1; ParagraphStyle.CHECKBOX_CHECKED -> 2; else -> 0 },
                     )
                     first = false
                 }
             }
-            return TextLayout(content, settings, posX, width, posY + TEXT_TOP_Y, lines)
+            return TextLayout(content, posX, width, posY + TextStyles.DOCUMENT_MARGIN, lines)
         }
 
         /** Greedy word wrap of paragraph [p]: (start, end) pairs, end exclusive. A line keeps the spaces that follow its last word. */
@@ -355,6 +382,6 @@ class TextLayout private constructor(
         }
 
         /** Y position of each text character / paragraph, used to place groups anchored to text lines. */
-        fun anchors(text: Text?, settings: TextSettings = TextSettings.current): Map<CrdtId, Float> = of(text, settings).anchors()
+        fun anchors(text: Text?): Map<CrdtId, Float> = of(text).anchors()
     }
 }

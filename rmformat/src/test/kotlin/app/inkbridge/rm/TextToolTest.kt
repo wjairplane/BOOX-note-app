@@ -41,7 +41,9 @@ class TextToolTest {
         assertTrue(e.editText { it.insert(0, "Hello world") })
         val again = reload(e)
         assertEquals("Hello world", TextContent.from(again.rootText).text)
-        assertEquals(TextSettings.DEFAULT_SIDE_MARGIN - TextSettings.PAGE_WIDTH / 2, again.rootText!!.posX.toFloat(), 0.01f)
+        assertEquals(-468.0, again.rootText!!.posX, 0.01)
+        assertEquals(936f, again.rootText!!.width, 0f)
+        assertEquals(234.0, again.rootText!!.posY, 0.01)
     }
 
     @Test fun enterSplitsParagraphsAndDeleteJoinsThemAgain() {
@@ -138,7 +140,7 @@ class TextToolTest {
         e.editText { it.insert(0, words) }
         val layout = e.renderer.textLayout!!
         assertTrue("wrapped", layout.lines.size > 3)
-        for (l in layout.lines) assertTrue("fits ${l.right} <= ${layout.right + 1}", l.runs.lastOrNull()?.let { r -> r.x + TextMetrics.width(r.text.trimEnd(), l.size, r.bold, r.italic, layout.settings.font) <= layout.right + 1f } ?: true)
+        for (l in layout.lines) assertTrue("fits ${l.right} <= ${layout.right + 1}", l.runs.lastOrNull()?.let { r -> r.x + TextMetrics.width(r.text.trimEnd(), l.size, r.bold, r.italic, l.font) <= layout.right + 1f } ?: true)
         // Every offset maps to a caret on some line and back to itself.
         for (o in listOf(0, 5, 100, words.length)) {
             val cr = layout.caret(o)
@@ -156,21 +158,49 @@ class TextToolTest {
         assertTrue(svg, svg.contains("Hello &amp;"))
         assertTrue(svg.contains("font-family=\"reMarkable Sans"))
         assertTrue(svg.contains("font-style=\"italic\""))
-        assertTrue(svg.contains("font-weight=\"bold\""))
+        assertTrue(svg.contains("reMarkable Serif Small"))
     }
 
-    @Test fun settingsChangeTheLayout() {
+    @Test fun theColumnSetsTheWidthAndRelaysOutAsOneUndoStep() {
         val e = PageEditor.blank()
-        e.editText { it.insert(0, List(30) { "word" }.joinToString(" ")) }
-        val text = e.rootText!!
-        val base = TextLayout.of(text, TextSettings())
-        val big = TextLayout.of(text, TextSettings(scale = 2.0f))
-        val loose = TextLayout.of(text, TextSettings(lineSpacing = LineSpacing.MAXIMUM))
-        assertTrue(big.lines.size > base.lines.size)
-        assertTrue(loose.lines[1].baseline - loose.lines[0].baseline > base.lines[1].baseline - base.lines[0].baseline)
-        val justified = TextLayout.of(text, TextSettings(justify = true))
-        val l = justified.lines.first()
-        assertEquals(justified.right, l.runs.last().let { r -> if (r.text.isBlank()) r.x else r.x + r.width }, 1.5f)
+        e.editText { it.insert(0, List(150) { "word" }.joinToString(" ")) }
+        val medium = e.renderer.textLayout!!
+        assertEquals(TextColumn.MEDIUM, TextColumn.ofWidth(e.rootText!!.width))
+        e.editText { it.setColumn(TextColumn.NARROW) }
+        assertEquals(740f, e.rootText!!.width, 0f)
+        assertEquals(-370.0, e.rootText!!.posX, 0.0)
+        assertEquals(234.0, e.rootText!!.posY, 0.0)
+        assertTrue(e.renderer.textLayout!!.lines.size > medium.lines.size)
+        val wide = PageEditor.fromBytes(e.toBytes()).also { it.editText { b -> b.setColumn(TextColumn.WIDE) } }
+        assertEquals(1152f, wide.rootText!!.width, 0f)
+        assertTrue(wide.renderer.textLayout!!.lines.size < medium.lines.size)
+        assertTrue(e.undo())
+        assertEquals(936f, e.rootText!!.width, 0f)
+        assertNull(TextColumn.ofWidth(1000f))
+    }
+
+    @Test fun stylesUseTheFirmwareFontsSizesAndMargins() {
+        val e = PageEditor.blank()
+        e.editText { it.insert(0, "T\nS\nbody\nitem\nnum\ndone") }
+        e.editText { b ->
+            b.setParagraphStyle(0, ParagraphStyle.HEADING); b.setParagraphStyle(1, ParagraphStyle.BOLD)
+            b.setParagraphStyle(3, ParagraphStyle.BULLET); b.setParagraphStyle(4, ParagraphStyle.NUMBERED); b.setParagraphStyle(5, ParagraphStyle.CHECKBOX_CHECKED)
+        }
+        val l = e.renderer.textLayout!!.lines
+        assertEquals(TextFont.RM_SERIF, l[0].font); assertEquals(64f, l[0].size, 0f)
+        assertEquals(TextFont.RM_SANS_MEDIUM, l[1].font); assertEquals(36f, l[1].size, 0f)
+        assertEquals(TextFont.RM_SANS, l[2].font); assertEquals(32f, l[2].size, 0f)
+        // Block top margins 88 / 40 / 24 between the previous line's bottom and this line's top.
+        assertEquals(234f + 4f + 88f, l[0].top, 0.01f)
+        assertEquals(l[0].bottom + 40f, l[1].top, 0.01f)
+        assertEquals(l[1].bottom + 24f, l[2].top, 0.01f)
+        // Body lines are 1.18 x 32 high with 0.2 x that as a gap.
+        assertEquals(l[2].bottom + 0.2f * l[2].height + 24f, l[3].top, 0.01f)
+        // Lists: text at 48 from the box, bullets at +20, numbers right-aligned at +29, check boxes struck through.
+        assertEquals(-468f + 4f + 48f, l[3].left, 0.01f)
+        assertEquals(-468f + 4f + 20f, l[3].markerX, 0.01f)
+        assertEquals(-468f + 4f + 29f, l[4].markerX, 0.01f)
+        assertEquals(2, l[5].checkbox)
     }
 
     @Test fun everyShippedPageWithTextLaysOut() {

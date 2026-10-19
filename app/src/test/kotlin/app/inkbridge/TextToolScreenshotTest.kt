@@ -24,7 +24,7 @@ import app.inkbridge.rm.library.PageFiles
 import app.inkbridge.rm.render.PageTemplate
 import app.inkbridge.rm.scene.ParagraphStyle
 import app.inkbridge.rm.text.TextContent
-import app.inkbridge.rm.text.TextSettings
+import app.inkbridge.rm.text.TextColumn
 import app.inkbridge.text.TextInputView
 import app.inkbridge.ui.InkBridgeApp
 import org.junit.After
@@ -48,7 +48,7 @@ class TextToolScreenshotTest {
 
     @org.junit.Before fun transparentRoot() { app.inkbridge.ui.RootBackground = androidx.compose.ui.graphics.Color.Transparent; rule.activity.window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)) }
 
-    @After fun resetSettings() { TextSettings.current = TextSettings.DEFAULT; app.inkbridge.ui.RootBackground = androidx.compose.ui.graphics.Color.White }
+    @After fun resetSettings() { app.inkbridge.ui.RootBackground = androidx.compose.ui.graphics.Color.White }
 
     private fun snapshot(name: String) {
         val decor = rule.activity.window.decorView
@@ -230,7 +230,7 @@ class TextToolScreenshotTest {
         // Double tap on the body paragraph (second tap within 300 ms and 0.6 cm of the first).
         val t = SystemClock.uptimeMillis()
         val view = surface
-        val x = view.width * 0.4f; val y = view.height * 0.2f
+        val x = view.width * 0.4f; val y = view.height * 0.247f
         fingerTap(x, y, t); fingerTap(x + 4f, y + 2f, t + 120)
         settle()
         assertTrue("typing mode: the input view exists", findInput(rule.activity.window.decorView) != null)
@@ -251,16 +251,41 @@ class TextToolScreenshotTest {
         assertEquals(c.content.length, c.selEnd - c.selStart)
     }
 
-    @Test fun textSettingsPage() {
-        launch()
+    @Test fun typingFoldoutShowsTheColumnsAndChangingOneIsUndoable() {
+        val (app, id) = launch()
+        rule.onNodeWithContentDescription("Typing").performClick(); settle(); snapshot("text_typing_foldout_columns")
+        rule.onNodeWithText("Edit text").assertExists()
+        rule.onNodeWithText("Medium column").assertExists()
+        rule.onNodeWithContentDescription("Narrow column").performClick(); settle()
+        rule.onNodeWithText("Narrow column").assertExists(); snapshot("text_column_narrow")
+        rule.onNodeWithContentDescription("Wide column").performClick(); settle()
+        rule.onNodeWithText("Wide column").assertExists(); snapshot("text_column_wide")
+        rule.onNodeWithContentDescription("Typing").performClick(); settle() // closes the foldout
+        rule.onNodeWithContentDescription("Undo").performClick(); settle()
         rule.onNodeWithContentDescription("Typing").performClick(); settle()
-        rule.onNodeWithText("Text settings").performClick(); settle(); snapshot("text_settings")
-        rule.onNodeWithContentDescription("font-scale-1.5").performClick(); settle(); snapshot("text_settings_confirm")
-        rule.onNodeWithText("Confirm").performClick(); settle()
-        rule.onNodeWithContentDescription("align-justify").performClick(); settle()
-        rule.onNodeWithContentDescription("line-height-maximum").performClick(); settle()
-        rule.onNodeWithContentDescription("Noto Serif").performClick(); settle(); snapshot("text_settings_changed")
-        assertEquals(1.5f, TextSettings.current.scale, 0f)
-        rule.onNodeWithText("Save").performClick(); settle(); snapshot("text_settings_applied")
+        rule.onNodeWithText("Narrow column").assertExists()
+    }
+
+    /** The firmware's own pages with typed text ("Learn the basics"): every line wraps inside the 936 px column with the real fonts. */
+    @Test fun shippedPagesWrapInsideTheColumn() {
+        AndroidPageCanvas.installFonts(RuntimeEnvironment.getApplication())
+        val dir = listOf("../reference/remarkable-3.27.1.0/library", "/home/user/BOOX-note-app/reference/remarkable-3.27.1.0/library").map { File(it) }.firstOrNull { it.isDirectory } ?: return
+        var n = 0
+        dir.walkTopDown().filter { it.extension == "rm" }.forEach { f ->
+            val ed = PageEditor.fromBytes(f.readBytes())
+            val layout = ed.renderer.textLayout ?: return@forEach
+            for (l in layout.lines) {
+                val w = l.runs.sumOf { r -> app.inkbridge.rm.text.TextMetrics.width(r.text.trimEnd(), l.size, r.bold, r.italic, l.font).toDouble() }
+                assertTrue("${f.name}: line right ${l.left + w} > ${layout.right}", l.left + w <= layout.right + 1f)
+            }
+            n++
+            if (n <= 3) {
+                val bmp = android.graphics.Bitmap.createBitmap(1404, 1872, android.graphics.Bitmap.Config.ARGB_8888)
+                val c = android.graphics.Canvas(bmp); c.drawColor(android.graphics.Color.WHITE); c.translate(702f, 0f)
+                ed.renderer.render(AndroidPageCanvas(c), strokes = false)
+                File("build/ui-snapshots").apply { mkdirs() }
+                File("build/ui-snapshots/text_library_$n.png").outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+            }
+        }
     }
 }

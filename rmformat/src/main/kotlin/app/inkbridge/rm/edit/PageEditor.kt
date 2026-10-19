@@ -535,8 +535,8 @@ class PageEditor private constructor(initial: List<Block>) {
      * Edit the page's typed text through a [TextBuffer] (a new empty text block is made when the page has none). One undo
      * step per call, except that consecutive calls with [merge] set share one. Returns true if the text changed.
      */
-    fun editText(merge: Boolean = false, sideMargin: Float = app.inkbridge.rm.text.TextSettings.DEFAULT_SIDE_MARGIN, edit: (TextBuffer) -> Unit): Boolean {
-        val buffer = TextBuffer.open(tree.rootText, primaryAuthor(), nextCounter(), sideMargin)
+    fun editText(merge: Boolean = false, edit: (TextBuffer) -> Unit): Boolean {
+        val buffer = TextBuffer.open(tree.rootText, primaryAuthor(), nextCounter())
         edit(buffer)
         if (!buffer.modified) return false
         val text = buffer.toText()

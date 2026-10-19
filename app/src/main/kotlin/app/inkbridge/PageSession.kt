@@ -489,20 +489,14 @@ class PageSession(
 
     /** Edit the page's typed text (see [PageEditor.editText]) and redraw the page. Returns true if the text changed. */
     @Synchronized
-    fun editText(merge: Boolean = false, sideMargin: Float = app.inkbridge.rm.text.TextSettings.DEFAULT_SIDE_MARGIN, edit: (app.inkbridge.rm.text.TextBuffer) -> Unit): Boolean {
-        if (!editor.editText(merge, sideMargin, edit)) return false
+    fun editText(merge: Boolean = false, edit: (app.inkbridge.rm.text.TextBuffer) -> Unit): Boolean {
+        if (!editor.editText(merge, edit)) return false
         textLayoutChanged()
         return true
     }
 
     /** The next text edit starts a new undo step even if it asks to be merged. */
     @Synchronized fun endTextRun() = editor.endTextRun()
-
-    /** Does the page have handwriting (changing the text settings would then move the text away from it)? */
-    @Synchronized fun hasInk(): Boolean = editor.renderer.placedLines().isNotEmpty()
-
-    /** The text settings (font, size, spacing, justification) changed: set the page's text again. */
-    @Synchronized fun textSettingsChanged() { editor.refreshRenderer(); textLayoutChanged() }
 
     private fun textLayoutChanged() {
         if (bitmap == null) return

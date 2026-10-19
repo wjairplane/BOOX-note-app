@@ -153,12 +153,10 @@ class TextBuffer private constructor(
         changed()
     }
 
-    /** Move and resize the text block: [sideMargin] on both sides of the page. */
-    fun setSideMargin(sideMargin: Float) {
-        val x = (-TextSettings.PAGE_WIDTH / 2 + sideMargin).toDouble()
-        val w = TextSettings.PAGE_WIDTH - 2 * sideMargin
-        if (x == posX && w == width) return
-        posX = x; width = w
+    /** Set the text column: the box is [column] wide and centred on the page. */
+    fun setColumn(column: TextColumn) {
+        if (column.posX == posX && column.width == width && posY == TextStyles.POS_Y) return
+        posX = column.posX; posY = TextStyles.POS_Y; width = column.width
         changed()
     }
 
@@ -274,12 +272,10 @@ class TextBuffer private constructor(
 
     companion object {
         /** Open [t] for editing; a null [t] opens an empty text block at the default place with the given side margin. */
-        fun open(t: Text?, author: Int, nextCounter: Long, sideMargin: Float = TextSettings.DEFAULT_SIDE_MARGIN): TextBuffer {
+        fun open(t: Text?, author: Int, nextCounter: Long): TextBuffer {
             if (t == null) {
-                val w = TextSettings.PAGE_WIDTH - 2 * sideMargin
-                return TextBuffer(
-                    ArrayList(), LinkedHashMap(), HashMap(), (-TextSettings.PAGE_WIDTH / 2 + sideMargin).toDouble(), DEFAULT_POS_Y, w, author, nextCounter,
-                )
+                val c = TextColumn.DEFAULT
+                return TextBuffer(ArrayList(), LinkedHashMap(), HashMap(), c.posX, TextStyles.POS_Y, c.width, author, nextCounter)
             }
             val elems = ArrayList<Elem>()
             for (item in TextDocument.expandAll(t)) {
@@ -295,7 +291,7 @@ class TextBuffer private constructor(
         }
 
         /** Where the first line sits on a new page (the value tablets write). */
-        const val DEFAULT_POS_Y = 234.0
+        const val DEFAULT_POS_Y = TextStyles.POS_Y
 
         fun styleAfterEnter(style: ParagraphStyle, emptyParagraph: Boolean): ParagraphStyle = when (style) {
             ParagraphStyle.HEADING, ParagraphStyle.BOLD, ParagraphStyle.BASIC -> ParagraphStyle.PLAIN

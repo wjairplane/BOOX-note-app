@@ -9,7 +9,7 @@ import app.inkbridge.rm.scene.ParagraphStyle
 import app.inkbridge.rm.text.TextBuffer
 import app.inkbridge.rm.text.TextContent
 import app.inkbridge.rm.text.TextLayout
-import app.inkbridge.rm.text.TextSettings
+import app.inkbridge.rm.text.TextColumn
 import kotlin.math.max
 import kotlin.math.min
 
@@ -18,7 +18,7 @@ import kotlin.math.min
  * edits (typing, deleting, paragraph styles, bold / italic, indent) that go to the page through [PageSession.editText].
  * Offsets are indices into [TextContent.text]. The input method and hardware keys both come in through here.
  */
-class TextController(private val session: PageSession, private val sideMargin: () -> Float = { TextSettings.DEFAULT_SIDE_MARGIN }) {
+class TextController(private val session: PageSession) {
     /** Bumped on every change, so that views reading the controller recompose. */
     var version by mutableIntStateOf(0)
         private set
@@ -67,7 +67,7 @@ class TextController(private val session: PageSession, private val sideMargin: (
     private fun touch() { version++ }
 
     private fun edit(merge: Boolean = false, f: (TextBuffer) -> Unit): Boolean {
-        return session.editText(merge, sideMargin(), f).also { if (it) editCount++ }
+        return session.editText(merge, f).also { if (it) editCount++ }
     }
 
     private companion object { const val TYPING_PAUSE_MS = 1500L }
@@ -275,6 +275,16 @@ class TextController(private val session: PageSession, private val sideMargin: (
                 if (next != null) b.setParagraphStyle(p, next)
             }
         }
+        touch()
+    }
+
+    /** The column the page's text is in (the medium one on a page without text); null for a custom width. */
+    val column: TextColumn? get() = TextColumn.ofWidth(session.textLayout?.width ?: TextColumn.DEFAULT.width)
+
+    /** Choose a text column. Like the firmware, this does nothing before the page has text. One undo step. */
+    fun setColumn(c: TextColumn) {
+        if (!hasText && session.textLayout == null) return
+        edit { it.setColumn(c) }
         touch()
     }
 

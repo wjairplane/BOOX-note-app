@@ -2,7 +2,7 @@ package app.inkbridge.rm.render
 
 import app.inkbridge.rm.scene.*
 import app.inkbridge.rm.text.TextLayout
-import app.inkbridge.rm.text.TextSettings
+import app.inkbridge.rm.text.TextStyles
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -23,8 +23,8 @@ data class PageLayout(val xMin: Float, val xMax: Float, val yMin: Float, val yMa
  * Output is in page units with x relative to the page centre (see [layout] for the shift).
  */
 class PageRenderer(private val tree: SceneTree) {
-    /** The typed text set for this page with the settings in force when the renderer was made; null on a page without text. */
-    val textLayout: TextLayout? by lazy { tree.rootText?.let { TextLayout.of(it, TextSettings.current) } }
+    /** The typed text set for this page null on a page without text. */
+    val textLayout: TextLayout? by lazy { tree.rootText?.let { TextLayout.of(it) } }
 
     private val anchorPos: Map<CrdtId, Float> by lazy { textLayout?.anchors() ?: buildAnchorPos(null) }
 
@@ -33,7 +33,7 @@ class PageRenderer(private val tree: SceneTree) {
         val b = floatArrayOf(-PageLayout.PAGE_WIDTH / 2, PageLayout.PAGE_WIDTH / 2, 0f, PageLayout.PAGE_HEIGHT)
         grow(tree.root, 0f, 0f, b)
         // Typed text that runs past the bottom of the page makes the page longer.
-        textLayout?.lines?.lastOrNull()?.let { b[3] = max(b[3], it.bottom + TextSettings.TOP_MARGIN) }
+        textLayout?.lines?.lastOrNull()?.let { b[3] = max(b[3], it.bottom + TextStyles.BOTTOM_MARGIN) }
         PageLayout(b[0], b[1], b[2], b[3])
     }
 
