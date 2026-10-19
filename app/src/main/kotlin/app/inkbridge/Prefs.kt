@@ -82,9 +82,13 @@ class Prefs(context: Context) {
     fun toolbarFor(landscape: Boolean) = if (landscape) toolbarLandscape else toolbarPosition
     fun setToolbarFor(landscape: Boolean, v: ToolbarPosition) { if (landscape) toolbarLandscape = v else toolbarPosition = v }
 
-    private var _exact by mutableStateOf(sp.getBoolean("penExact", true))
-    /** "Pen preview: Exact": the stroke is drawn by the app with the firmware's pen renderer while writing (instead of the Onyx SDK's trail). */
-    var penExact: Boolean get() = _exact; set(v) { _exact = v; sp.edit().putBoolean("penExact", v).apply() }
+    private var _penMode by mutableStateOf(runCatching { PenMode.valueOf(sp.getString("penMode", null) ?: "HYBRID") }.getOrDefault(PenMode.HYBRID))
+    /** How the stroke is shown while it is written; see [PenMode]. */
+    var penMode: PenMode get() = _penMode; set(v) { _penMode = v; sp.edit().putString("penMode", v.name).apply() }
+
+    private var _penLatency by mutableStateOf(sp.getBoolean("penLatency", false))
+    /** Show the pen's app-side latency (input age, drawing time) on the page; for tuning on the tablet. */
+    var penLatency: Boolean get() = _penLatency; set(v) { _penLatency = v; sp.edit().putBoolean("penLatency", v).apply() }
 
     private var _shapes by mutableStateOf(sp.getBoolean("shapes", true))
     /** "Enable shapes": hold at the end of a stroke to turn it into a clean shape. */
@@ -123,3 +127,11 @@ class Prefs(context: Context) {
     /** Full e-ink refresh after this many strokes (0 = never automatically). */
     var refreshEveryStrokes: Int get() = _refresh; set(v) { _refresh = v; sp.edit().putInt("refresh", v).apply() }
 }
+
+/**
+ * How a stroke is shown while the pen is down.
+ * - [HYBRID]: the tablet's own pen layer draws the live trail at its lowest latency; the firmware's pen renderer then draws the real stroke when the pen lifts.
+ * - [EXACT]: the app draws the stroke with the firmware's pen renderer while it is written (stylus read as ordinary touch events).
+ * - [EXACT_SDK]: as [EXACT], but the stylus comes from the SDK's native pen reader (experimental).
+ */
+enum class PenMode { HYBRID, EXACT, EXACT_SDK }

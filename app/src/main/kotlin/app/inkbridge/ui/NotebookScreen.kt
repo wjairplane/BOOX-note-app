@@ -60,6 +60,8 @@ import app.inkbridge.AppController
 import app.inkbridge.PageSession
 import app.inkbridge.StrokeClipboard
 import app.inkbridge.PdfBackground
+import app.inkbridge.PenMode
+import kotlin.math.roundToInt
 import app.inkbridge.Screen
 import app.inkbridge.pen.PenListener
 import app.inkbridge.pen.PenSample
@@ -440,7 +442,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 excludeRects = blockers.rects(),
                 blockers = blockers,
                 shapes = prefs.shapesEnabled,
-                exactPen = prefs.penExact,
+                penMode = prefs.penMode, latency = prefs.penLatency,
                 onSelectBelow = { selecting = true; erasing = false; panel = false; eraserMenu = false },
                 onEdgeSwipe = { edge ->
                     panel = false; menu = false; eraserMenu = false; layersMenu = false
@@ -605,7 +607,7 @@ private fun PageArea(
     selecting: Boolean, selectionRect: android.graphics.RectF?, onSelectionRect: (android.graphics.RectF?) -> Unit, onSelectionAction: (String) -> Unit,
     onSurface: (PenSurface?) -> Unit, onChanged: () -> Unit, onSwipe: (Boolean) -> Unit,
     excludeRects: List<Rect>, onFingerTap: (Int) -> Unit, blockers: PenBlockers,
-    onEdgeSwipe: (FingerGestures.Edge) -> Unit, onSelectBelow: () -> Unit, shapes: Boolean, exactPen: Boolean,
+    onEdgeSwipe: (FingerGestures.Edge) -> Unit, onSelectBelow: () -> Unit, shapes: Boolean, penMode: PenMode, latency: Boolean,
 ) {
     val currentOnEdge by rememberUpdatedState(onEdgeSwipe)
     val currentShapes by rememberUpdatedState(shapes)
@@ -649,19 +651,23 @@ private fun PageArea(
 
         LaunchedEffect(surface, excludeRects) { surface?.setExcludeRects(excludeRects) }
 
-        LaunchedEffect(surface, spec, drawing, session, layoutVersion, swipeEnabled, fingerDraws, exactPen) {
+        LaunchedEffect(surface, spec, drawing, session, layoutVersion, swipeEnabled, fingerDraws, penMode) {
             val view = surface ?: return@LaunchedEffect
             view.swipeEnabled = swipeEnabled
             view.fingerDraws = fingerDraws
-            view.exactMode = exactPen
+            view.sdkInput = penMode == PenMode.EXACT_SDK
+            view.exactMode = penMode != PenMode.HYBRID
             view.setTool(spec, session?.transform?.scale ?: 1f)
             view.penEnabled = drawing && session != null
         }
 
+        var latencyText by remember { mutableStateOf("") }
+        val currentLatency by rememberUpdatedState(latency)
+        val currentPenMode by rememberUpdatedState(penMode)
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
-                PenSurface(ctx, object : PenListener {
+                PenSurface(ctx, exactAtStart = penMode != PenMode.HYBRID, listener = object : PenListener {
                     override fun onStroke(samples: List<PenSample>) {
                         val spec = surface?.currentSpec
                         val body = if (spec != null && spec.tool != PenTool.ERASER && currentShapes) HoldGesture.body(samples) else null
@@ -733,10 +739,29 @@ private fun PageArea(
                 }).also { v ->
                     v.selectionFrameProvider = { currentSession?.selectionFrame() }
                     v.zoomProvider = { currentSession?.zoom ?: 1f }
+                    // The pen latency readout (Settings > Pen preview): a rolling average of the last few frames, shown at most every 400 ms.
+                    val ages = LongArray(8); val draws = LongArray(8); var count = 0; var shownAt = 0L
+                    v.latencyListener = { age, ms ->
+                        if (currentLatency) {
+                            ages[count % 8] = age; draws[count % 8] = ms; count++
+                            val now = android.os.SystemClock.uptimeMillis()
+                            if (now - shownAt > 400) {
+                                shownAt = now
+                                val n = minOf(count, 8)
+                                val known = (0 until n).map { ages[it] }.filter { it >= 0 }
+                                val input = if (known.isEmpty()) "n/a" else "${known.average().roundToInt()} ms"
+                                latencyText = "pen input $input, drawing ${(0 until n).map { draws[it] }.average().roundToInt()} ms (${currentPenMode.name.lowercase()})"
+                            }
+                        }
+                    }
                     surface = v; onSurface(v)
                 }
             },
         )
+
+        if (latency && latencyText.isNotEmpty()) {
+            Text(latencyText, style = RmText.Label, modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp).background(Ink.White).border(Rm.Outline, Ink.Black).padding(horizontal = 12.dp, vertical = 6.dp))
+        }
 
         // The selection's menu (the firmware's contextual menu): white, a 2 px border, icon-only 80 px buttons (cut, copy, delete),
         // 48 px below the selection (above only when there's no room below), hidden while the selection is being dragged.

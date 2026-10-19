@@ -59,7 +59,7 @@ interface PenListener {
  * Everything touching the Onyx SDK is isolated here: pen *feel* (preview style, refresh behaviour)
  * can only be tuned on a real device.
  */
-class PenSurface(context: Context, private val listener: PenListener) : SurfaceView(context), SurfaceHolder.Callback {
+class PenSurface(context: Context, private val listener: PenListener, exactAtStart: Boolean = false) : SurfaceView(context), SurfaceHolder.Callback {
     private var bitmap: Bitmap? = null
 
     internal fun listenerForTest(): PenListener = listener
@@ -76,16 +76,36 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
      * while it is written with the firmware's own pen renderer, into the page under the toolbar and menus (so nothing can be drawn
      * over a button), and only the part that changed is sent to the panel. The default "Fast" mode lets the SDK draw its own trail.
      */
-    var exactMode = false
+    var exactMode = exactAtStart
         set(value) {
             if (field == value) return
             field = value
-            if (useOnyx) {
-                if (value) closeHelper() else if (width > 0) reopenHelper()
-            }
-            applyEnabled()
+            refreshHelper()
         }
-    private val useRaw: Boolean get() = useOnyx && !exactMode
+
+    /**
+     * With [exactMode]: read the stylus through the SDK's native pen reader (its raw-drawing callbacks, with the SDK's own drawing
+     * switched off) instead of ordinary touch events. Experimental: whether it is quicker has to be measured on the tablet.
+     */
+    var sdkInput = false
+        set(value) {
+            if (field == value) return
+            field = value
+            refreshHelper()
+        }
+
+    private fun refreshHelper() {
+        if (useOnyx) {
+            if (exactMode && !sdkInput) closeHelper() else if (width > 0) reopenHelper()
+        }
+        applyEnabled()
+    }
+
+    private val useRaw: Boolean get() = useOnyx && (!exactMode || sdkInput)
+
+    /** Called now and then with (age of the newest pen point when the app handled it, time spent drawing it), both in ms. */
+    var latencyListener: ((Long, Long) -> Unit)? = null
+    @Volatile private var inputAgeMs = -1L
 
     var penEnabled = false
         set(value) { field = value; applyEnabled() }
@@ -209,7 +229,7 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         dragMode = false; dragHit = null
         listener.onSelectionGesture(false)
         runCatching { EpdController.resetViewUpdateMode(this) }
-        touchHelper?.let { runCatching { it.setRawDrawingRenderEnabled(tool.tool != PenTool.ERASER) } }
+        touchHelper?.let { runCatching { it.setRawDrawingRenderEnabled(!exactMode && tool.tool != PenTool.ERASER) } }
     }
 
     /**
@@ -217,7 +237,7 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
      * canvas). Exact pen mode draws small parts of the page often, which a software canvas can do through a dirty rectangle; the
      * hardware one would have to upload the whole page bitmap to the GPU for every frame of a stroke.
      */
-    private var softwareCanvas: Boolean? = null
+    private var softwareCanvas: Boolean? = if (exactAtStart) true else null
 
     /** A hardware-accelerated canvas when there is one (much faster for scaled bitmaps), else a software one. */
     private fun lock(): android.graphics.Canvas? {
@@ -319,12 +339,12 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         helper.setStrokeStyle(
             when (tool.tool) {
                 PenTool.SELECTION, PenTool.ERASE_AREA -> TouchHelper.STROKE_STYLE_DASH                                       // the lasso is a dotted line
-                PenTool.FINELINER, PenTool.MECHANICAL_PENCIL -> TouchHelper.STROKE_STYLE_PENCIL   // constant width
+                PenTool.FINELINER, PenTool.MECHANICAL_PENCIL, PenTool.BALLPOINT -> TouchHelper.STROKE_STYLE_PENCIL   // constant width (the firmware's ballpoint hardly varies)
                 PenTool.MARKER, PenTool.HIGHLIGHTER -> TouchHelper.STROKE_STYLE_MARKER
                 PenTool.PENCIL -> TouchHelper.STROKE_STYLE_CHARCOAL
                 PenTool.PAINTBRUSH -> TouchHelper.STROKE_STYLE_NEO_BRUSH
                 PenTool.CALLIGRAPHY -> TouchHelper.STROKE_STYLE_SQUARE_PEN
-                else -> TouchHelper.STROKE_STYLE_FOUNTAIN                                           // ballpoint: pressure-sensitive
+                else -> TouchHelper.STROKE_STYLE_FOUNTAIN
             },
         )
         helper.setStrokeColor(previewColor(tool))
@@ -372,17 +392,18 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         if (exactMode && useOnyx) {
             // The page is redrawn in small pieces as the pen moves, so the panel stays in a fast update mode while writing is on.
             runCatching { if (penEnabled) EpdController.setViewDefaultUpdateMode(this, com.onyx.android.sdk.api.device.epd.UpdateMode.DU) else EpdController.resetViewUpdateMode(this) }
-            return
+            if (!sdkInput) return
         }
         val helper = touchHelper ?: return
         runCatching {
             helper.setRawDrawingEnabled(penEnabled)
-            // The eraser must not leave ink behind: let the SDK track the pen but draw nothing.
-            helper.setRawDrawingRenderEnabled(tool.tool != PenTool.ERASER)
+            // The eraser must not leave ink behind: let the SDK track the pen but draw nothing (as does Exact with SDK input, which draws the page itself).
+            helper.setRawDrawingRenderEnabled(!exactMode && tool.tool != PenTool.ERASER)
         }
     }
 
-    private fun maxPressure(): Float = runCatching { EpdController.getMaxTouchPressure() }.getOrDefault(4096f).coerceAtLeast(1f)
+    private val maxPressureValue: Float by lazy { runCatching { EpdController.getMaxTouchPressure() }.getOrDefault(4096f).coerceAtLeast(1f) }
+    private fun maxPressure(): Float = maxPressureValue
 
     private fun toSamples(points: List<TouchPoint>): List<PenSample> {
         val max = maxPressure()
@@ -390,11 +411,18 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
     }
 
     private val callback = object : RawInputCallback() {
-        override fun onBeginRawDrawing(b: Boolean, p: TouchPoint) { lastPenMs = android.os.SystemClock.uptimeMillis(); beginSelectionDrag(p.x, p.y) }
+        override fun onBeginRawDrawing(b: Boolean, p: TouchPoint) {
+            lastPenMs = android.os.SystemClock.uptimeMillis(); beginSelectionDrag(p.x, p.y)
+            if (exactMode && sdkInput) { sdkLive(p, eraserEnd = false, first = true) }
+        }
         override fun onEndRawDrawing(b: Boolean, p: TouchPoint) { lastPenMs = android.os.SystemClock.uptimeMillis(); endSelectionDrag() }
-        override fun onRawDrawingTouchPointMoveReceived(p: TouchPoint) { lastPenMs = android.os.SystemClock.uptimeMillis(); moveSelectionDrag(p.x, p.y) }
+        override fun onRawDrawingTouchPointMoveReceived(p: TouchPoint) {
+            lastPenMs = android.os.SystemClock.uptimeMillis(); moveSelectionDrag(p.x, p.y)
+            if (exactMode && sdkInput && !dragMode) sdkLive(p, eraserEnd = false, first = false)
+        }
         override fun onRawDrawingTouchPointListReceived(list: TouchPointList) {
             val samples = toSamples(list.points)
+            if (exactMode && sdkInput) endLive()
             if (samples.isEmpty()) return
             if (tapOnControl(samples)) return
             when (tool.tool) {
@@ -405,12 +433,13 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
             }
         }
 
-        override fun onBeginRawErasing(b: Boolean, p: TouchPoint) {}
+        override fun onBeginRawErasing(b: Boolean, p: TouchPoint) { if (exactMode && sdkInput) sdkLive(p, eraserEnd = true, first = true) }
         override fun onEndRawErasing(b: Boolean, p: TouchPoint) {}
-        override fun onRawErasingTouchPointMoveReceived(p: TouchPoint) {}
+        override fun onRawErasingTouchPointMoveReceived(p: TouchPoint) { if (exactMode && sdkInput) sdkLive(p, eraserEnd = true, first = false) }
         // The stylus's own eraser end/button always erases, whatever tool is selected.
         override fun onRawErasingTouchPointListReceived(list: TouchPointList) {
             val samples = toSamples(list.points)
+            if (exactMode && sdkInput) endLive()
             if (samples.isNotEmpty()) listener.onErase(samples, hardware = true)
         }
     }
@@ -433,6 +462,7 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
             MotionEvent.ACTION_MOVE -> moveSelectionDrag(event.x, event.y)
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> endSelectionDrag()
         }
+        inputAgeMs = (android.os.SystemClock.uptimeMillis() - event.eventTime).let { if (it in 0..3000) it else -1L }
         for (i in 0 until event.historySize) addTouch(event.getHistoricalX(i), event.getHistoricalY(i), event.getHistoricalPressure(i), event.getHistoricalEventTime(i), area)
         addTouch(event.x, event.y, event.pressure, event.eventTime, area)
         if (event.actionMasked == MotionEvent.ACTION_MOVE && !dragMode) liveUpdate(eraserEnd)
@@ -467,6 +497,28 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         liveShown = true
         if (erasing) listener.onLiveErase(snapshot, liveCount, eraserEnd) else if (snapshot.size >= 2) listener.onLiveStroke(snapshot, liveCount)
         liveCount = snapshot.size
+        latencyListener?.invoke(inputAgeMs, android.os.SystemClock.uptimeMillis() - now)
+    }
+
+    /** The pen lifted (or the touch was cancelled): take the live stroke off the picture. */
+    private fun endLive() {
+        if (liveShown) { liveShown = false; listener.onLiveEnd() }
+        liveCount = 0
+        touchSamples.clear()
+    }
+
+    /** One pen point from the SDK's pen reader (Exact with SDK input). */
+    private fun sdkLive(p: TouchPoint, eraserEnd: Boolean, first: Boolean) {
+        if (first) { touchSamples.clear(); liveCount = 0 }
+        val ts = p.timestamp
+        inputAgeMs = when {
+            ts > 1_000_000_000_000L -> (System.currentTimeMillis() - ts)
+            ts > 0L -> (android.os.SystemClock.uptimeMillis() - ts)
+            else -> -1L
+        }.let { if (it in 0..3000) it else -1L }
+        val area = pageArea
+        if (area == null || area.contains(p.x.toInt(), p.y.toInt())) touchSamples += toSamples(listOf(p))
+        liveUpdate(eraserEnd)
     }
 
     /**

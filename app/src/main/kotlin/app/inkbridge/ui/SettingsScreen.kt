@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import app.inkbridge.AppController
 import app.inkbridge.BooxGestureGuard
 import app.inkbridge.BuildConfig
+import app.inkbridge.PenMode
 import app.inkbridge.Screen
 import app.inkbridge.ToolbarPosition
 import app.inkbridge.rm.render.PageTemplate
@@ -171,9 +172,11 @@ private fun Display(app: AppController) {
         SegmentedRow(options.map { it.second }, options.indexOfFirst { it.first == p.refreshEveryStrokes }.coerceAtLeast(0), { p.refreshEveryStrokes = options[it].first })
     }
     Group("Pen preview") {
-        Text("Exact draws the stroke while you write with the reMarkable pen renderer, so it looks the same before and after you lift the pen, and it is always under the toolbar and menus. Fast lets the tablet's own pen layer draw a quicker, plainer trail.", style = RmText.Body)
+        Text("Hybrid lets the tablet's own pen layer draw the live trail (the lowest delay) and draws the real reMarkable stroke the moment you lift the pen. Exact draws the reMarkable stroke while you write, so it looks the same all the time, but with more delay. Exact (SDK input) is an experiment: the same, with the stylus read by the tablet's own pen reader.", style = RmText.Body)
         Spacer(Modifier.height(8.dp))
-        SegmentedRow(listOf("Exact", "Fast"), if (p.penExact) 0 else 1, { p.penExact = it == 0 })
+        SegmentedRow(listOf("Hybrid", "Exact", "Exact (SDK input)"), p.penMode.ordinal, { p.penMode = PenMode.values()[it] })
+        Spacer(Modifier.height(8.dp))
+        SwitchRow("Show pen latency", p.penLatency, { p.penLatency = it }, "Shows, on the page, how late the app gets each pen point and how long drawing it takes. It does not include the screen's own update time.")
     }
 }
 
