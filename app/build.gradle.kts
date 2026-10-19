@@ -12,8 +12,8 @@ android {
         applicationId = "app.inkbridge"
         minSdk = 29
         targetSdk = 35
-        versionCode = 6
-        versionName = "1.1.3"
+        versionCode = 7
+        versionName = "1.1.4"
 
         // The Note Air5 C is 64-bit ARM; the Onyx SDK only ships ARM native libraries anyway.
         ndk {
