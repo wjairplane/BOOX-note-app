@@ -685,11 +685,11 @@ private fun PageArea(
                     override fun onLiveStroke(samples: List<PenSample>, from: Int) {
                         val s = currentSession ?: return
                         val view = surface ?: return
-                        s.previewStroke(view.currentSpec, samples, from)?.let { view.refreshRect(it) }
+                        s.previewStroke(view.currentSpec, samples, from)?.let { view.refreshRect(it, live = true) }
                     }
                     override fun onLiveErase(samples: List<PenSample>, from: Int, hardware: Boolean) {
                         val s = currentSession ?: return
-                        s.previewErase(samples, if (hardware) HARDWARE_ERASER_RADIUS else currentEraserRadius, from)?.let { surface?.refreshRect(it) }
+                        s.previewErase(samples, if (hardware) HARDWARE_ERASER_RADIUS else currentEraserRadius, from)?.let { surface?.refreshRect(it, live = true) }
                     }
                     override fun onLiveEnd() { currentSession?.endPreview(); currentSession?.endErasePreview() }
                     override fun onErase(samples: List<PenSample>, hardware: Boolean) {

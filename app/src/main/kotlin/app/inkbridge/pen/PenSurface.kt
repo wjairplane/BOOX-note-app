@@ -212,10 +212,20 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         touchHelper?.let { runCatching { it.setRawDrawingRenderEnabled(tool.tool != PenTool.ERASER) } }
     }
 
+    /**
+     * Which kind of canvas this surface uses, fixed on the first draw (a surface refuses to switch between a hardware and a software
+     * canvas). Exact pen mode draws small parts of the page often, which a software canvas can do through a dirty rectangle; the
+     * hardware one would have to upload the whole page bitmap to the GPU for every frame of a stroke.
+     */
+    private var softwareCanvas: Boolean? = null
+
     /** A hardware-accelerated canvas when there is one (much faster for scaled bitmaps), else a software one. */
-    private fun lock(): android.graphics.Canvas? =
-        runCatching { if (Build.VERSION.SDK_INT >= 26) holder.lockHardwareCanvas() else holder.lockCanvas() }.getOrNull()
+    private fun lock(): android.graphics.Canvas? {
+        val software = softwareCanvas ?: exactMode.also { softwareCanvas = it }
+        if (software) return runCatching { holder.lockCanvas() }.getOrNull()
+        return runCatching { if (Build.VERSION.SDK_INT >= 26) holder.lockHardwareCanvas() else holder.lockCanvas() }.getOrNull()
             ?: runCatching { holder.lockCanvas() }.getOrNull()
+    }
 
     /** Draw one preview frame (no pen-layer toggling: that is only for the final, sharp picture). */
     private fun drawPreviewCanvas(content: (android.graphics.Canvas) -> Unit) {
@@ -459,17 +469,26 @@ class PenSurface(context: Context, private val listener: PenListener) : SurfaceV
         liveCount = snapshot.size
     }
 
-    /** Send just [r] (view px) of the bitmap to the panel, in a fast update mode. */
-    fun refreshRect(r: Rect?) {
+    /**
+     * Send just [r] (view px) of the bitmap to the panel. [live] frames of a stroke being written use the fastest update mode (the
+     * panel is cleaned up by the final, [live] = false refresh when the pen lifts).
+     */
+    fun refreshRect(r: Rect?, live: Boolean = false) {
         if (r == null || r.isEmpty) { draw(); return }
         val surface = holder.surface ?: return
         if (!surface.isValid) return
-        // The same kind of canvas as draw(): a surface that was locked for hardware drawing refuses a software canvas (lockCanvas(dirty)),
-        // which left the live stroke unseen. A hardware canvas starts from an empty buffer, so the whole page is drawn; only [r] is sent to the panel.
         val bmp = bitmap ?: return
-        val canvas = lock() ?: return
-        try { canvas.drawColor(Color.WHITE); canvas.drawBitmap(bmp, bitmapLeft, 0f, null) } finally { holder.unlockCanvasAndPost(canvas) }
-        runCatching { EpdController.refreshScreenRegion(this, r.left, r.top, r.width(), r.height(), com.onyx.android.sdk.api.device.epd.UpdateMode.DU) }
+        if (softwareCanvas ?: exactMode.also { softwareCanvas = it }) {
+            // Only the rectangle that changed is drawn: the rest of the surface keeps its pixels.
+            val dirty = Rect(r)
+            val canvas = runCatching { holder.lockCanvas(dirty) }.getOrNull() ?: return
+            try { canvas.clipRect(dirty); canvas.drawColor(Color.WHITE); canvas.drawBitmap(bmp, bitmapLeft, 0f, null) } finally { holder.unlockCanvasAndPost(canvas) }
+        } else {
+            val canvas = lock() ?: return
+            try { canvas.drawColor(Color.WHITE); canvas.drawBitmap(bmp, bitmapLeft, 0f, null) } finally { holder.unlockCanvasAndPost(canvas) }
+        }
+        val mode = if (live) com.onyx.android.sdk.api.device.epd.UpdateMode.ANIMATION else com.onyx.android.sdk.api.device.epd.UpdateMode.DU
+        runCatching { EpdController.refreshScreenRegion(this, r.left, r.top, r.width(), r.height(), mode) }
     }
 
     override fun onHoverEvent(event: MotionEvent): Boolean {

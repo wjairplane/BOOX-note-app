@@ -357,21 +357,23 @@ class PageSession(
         val w = bmp.width; val h = bmp.height
         val live = (if (liveInk?.width == w && liveInk?.height == h) liveInk else null) ?: PixelInk(w, h).also { liveInk = it }
         val out = (if (liveOut?.size == w * h) liveOut else null) ?: IntArray(w * h).also { liveOut = it }
-        // Take back what the previous frame drew, then draw the stroke from the start (so joins and caps are exactly the firmware's).
-        liveBounds?.let { b -> live.clearRect(b.left, b.top, b.right, b.bottom) }
-        live.resetDirty()
-        live.drawLine(added.line, added.ox, added.oy, tf)
-        if (!live.isDirty) return null
-        val now = android.graphics.Rect(live.dirtyLeft, live.dirtyTop, live.dirtyRight + 1, live.dirtyBottom + 1)
-        val union = android.graphics.Rect(now).also { r -> liveBounds?.let { r.union(it) } }
-        live.compositeInto(shown, out, union.left, union.top, union.right, union.bottom)
-        bmp.setPixels(out, union.top * w + union.left, w, union.left, union.top, union.width(), union.height())
-        liveBounds = now
-        // The panel only needs the newest part: the points since the last frame, padded by the pen's width.
+        // The panel (and the pixels) only need the newest part: the points since the last frame, padded by the pen's width.
         var l = Float.MAX_VALUE; var tp = Float.MAX_VALUE; var r = -Float.MAX_VALUE; var b = -Float.MAX_VALUE
         for (i in (from - 3).coerceAtLeast(0) until samples.size) { l = minOf(l, samples[i].x); r = maxOf(r, samples[i].x); tp = minOf(tp, samples[i].y); b = maxOf(b, samples[i].y) }
         val pad = (spec.thickness * 8f + 12f) * t.scale + 6f
-        return android.graphics.Rect((l - pad).toInt(), (tp - pad).toInt(), (r + pad).toInt() + 1, (b + pad).toInt() + 1).also { it.intersect(0, 0, w, h) }
+        val fresh = android.graphics.Rect((l - pad).toInt(), (tp - pad).toInt(), (r + pad).toInt() + 1, (b + pad).toInt() + 1).also { it.intersect(0, 0, w, h) }
+        if (fresh.isEmpty) return null
+        // Redraw only the rows the new part touches: clear them, then draw the whole stroke clipped to them (so joins and caps are exactly
+        // the firmware's, but the work no longer grows with the length of the stroke).
+        live.clearRect(0, fresh.top, w, fresh.bottom)
+        live.resetDirty()
+        live.drawLine(added.line, added.ox, added.oy, tf, 0, fresh.top, fresh.bottom)
+        val drawn = if (live.isDirty) android.graphics.Rect(live.dirtyLeft, live.dirtyTop, live.dirtyRight + 1, live.dirtyBottom + 1) else android.graphics.Rect(fresh)
+        val band = android.graphics.Rect(minOf(drawn.left, fresh.left), fresh.top, maxOf(drawn.right, fresh.right), fresh.bottom).also { it.intersect(0, 0, w, h) }
+        live.compositeInto(shown, out, band.left, band.top, band.right, band.bottom)
+        bmp.setPixels(out, band.top * w + band.left, w, band.left, band.top, band.width(), band.height())
+        liveBounds = liveBounds?.also { it.union(band) } ?: android.graphics.Rect(band)
+        return fresh
     }
 
     /** Remove the live stroke from the picture (the finished stroke is added next, or the gesture was cancelled). */

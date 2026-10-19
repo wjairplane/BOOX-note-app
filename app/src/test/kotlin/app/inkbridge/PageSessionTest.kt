@@ -236,4 +236,22 @@ class PageSessionTest {
         assertArrayEquals(before, restored)
         assertTrue(s.erase(eraser, 20f))
     }
+
+    @Test fun aStrokeDrawnInManyFramesLooksLikeTheFinishedStroke() {
+        val s = session()
+        val bmp = s.bitmap!!
+        val spec = PenSpec(PenTool.FINELINER, thickness = 2)
+        // A wavy line that goes up and down, so later frames touch rows that earlier frames drew in.
+        val pts = (0..40).flatMap { i -> listOf(-250f + i * 11f, 640f + (kotlin.math.sin(i / 3.0) * 90).toFloat()) }.toFloatArray()
+        val stroke = path(s, *pts)
+        var from = 0
+        for (n in 6..stroke.size step 5) { s.previewStroke(spec, stroke.take(n), from); from = n }
+        s.previewStroke(spec, stroke, from)
+        val live = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        s.endPreview()
+        assertTrue(s.addStroke(spec, stroke))
+        val done = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+        val different = live.indices.count { live[it] != done[it] }
+        assertTrue("frames and final differ in $different px", different < 60)
+    }
 }
