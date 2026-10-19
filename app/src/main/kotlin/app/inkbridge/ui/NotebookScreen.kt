@@ -276,12 +276,9 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                     Box {
                         IconTile("Writing tool ${i + 1}: ${s.tool.label}", {
                             if (active) panel = !panel else { leaveSelection(); activeSlot = i; erasing = false; typing = false; typingMenu = false; panel = false; eraserMenu = false }
-                        }, selected = active) { tint ->
-                            Box {
-                                InkIcons.Pen(s.tool, tint = tint)
-                                ColourDot(s.colorId, active, Modifier.align(if (pos == ToolbarPosition.RIGHT) Alignment.TopStart else Alignment.TopEnd).padding(8.dp))
-                            }
-                        }
+                        }, selected = active) { tint -> InkIcons.Pen(s.tool, tint = tint) }
+                        // The colour marker sits in the button's top corner (8 px in), not on the glyph: the right one, or the left with the toolbar on the right.
+                        ColourDot(s.colorId, active, Modifier.align(if (pos == ToolbarPosition.RIGHT) Alignment.TopStart else Alignment.TopEnd).padding(8.dp))
                         if (active) RmMenu(panel, { panel = false }, side, Rm.WritingFoldoutWidth) { PenMenu(slot, onChange = { prefs.setSlot(activeSlot, it) }) }
                     }
                 }
