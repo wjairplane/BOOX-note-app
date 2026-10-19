@@ -46,19 +46,23 @@ import java.io.File
 class TextToolScreenshotTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
 
-    @After fun resetSettings() { TextSettings.current = TextSettings.DEFAULT }
+    @org.junit.Before fun transparentRoot() { app.inkbridge.ui.RootBackground = androidx.compose.ui.graphics.Color.Transparent; rule.activity.window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)) }
+
+    @After fun resetSettings() { TextSettings.current = TextSettings.DEFAULT; app.inkbridge.ui.RootBackground = androidx.compose.ui.graphics.Color.White }
 
     private fun snapshot(name: String) {
         val decor = rule.activity.window.decorView
         val bmp = android.graphics.Bitmap.createBitmap(decor.width.coerceAtLeast(1), decor.height.coerceAtLeast(1), android.graphics.Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(bmp)
-        decor.draw(canvas)
-        // The page lives on a SurfaceView, which a view capture leaves out: lay its bitmap under the Compose layers.
+        canvas.drawColor(android.graphics.Color.WHITE)
+        // The page lives on a SurfaceView, which a view capture leaves out: lay its bitmap underneath, as on the device,
+        // and draw everything Compose shows (toolbar, panels, menus) on top of it.
         findSurface(decor)?.let { v ->
             val bitmap = v.shownBitmap ?: return@let
             val at = IntArray(2).also { v.getLocationInWindow(it) }
-            canvas.drawBitmap(bitmap, at[0].toFloat(), at[1].toFloat(), android.graphics.Paint().apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DARKEN) })
+            canvas.drawBitmap(bitmap, at[0].toFloat(), at[1].toFloat(), null)
         }
+        decor.draw(canvas)
         runCatching {
             val wmg = Class.forName("android.view.WindowManagerGlobal")
             val global = wmg.getMethod("getInstance").invoke(null)
