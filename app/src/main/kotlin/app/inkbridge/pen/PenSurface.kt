@@ -96,6 +96,12 @@ class PenSurface(context: Context, private val listener: PenListener, exactAtSta
     var inkWidthPct = 100
         set(value) { if (field != value) { field = value; touchHelper?.let { applyToolToHelper(it) } } }
 
+    /** The panel update mode (an `UpdateMode` name) for the exact pen's live frames; the final frame always uses DU. */
+    var liveModeName = "ANIMATION"
+        set(value) { field = value; liveModeCache = null }
+    private var liveModeCache: com.onyx.android.sdk.api.device.epd.UpdateMode? = null
+    private fun liveMode(): com.onyx.android.sdk.api.device.epd.UpdateMode = liveModeCache ?: (runCatching { com.onyx.android.sdk.api.device.epd.UpdateMode.valueOf(liveModeName) }.getOrNull() ?: com.onyx.android.sdk.api.device.epd.UpdateMode.ANIMATION).also { liveModeCache = it }
+
     var sdkInput = false
         set(value) {
             if (field == value) return
@@ -558,7 +564,7 @@ class PenSurface(context: Context, private val listener: PenListener, exactAtSta
             val canvas = lock() ?: return
             try { canvas.drawColor(Color.WHITE); canvas.drawBitmap(bmp, bitmapLeft, 0f, null) } finally { holder.unlockCanvasAndPost(canvas) }
         }
-        val mode = if (live) com.onyx.android.sdk.api.device.epd.UpdateMode.ANIMATION else com.onyx.android.sdk.api.device.epd.UpdateMode.DU
+        val mode = if (live) liveMode() else com.onyx.android.sdk.api.device.epd.UpdateMode.DU
         runCatching { EpdController.refreshScreenRegion(this, r.left, r.top, r.width(), r.height(), mode) }
     }
 

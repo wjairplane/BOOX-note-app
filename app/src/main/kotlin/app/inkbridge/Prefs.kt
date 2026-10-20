@@ -94,6 +94,10 @@ class Prefs(context: Context) {
     /** The Hybrid live ink's width as a percentage of the measured width of the pen. */
     var liveInkWidth: Int get() = _inkWidth; set(v) { _inkWidth = v.coerceIn(50, 200); sp.edit().putInt("liveInkWidth", _inkWidth).apply() }
 
+    private var _liveMode by mutableStateOf(sp.getString("liveRefreshMode", "ANIMATION") ?: "ANIMATION")
+    /** The panel update mode used for the live frames of the exact pen (an `UpdateMode` name). */
+    var liveRefreshMode: String get() = _liveMode; set(v) { _liveMode = v; sp.edit().putString("liveRefreshMode", v).apply() }
+
     private var _penLatency by mutableStateOf(sp.getBoolean("penLatency", false))
     /** Show the pen's app-side latency (input age, drawing time) on the page; for tuning on the tablet. */
     var penLatency: Boolean get() = _penLatency; set(v) { _penLatency = v; sp.edit().putBoolean("penLatency", v).apply() }

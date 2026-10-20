@@ -444,7 +444,7 @@ fun NotebookScreen(app: AppController, nav: Screen.Notebook) {
                 excludeRects = blockers.rects(),
                 blockers = blockers,
                 shapes = prefs.shapesEnabled,
-                penMode = prefs.penMode, latency = prefs.penLatency, snapText = prefs.snapHighlighter, inkDarkness = prefs.liveInkDarkness, inkWidth = prefs.liveInkWidth,
+                penMode = prefs.penMode, latency = prefs.penLatency, snapText = prefs.snapHighlighter, inkDarkness = prefs.liveInkDarkness, inkWidth = prefs.liveInkWidth, liveMode = prefs.liveRefreshMode,
                 onSelectBelow = { selecting = true; erasing = false; panel = false; eraserMenu = false },
                 onEdgeSwipe = { edge ->
                     panel = false; menu = false; eraserMenu = false; layersMenu = false
@@ -619,7 +619,7 @@ private fun PageArea(
     selecting: Boolean, selectionRect: android.graphics.RectF?, onSelectionRect: (android.graphics.RectF?) -> Unit, onSelectionAction: (String) -> Unit,
     onSurface: (PenSurface?) -> Unit, onChanged: () -> Unit, onSwipe: (Boolean) -> Unit,
     excludeRects: List<Rect>, onFingerTap: (Int) -> Unit, onPageTap: (Float, Float) -> Unit, blockers: PenBlockers,
-    onEdgeSwipe: (FingerGestures.Edge) -> Unit, onSelectBelow: () -> Unit, shapes: Boolean, penMode: PenMode, latency: Boolean, snapText: Boolean, inkDarkness: Int, inkWidth: Int,
+    onEdgeSwipe: (FingerGestures.Edge) -> Unit, onSelectBelow: () -> Unit, shapes: Boolean, penMode: PenMode, latency: Boolean, snapText: Boolean, inkDarkness: Int, inkWidth: Int, liveMode: String,
 ) {
     val currentOnEdge by rememberUpdatedState(onEdgeSwipe)
     val currentShapes by rememberUpdatedState(shapes)
@@ -665,13 +665,13 @@ private fun PageArea(
 
         LaunchedEffect(surface, excludeRects) { surface?.setExcludeRects(excludeRects) }
 
-        LaunchedEffect(surface, spec, drawing, session, layoutVersion, swipeEnabled, fingerDraws, penMode, inkDarkness, inkWidth) {
+        LaunchedEffect(surface, spec, drawing, session, layoutVersion, swipeEnabled, fingerDraws, penMode, inkDarkness, inkWidth, liveMode) {
             val view = surface ?: return@LaunchedEffect
             view.swipeEnabled = swipeEnabled
             view.fingerDraws = fingerDraws
             view.sdkInput = penMode == PenMode.EXACT_SDK
             view.exactMode = penMode != PenMode.HYBRID
-            view.inkDarkness = inkDarkness; view.inkWidthPct = inkWidth
+            view.inkDarkness = inkDarkness; view.inkWidthPct = inkWidth; view.liveModeName = liveMode
             view.setTool(spec, session?.transform?.scale ?: 1f)
             view.penEnabled = drawing && session != null
         }

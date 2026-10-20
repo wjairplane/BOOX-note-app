@@ -1,5 +1,6 @@
 package app.inkbridge.ui
 
+import app.inkbridge.pen.PenProbe
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.activity.compose.BackHandler
@@ -186,6 +187,16 @@ private fun Display(app: AppController) {
         Text("Width", style = RmText.LabelLg)
         val widths = listOf(70, 85, 100, 120, 150)
         SegmentedRow(widths.map { "$it%" }, widths.indexOf(p.liveInkWidth).takeIf { it >= 0 } ?: 2, { p.liveInkWidth = widths[it] })
+        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(8.dp))
+        Text("Exact pen: screen update mode for the live frames. Animation is the default; try the others and compare the latency readout and how the ink looks.", style = RmText.Body)
+        Spacer(Modifier.height(8.dp))
+        val liveModes = listOf("ANIMATION" to "Animation", "ANIMATION_MONO" to "Animation mono", "DU4" to "DU4", "HAND_WRITING_REPAINT_MODE" to "Hand-writing")
+        SegmentedRow(liveModes.map { it.second }, liveModes.indexOfFirst { it.first == p.liveRefreshMode }.coerceAtLeast(0), { p.liveRefreshMode = liveModes[it].first })
+        Spacer(Modifier.height(8.dp))
+        var probe by remember { mutableStateOf("") }
+        EButton("Run fast-path probe", { probe = PenProbe.run() })
+        if (probe.isNotEmpty()) { Spacer(Modifier.height(8.dp)); Text(probe, style = RmText.Body) }
         Spacer(Modifier.height(8.dp))
         SwitchRow("Show pen latency", p.penLatency, { p.penLatency = it }, "Shows, on the page, how late the app gets each pen point and how long drawing it takes. It does not include the screen's own update time.")
     }
