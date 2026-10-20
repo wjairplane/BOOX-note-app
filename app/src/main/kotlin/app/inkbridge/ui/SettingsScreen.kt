@@ -176,6 +176,17 @@ private fun Display(app: AppController) {
         Spacer(Modifier.height(8.dp))
         SegmentedRow(listOf("Hybrid", "Exact", "Exact (SDK input)"), p.penMode.ordinal, { p.penMode = PenMode.values()[it] })
         Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(8.dp))
+        Text("Live ink (Hybrid): the trail drawn while the pen is down is set to the measured width and amount of ink of the finished stroke. If the stroke changes shade or width when you lift the pen, adjust these.", style = RmText.Body)
+        Spacer(Modifier.height(8.dp))
+        Text("Darkness", style = RmText.LabelLg)
+        val darkness = listOf("-3", "-2", "-1", "0", "+1", "+2", "+3")
+        SegmentedRow(darkness, p.liveInkDarkness + 3, { p.liveInkDarkness = it - 3 })
+        Spacer(Modifier.height(8.dp))
+        Text("Width", style = RmText.LabelLg)
+        val widths = listOf(70, 85, 100, 120, 150)
+        SegmentedRow(widths.map { "$it%" }, widths.indexOf(p.liveInkWidth).takeIf { it >= 0 } ?: 2, { p.liveInkWidth = widths[it] })
+        Spacer(Modifier.height(8.dp))
         SwitchRow("Show pen latency", p.penLatency, { p.penLatency = it }, "Shows, on the page, how late the app gets each pen point and how long drawing it takes. It does not include the screen's own update time.")
     }
 }

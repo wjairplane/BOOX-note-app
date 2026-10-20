@@ -86,6 +86,14 @@ class Prefs(context: Context) {
     /** How the stroke is shown while it is written; see [PenMode]. */
     var penMode: PenMode get() = _penMode; set(v) { _penMode = v; sp.edit().putString("penMode", v.name).apply() }
 
+    private var _inkDark by mutableStateOf(sp.getInt("liveInkDarkness", 0))
+    /** The Hybrid live ink's darkness against the measured look of the pen, -3 (lighter) .. +3 (darker). */
+    var liveInkDarkness: Int get() = _inkDark; set(v) { _inkDark = v.coerceIn(-3, 3); sp.edit().putInt("liveInkDarkness", _inkDark).apply() }
+
+    private var _inkWidth by mutableStateOf(sp.getInt("liveInkWidth", 100))
+    /** The Hybrid live ink's width as a percentage of the measured width of the pen. */
+    var liveInkWidth: Int get() = _inkWidth; set(v) { _inkWidth = v.coerceIn(50, 200); sp.edit().putInt("liveInkWidth", _inkWidth).apply() }
+
     private var _penLatency by mutableStateOf(sp.getBoolean("penLatency", false))
     /** Show the pen's app-side latency (input age, drawing time) on the page; for tuning on the tablet. */
     var penLatency: Boolean get() = _penLatency; set(v) { _penLatency = v; sp.edit().putBoolean("penLatency", v).apply() }

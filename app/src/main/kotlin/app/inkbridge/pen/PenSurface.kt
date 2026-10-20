@@ -8,6 +8,7 @@ import android.os.Build
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import app.inkbridge.rm.render.PenLook
 import app.inkbridge.rm.edit.PenSpec
 import app.inkbridge.rm.edit.PenTool
 import app.inkbridge.rm.edit.SelectionGesture
@@ -89,6 +90,12 @@ class PenSurface(context: Context, private val listener: PenListener, exactAtSta
      * With [exactMode]: read the stylus through the SDK's native pen reader (its raw-drawing callbacks, with the SDK's own drawing
      * switched off) instead of ordinary touch events. Experimental: whether it is quicker has to be measured on the tablet.
      */
+    /** Hybrid live ink: darkness step (-3..3) and width percentage against the measured look of the finished stroke. */
+    var inkDarkness = 0
+        set(value) { if (field != value) { field = value; touchHelper?.let { applyToolToHelper(it) } } }
+    var inkWidthPct = 100
+        set(value) { if (field != value) { field = value; touchHelper?.let { applyToolToHelper(it) } } }
+
     var sdkInput = false
         set(value) {
             if (field == value) return
@@ -332,11 +339,14 @@ class PenSurface(context: Context, private val listener: PenListener, exactAtSta
     }
 
     private fun applyToolToHelper(helper: TouchHelper) {
+        // A pen's live ink is set to the width and the amount of ink measured on its finished stroke (what the firmware renderer draws),
+        // adjusted by the user's darkness and width steps.
+        val look = if (tool.tool.isPen && tool.tool != PenTool.HIGHLIGHTER) PenLook.of(tool) else null
         val widthPx = when (tool.tool) {
             PenTool.HIGHLIGHTER -> 15f
             PenTool.SELECTION, PenTool.ERASE_AREA -> 2f
-            else -> 2f * tool.thickness
-        } * pageScale
+            else -> look?.width ?: (2f * tool.thickness)
+        } * pageScale * (if (look != null) inkWidthPct / 100f else 1f)
         helper.setStrokeWidth(widthPx.coerceAtLeast(1f))
         // Live preview style only (what is saved comes from our own pen model). Guesses; tune on the device.
         helper.setStrokeStyle(
@@ -344,13 +354,19 @@ class PenSurface(context: Context, private val listener: PenListener, exactAtSta
                 PenTool.SELECTION, PenTool.ERASE_AREA -> TouchHelper.STROKE_STYLE_DASH                                       // the lasso is a dotted line
                 PenTool.FINELINER, PenTool.MECHANICAL_PENCIL, PenTool.BALLPOINT -> TouchHelper.STROKE_STYLE_PENCIL   // constant width (the firmware's ballpoint hardly varies)
                 PenTool.MARKER, PenTool.HIGHLIGHTER -> TouchHelper.STROKE_STYLE_MARKER
-                PenTool.PENCIL -> TouchHelper.STROKE_STYLE_CHARCOAL
+                PenTool.PENCIL -> TouchHelper.STROKE_STYLE_PENCIL // charcoal is far darker and wider than the firmware's pencil
                 PenTool.PAINTBRUSH -> TouchHelper.STROKE_STYLE_NEO_BRUSH
                 PenTool.CALLIGRAPHY -> TouchHelper.STROKE_STYLE_SQUARE_PEN
                 else -> TouchHelper.STROKE_STYLE_FOUNTAIN
             },
         )
-        helper.setStrokeColor(previewColor(tool))
+        helper.setStrokeColor(look?.let { inkColor(previewColor(tool), (it.coverage + 0.12f * inkDarkness).coerceIn(0.1f, 1f)) } ?: previewColor(tool))
+    }
+
+    /** [base] thinned towards white so that [amount] (0..1) of it remains: the same ink as a textured stroke on a solid line. */
+    private fun inkColor(base: Int, amount: Float): Int {
+        fun mix(c: Int) = (255 - (255 - c) * amount).toInt().coerceIn(0, 255)
+        return Color.rgb(mix(Color.red(base)), mix(Color.green(base)), mix(Color.blue(base)))
     }
 
     private fun previewColor(spec: PenSpec): Int = when (spec.colorId) {
